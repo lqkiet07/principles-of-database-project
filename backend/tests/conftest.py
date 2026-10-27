@@ -25,7 +25,7 @@ def pytest_asyncio_loop_factories():
     return {"default": asyncio.new_event_loop}
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="session", autouse=True)
 async def pool():
     p = await get_pool()
     yield p
@@ -33,7 +33,7 @@ async def pool():
 
 
 @pytest_asyncio.fixture
-async def client(pool):
+async def client():
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as ac:
