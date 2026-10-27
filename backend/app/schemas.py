@@ -59,3 +59,20 @@ class GenerateBillOut(BaseModel):
     status_code: int
     message: str
     debts: list[DebtItem]
+
+
+class PaymentIn(BaseModel):
+    student_id: str
+    debt_id: int = Field(..., ge=1)
+    amount: float = Field(..., gt=0)
+
+
+class PaymentOut(BaseModel):
+    status_code: int
+    tx_code: str
+    student_id: str
+    debt_id: int
+    amount_paid: float
+    remaining_balance: float
+    remaining_debt: float
+    message: str

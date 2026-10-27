@@ -1,12 +1,14 @@
 import pytest
+import pytest_asyncio
 
 from app.db import execute, fetch_one
 
 
-@pytest.fixture(autouse=True)
+@pytest_asyncio.fixture(autouse=True)
 async def cleanup_test_bills():
+    await execute("DELETE FROM utility_bills WHERE month_year = '2026-11';")
+    await execute("DELETE FROM rooms WHERE room_number = 'TEST-EMPTY-ROOM';")
     yield
-    # Clean up any test bills generated for 2026-11 or temporary rooms
     await execute("DELETE FROM utility_bills WHERE month_year = '2026-11';")
     await execute("DELETE FROM rooms WHERE room_number = 'TEST-EMPTY-ROOM';")
 

@@ -1,19 +1,19 @@
 from typing import Any
 
 from app.db import fetch_all, fetch_one, get_connection
-from app.errors import raise_sp1_error
-from app.schemas import GenerateBillIn
+from app.errors import raise_sp1_error, raise_sp2_error
+from app.schemas import GenerateBillIn, PaymentIn
 
 
 async def generate_and_split_bill(payload: GenerateBillIn) -> dict[str, Any]:
     async with get_connection() as conn, conn.cursor() as cur:
         await cur.execute(
             """
-                CALL sp_generate_and_split_utility_bill(
-                    %s, %s, %s, %s, %s, %s,
-                    NULL, NULL, NULL, NULL, NULL
-                );
-                """,
+            CALL sp_generate_and_split_utility_bill(
+                %s, %s, %s, %s, %s, %s,
+                NULL, NULL, NULL, NULL, NULL
+            );
+            """,
             (
                 payload.room_id,
                 payload.month_year,
@@ -66,4 +66,35 @@ async def generate_and_split_bill(payload: GenerateBillIn) -> dict[str, Any]:
             }
             for d in debt_rows
         ],
+    }
+
+
+async def pay_student_debt(payload: PaymentIn) -> dict[str, Any]:
+    async with get_connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            CALL sp_pay_student_utility_bill(
+                %s, %s, %s::numeric,
+                NULL, NULL, NULL, NULL, NULL
+            );
+            """,
+            (payload.student_id, payload.debt_id, payload.amount),
+        )
+        out_row = await cur.fetchone()
+
+    status_code = out_row["p_status_code"]
+    message = out_row["p_message"]
+
+    if status_code != 0:
+        raise_sp2_error(status_code, message)
+
+    return {
+        "status_code": 0,
+        "tx_code": out_row["p_tx_code"],
+        "student_id": payload.student_id,
+        "debt_id": payload.debt_id,
+        "amount_paid": payload.amount,
+        "remaining_balance": float(out_row["p_remaining_balance"]),
+        "remaining_debt": float(out_row["p_remaining_debt"]),
+        "message": message,
     }
