@@ -1,0 +1,32 @@
+{
+  "description": "Thực nghiệm gửi 2 yêu cầu thanh toán đồng thời cho cùng 1 khoản nợ cá nhân để kiểm chứng khóa bi quan SELECT ... FOR UPDATE chống Double-Spending.",
+  "request_1": {
+    "http_status": 200,
+    "response": {
+      "success": true,
+      "status_code": 0,
+      "error_code": null,
+      "message": "Thanh toán thành công 375000 đ. Biên lai: TX-20261027-070457-87116C (SUCCESS)",
+      "data": {
+        "status_code": 0,
+        "tx_code": "TX-20261027-070457-87116C",
+        "student_id": "B2100009",
+        "debt_id": 7020,
+        "amount_paid": 375000.0,
+        "remaining_balance": 750000.0,
+        "remaining_debt": 0.0,
+        "message": "Thanh toán thành công 375000 đ. Biên lai: TX-20261027-070457-87116C (SUCCESS)"
+      }
+    }
+  },
+  "request_2": {
+    "http_status": 409,
+    "response": {
+      "success": false,
+      "status_code": 2,
+      "error_code": "DEBT_ALREADY_PAID",
+      "message": "Thông báo: Khoản nợ này đã được thanh toán hoàn tất trước đó (DEBT_ALREADY_PAID)",
+      "data": null
+    }
+  }
+}

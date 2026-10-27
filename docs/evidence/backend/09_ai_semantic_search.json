@@ -1,0 +1,75 @@
+{
+  "query": "phòng nữ thoáng mát yên tĩnh gần thư viện",
+  "results": [
+    {
+      "room_id": 3,
+      "room_number": "B2-201",
+      "building_id": "B2",
+      "building_name": "Tòa B2 - Nữ",
+      "gender_zone": "FEMALE",
+      "capacity": 4,
+      "current_occupancy": 2,
+      "base_price": 1300000.0,
+      "description": "Phòng nữ tầng 2, thoáng mát đón gió tự nhiên, gần thư viện ký túc xá",
+      "status": "AVAILABLE",
+      "cosine_distance": 0.1893,
+      "similarity": 0.8107
+    },
+    {
+      "room_id": 4,
+      "room_number": "B2-202",
+      "building_id": "B2",
+      "building_name": "Tòa B2 - Nữ",
+      "gender_zone": "FEMALE",
+      "capacity": 4,
+      "current_occupancy": 2,
+      "base_price": 1300000.0,
+      "description": "Phòng nữ tầng 2, phòng góc có cửa sổ lớn hướng đông, view vườn hoa",
+      "status": "AVAILABLE",
+      "cosine_distance": 0.4193,
+      "similarity": 0.5807
+    },
+    {
+      "room_id": 6,
+      "room_number": "B3-302",
+      "building_id": "B3",
+      "building_name": "Tòa B3 - Hỗn hợp",
+      "gender_zone": "MIXED",
+      "capacity": 4,
+      "current_occupancy": 2,
+      "base_price": 1500000.0,
+      "description": "Phòng dịch vụ tầng 3 khép kín, tiện nghi hiện đại, không gian yên tĩnh",
+      "status": "AVAILABLE",
+      "cosine_distance": 0.4543,
+      "similarity": 0.5457
+    },
+    {
+      "room_id": 1,
+      "room_number": "B1-101",
+      "building_id": "B1",
+      "building_name": "Tòa B1 - Nam",
+      "gender_zone": "MALE",
+      "capacity": 4,
+      "current_occupancy": 2,
+      "base_price": 1200000.0,
+      "description": "Phòng nam tầng 1, ban công thoáng mát, gần căng-tin và nhà xe",
+      "status": "AVAILABLE",
+      "cosine_distance": 0.4885,
+      "similarity": 0.5115
+    },
+    {
+      "room_id": 2,
+      "room_number": "B1-102",
+      "building_id": "B1",
+      "building_name": "Tòa B1 - Nam",
+      "gender_zone": "MALE",
+      "capacity": 4,
+      "current_occupancy": 2,
+      "base_price": 1200000.0,
+      "description": "Phòng nam tầng 1, yên tĩnh, view sân bóng rổ, có wifi tốc độ cao",
+      "status": "AVAILABLE",
+      "cosine_distance": 0.5693,
+      "similarity": 0.4307
+    }
+  ]
+}

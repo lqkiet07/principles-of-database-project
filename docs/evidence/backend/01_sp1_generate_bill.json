@@ -1,0 +1,32 @@
+{
+  "success": true,
+  "status_code": 0,
+  "error_code": null,
+  "message": "Thành công: Đã phát hành hóa đơn phòng và tự động chia nợ cho 2 sinh viên (SUCCESS)",
+  "data": {
+    "bill_id": 3509,
+    "room_id": 1,
+    "month_year": "2026-11",
+    "total_amount": 750000.0,
+    "split_amount": 375000.0,
+    "student_count": 2,
+    "status_code": 0,
+    "message": "Thành công: Đã phát hành hóa đơn phòng và tự động chia nợ cho 2 sinh viên (SUCCESS)",
+    "debts": [
+      {
+        "debt_id": 7017,
+        "student_id": "B2100002",
+        "assigned_amount": 375000.0,
+        "paid_amount": 0.0,
+        "debt_status": "UNPAID"
+      },
+      {
+        "debt_id": 7018,
+        "student_id": "B2100001",
+        "assigned_amount": 375000.0,
+        "paid_amount": 0.0,
+        "debt_status": "UNPAID"
+      }
+    ]
+  }
+}

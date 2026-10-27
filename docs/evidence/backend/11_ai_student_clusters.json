@@ -1,0 +1,181 @@
+{
+  "total_students": 12,
+  "clusters": [
+    {
+      "cluster_id": 0,
+      "label": "STANDARD",
+      "label_vi": "Gương mẫu",
+      "description": "Sinh viên chấp hành tốt giờ giấc và thanh toán tiền điện nước đầy đủ",
+      "student_count": 4,
+      "avg_late_count": 6667.0,
+      "avg_unpaid_ratio": 0.0105,
+      "avg_power_kwh": 217.9
+    },
+    {
+      "cluster_id": 2,
+      "label": "FINANCIAL_RISK",
+      "label_vi": "Nguy cơ tài chính",
+      "description": "Sinh viên thường xuyên nợ hoặc chậm nộp tiền điện nước",
+      "student_count": 4,
+      "avg_late_count": 3333.5,
+      "avg_unpaid_ratio": 0.6881,
+      "avg_power_kwh": 239.3
+    },
+    {
+      "cluster_id": 1,
+      "label": "SECURITY_RISK",
+      "label_vi": "Cảnh báo an ninh",
+      "description": "Sinh viên có tần suất về muộn giờ giới nghiêm cao sau 23:00",
+      "student_count": 4,
+      "avg_late_count": 12430.2,
+      "avg_unpaid_ratio": 0.045,
+      "avg_power_kwh": 258.9
+    }
+  ],
+  "points": [
+    {
+      "student_id": "B2100001",
+      "full_name": "Nguyễn Văn An",
+      "room_number": "B1-101",
+      "late_count": 6667,
+      "unpaid_ratio": 0.0,
+      "avg_power_kwh": 207.5,
+      "cluster_id": 0,
+      "cluster_label": "STANDARD",
+      "pca_x": -0.1161,
+      "pca_y": -1.8883
+    },
+    {
+      "student_id": "B2100002",
+      "full_name": "Trần Hoàng Bình",
+      "room_number": "B1-101",
+      "late_count": 6667,
+      "unpaid_ratio": 0.0421,
+      "avg_power_kwh": 207.5,
+      "cluster_id": 0,
+      "cluster_label": "STANDARD",
+      "pca_x": -0.2001,
+      "pca_y": -1.8228
+    },
+    {
+      "student_id": "B2100003",
+      "full_name": "Lê Quốc Cường",
+      "room_number": "B1-102",
+      "late_count": 6667,
+      "unpaid_ratio": 0.722,
+      "avg_power_kwh": 238.1,
+      "cluster_id": 2,
+      "cluster_label": "FINANCIAL_RISK",
+      "pca_x": -1.0467,
+      "pca_y": 0.7021
+    },
+    {
+      "student_id": "B2100004",
+      "full_name": "Phạm Minh Dũng",
+      "room_number": "B1-102",
+      "late_count": 0,
+      "unpaid_ratio": 0.722,
+      "avg_power_kwh": 238.1,
+      "cluster_id": 2,
+      "cluster_label": "FINANCIAL_RISK",
+      "pca_x": -1.799,
+      "pca_y": 0.6456
+    },
+    {
+      "student_id": "B2100005",
+      "full_name": "Huỳnh Ngọc Dung",
+      "room_number": "B2-201",
+      "late_count": 6667,
+      "unpaid_ratio": 0.0,
+      "avg_power_kwh": 228.2,
+      "cluster_id": 0,
+      "cluster_label": "STANDARD",
+      "pca_x": 0.2281,
+      "pca_y": -0.8959
+    },
+    {
+      "student_id": "B2100006",
+      "full_name": "Đặng Thùy Dương",
+      "room_number": "B2-201",
+      "late_count": 6667,
+      "unpaid_ratio": 0.0,
+      "avg_power_kwh": 228.2,
+      "cluster_id": 0,
+      "cluster_label": "STANDARD",
+      "pca_x": 0.2281,
+      "pca_y": -0.8959
+    },
+    {
+      "student_id": "B2100007",
+      "full_name": "Võ Hoàng Giang",
+      "room_number": "B2-202",
+      "late_count": 6667,
+      "unpaid_ratio": 0.6541,
+      "avg_power_kwh": 240.5,
+      "cluster_id": 2,
+      "cluster_label": "FINANCIAL_RISK",
+      "pca_x": -0.8714,
+      "pca_y": 0.7116
+    },
+    {
+      "student_id": "B2100008",
+      "full_name": "Bùi Ngọc Hạnh",
+      "room_number": "B2-202",
+      "late_count": 0,
+      "unpaid_ratio": 0.6541,
+      "avg_power_kwh": 240.5,
+      "cluster_id": 2,
+      "cluster_label": "FINANCIAL_RISK",
+      "pca_x": -1.6237,
+      "pca_y": 0.6551
+    },
+    {
+      "student_id": "B2100009",
+      "full_name": "Ngô Minh Khoa",
+      "room_number": "B3-301",
+      "late_count": 26667,
+      "unpaid_ratio": 0.0358,
+      "avg_power_kwh": 252.7,
+      "cluster_id": 1,
+      "cluster_label": "SECURITY_RISK",
+      "pca_x": 2.821,
+      "pca_y": 0.5039
+    },
+    {
+      "student_id": "B2100010",
+      "full_name": "Trịnh Công Long",
+      "room_number": "B3-301",
+      "late_count": 6666,
+      "unpaid_ratio": 0.0694,
+      "avg_power_kwh": 252.7,
+      "cluster_id": 1,
+      "cluster_label": "SECURITY_RISK",
+      "pca_x": 0.4971,
+      "pca_y": 0.3867
+    },
+    {
+      "student_id": "B2100011",
+      "full_name": "Lý Phương Mai",
+      "room_number": "B3-302",
+      "late_count": 6666,
+      "unpaid_ratio": 0.0373,
+      "avg_power_kwh": 265.2,
+      "cluster_id": 1,
+      "cluster_label": "SECURITY_RISK",
+      "pca_x": 0.769,
+      "pca_y": 0.936
+    },
+    {
+      "student_id": "B2100012",
+      "full_name": "Đoàn Bảo Nam",
+      "room_number": "B3-302",
+      "late_count": 9722,
+      "unpaid_ratio": 0.0373,
+      "avg_power_kwh": 265.2,
+      "cluster_id": 1,
+      "cluster_label": "SECURITY_RISK",
+      "pca_x": 1.1138,
+      "pca_y": 0.9619
+    }
+  ]
+}

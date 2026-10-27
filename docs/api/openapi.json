@@ -1,0 +1,2497 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Smart Dormitory & Utility Billing API",
+    "description": "Backend API for Smart Dormitory Management & Utility Billing (CT221H CTU)",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/students/{student_id}/wallet/topup": {
+      "post": {
+        "tags": [
+          "Students"
+        ],
+        "summary": "Topup Wallet",
+        "operationId": "topup_wallet_api_students__student_id__wallet_topup_post",
+        "parameters": [
+          {
+            "name": "student_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Student Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TopupIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_TopupOut_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/students/{student_id}": {
+      "get": {
+        "tags": [
+          "Students"
+        ],
+        "summary": "Get Profile",
+        "operationId": "get_profile_api_students__student_id__get",
+        "parameters": [
+          {
+            "name": "student_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Student Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_dict_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/students/{student_id}/room": {
+      "get": {
+        "tags": [
+          "Students"
+        ],
+        "summary": "Get Room",
+        "operationId": "get_room_api_students__student_id__room_get",
+        "parameters": [
+          {
+            "name": "student_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Student Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_dict_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/students/{student_id}/debts": {
+      "get": {
+        "tags": [
+          "Students"
+        ],
+        "summary": "Get Debts",
+        "operationId": "get_debts_api_students__student_id__debts_get",
+        "parameters": [
+          {
+            "name": "student_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Student Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_list_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/students/{student_id}/transactions": {
+      "get": {
+        "tags": [
+          "Students"
+        ],
+        "summary": "Get Transactions",
+        "operationId": "get_transactions_api_students__student_id__transactions_get",
+        "parameters": [
+          {
+            "name": "student_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Student Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_list_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/students/{student_id}/access-logs": {
+      "get": {
+        "tags": [
+          "Students"
+        ],
+        "summary": "Get Access Logs",
+        "operationId": "get_access_logs_api_students__student_id__access_logs_get",
+        "parameters": [
+          {
+            "name": "student_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Student Id"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "name": "late",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Late"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_dict_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/bills": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Generate Bill",
+        "operationId": "generate_bill_api_admin_bills_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateBillIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GenerateBillOut_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/bills/{bill_id}/meters": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Patch Bill Meters",
+        "operationId": "patch_bill_meters_api_admin_bills__bill_id__meters_patch",
+        "parameters": [
+          {
+            "name": "bill_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Bill Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeterUpdateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_MeterUpdateOut_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/audit-logs": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List Audit Logs",
+        "operationId": "list_audit_logs_api_admin_audit_logs_get",
+        "parameters": [
+          {
+            "name": "record_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Record Id"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_list_AuditLogItem__"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/rooms": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List Rooms",
+        "operationId": "list_rooms_api_admin_rooms_get",
+        "parameters": [
+          {
+            "name": "building_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Building Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_list_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/assignments": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Create Assignment",
+        "operationId": "create_assignment_api_admin_assignments_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_AssignmentOut_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/assignments/{assignment_id}": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Checkout Assignment",
+        "operationId": "checkout_assignment_api_admin_assignments__assignment_id__delete",
+        "parameters": [
+          {
+            "name": "assignment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Assignment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_dict_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/dashboard": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get Dashboard",
+        "operationId": "get_dashboard_api_admin_dashboard_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_DashboardSummaryOut_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/access-logs": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Search Access Logs",
+        "operationId": "search_access_logs_api_admin_access_logs_get",
+        "parameters": [
+          {
+            "name": "student_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Student Id"
+            }
+          },
+          {
+            "name": "gate_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Gate Name"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "name": "late",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Late"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_dict_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/benchmark": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Benchmark Index",
+        "operationId": "benchmark_index_api_admin_benchmark_get",
+        "parameters": [
+          {
+            "name": "mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(seq|index|natural)$",
+              "default": "natural",
+              "title": "Mode"
+            }
+          },
+          {
+            "name": "from_time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "2026-09-01 00:00:00",
+              "title": "From Time"
+            }
+          },
+          {
+            "name": "to_time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "2026-10-01 23:59:59",
+              "title": "To Time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_BenchmarkOut_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/ai/reindex": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Reindex Room Embeddings",
+        "operationId": "reindex_room_embeddings_api_admin_ai_reindex_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_dict_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments": {
+      "post": {
+        "tags": [
+          "Payments"
+        ],
+        "summary": "Pay Debt",
+        "operationId": "pay_debt_api_payments_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_PaymentOut_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/semantic-search": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Semantic Search",
+        "operationId": "semantic_search_api_ai_semantic_search_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Natural language search prompt for rooms",
+              "title": "Q"
+            },
+            "description": "Natural language search prompt for rooms"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "default": 5,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_list_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/forecast": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Forecast Consumption",
+        "operationId": "forecast_consumption_api_ai_forecast_get",
+        "parameters": [
+          {
+            "name": "building_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 10,
+              "title": "Building Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_ForecastOut_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/clusters": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Student Clusters",
+        "operationId": "student_clusters_api_ai_clusters_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_ClusterAnalysisOut_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/test-error": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Trigger Test Error",
+        "operationId": "trigger_test_error_api_test_error_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Health Check",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiResponse_AssignmentOut_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssignmentOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[AssignmentOut]"
+      },
+      "ApiResponse_BenchmarkOut_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenchmarkOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[BenchmarkOut]"
+      },
+      "ApiResponse_ClusterAnalysisOut_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClusterAnalysisOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[ClusterAnalysisOut]"
+      },
+      "ApiResponse_DashboardSummaryOut_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DashboardSummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[DashboardSummaryOut]"
+      },
+      "ApiResponse_ForecastOut_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ForecastOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[ForecastOut]"
+      },
+      "ApiResponse_GenerateBillOut_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GenerateBillOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[GenerateBillOut]"
+      },
+      "ApiResponse_MeterUpdateOut_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MeterUpdateOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[MeterUpdateOut]"
+      },
+      "ApiResponse_PaymentOut_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaymentOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[PaymentOut]"
+      },
+      "ApiResponse_TopupOut_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TopupOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[TopupOut]"
+      },
+      "ApiResponse_dict_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[dict]"
+      },
+      "ApiResponse_list_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[list]"
+      },
+      "ApiResponse_list_AuditLogItem__": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AuditLogItem"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[list[AuditLogItem]]"
+      },
+      "AssignmentIn": {
+        "properties": {
+          "room_id": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Room Id"
+          },
+          "student_id": {
+            "type": "string",
+            "title": "Student Id"
+          },
+          "bed_number": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Bed Number"
+          },
+          "start_date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "room_id",
+          "student_id",
+          "bed_number",
+          "start_date"
+        ],
+        "title": "AssignmentIn"
+      },
+      "AssignmentOut": {
+        "properties": {
+          "assignment_id": {
+            "type": "integer",
+            "title": "Assignment Id"
+          },
+          "room_id": {
+            "type": "integer",
+            "title": "Room Id"
+          },
+          "student_id": {
+            "type": "string",
+            "title": "Student Id"
+          },
+          "bed_number": {
+            "type": "integer",
+            "title": "Bed Number"
+          },
+          "start_date": {
+            "type": "string",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assignment_id",
+          "room_id",
+          "student_id",
+          "bed_number",
+          "start_date",
+          "is_active"
+        ],
+        "title": "AssignmentOut"
+      },
+      "AuditLogItem": {
+        "properties": {
+          "log_id": {
+            "type": "integer",
+            "title": "Log Id"
+          },
+          "table_name": {
+            "type": "string",
+            "title": "Table Name"
+          },
+          "action_type": {
+            "type": "string",
+            "title": "Action Type"
+          },
+          "record_id": {
+            "type": "string",
+            "title": "Record Id"
+          },
+          "changed_by": {
+            "type": "string",
+            "title": "Changed By"
+          },
+          "changed_at": {
+            "type": "string",
+            "title": "Changed At"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "old_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old Data"
+          },
+          "new_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "log_id",
+          "table_name",
+          "action_type",
+          "record_id",
+          "changed_by",
+          "changed_at"
+        ],
+        "title": "AuditLogItem"
+      },
+      "BenchmarkOut": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "execution_time_ms": {
+            "type": "number",
+            "title": "Execution Time Ms"
+          },
+          "planning_time_ms": {
+            "type": "number",
+            "title": "Planning Time Ms"
+          },
+          "node_type": {
+            "type": "string",
+            "title": "Node Type"
+          },
+          "shared_hit_blocks": {
+            "type": "integer",
+            "title": "Shared Hit Blocks"
+          },
+          "shared_read_blocks": {
+            "type": "integer",
+            "title": "Shared Read Blocks"
+          },
+          "total_buffers": {
+            "type": "integer",
+            "title": "Total Buffers"
+          },
+          "rows_returned": {
+            "type": "integer",
+            "title": "Rows Returned"
+          },
+          "plan": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Plan"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mode",
+          "execution_time_ms",
+          "planning_time_ms",
+          "node_type",
+          "shared_hit_blocks",
+          "shared_read_blocks",
+          "total_buffers",
+          "rows_returned",
+          "plan"
+        ],
+        "title": "BenchmarkOut"
+      },
+      "ClusterAnalysisOut": {
+        "properties": {
+          "total_students": {
+            "type": "integer",
+            "title": "Total Students"
+          },
+          "clusters": {
+            "items": {
+              "$ref": "#/components/schemas/ClusterSummaryItem"
+            },
+            "type": "array",
+            "title": "Clusters"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/ClusterStudentPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_students",
+          "clusters",
+          "points"
+        ],
+        "title": "ClusterAnalysisOut"
+      },
+      "ClusterStudentPoint": {
+        "properties": {
+          "student_id": {
+            "type": "string",
+            "title": "Student Id"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "room_number": {
+            "type": "string",
+            "title": "Room Number"
+          },
+          "late_count": {
+            "type": "integer",
+            "title": "Late Count"
+          },
+          "unpaid_ratio": {
+            "type": "number",
+            "title": "Unpaid Ratio"
+          },
+          "avg_power_kwh": {
+            "type": "number",
+            "title": "Avg Power Kwh"
+          },
+          "cluster_id": {
+            "type": "integer",
+            "title": "Cluster Id"
+          },
+          "cluster_label": {
+            "type": "string",
+            "title": "Cluster Label"
+          },
+          "pca_x": {
+            "type": "number",
+            "title": "Pca X"
+          },
+          "pca_y": {
+            "type": "number",
+            "title": "Pca Y"
+          }
+        },
+        "type": "object",
+        "required": [
+          "student_id",
+          "full_name",
+          "room_number",
+          "late_count",
+          "unpaid_ratio",
+          "avg_power_kwh",
+          "cluster_id",
+          "cluster_label",
+          "pca_x",
+          "pca_y"
+        ],
+        "title": "ClusterStudentPoint"
+      },
+      "ClusterSummaryItem": {
+        "properties": {
+          "cluster_id": {
+            "type": "integer",
+            "title": "Cluster Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "label_vi": {
+            "type": "string",
+            "title": "Label Vi"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "student_count": {
+            "type": "integer",
+            "title": "Student Count"
+          },
+          "avg_late_count": {
+            "type": "number",
+            "title": "Avg Late Count"
+          },
+          "avg_unpaid_ratio": {
+            "type": "number",
+            "title": "Avg Unpaid Ratio"
+          },
+          "avg_power_kwh": {
+            "type": "number",
+            "title": "Avg Power Kwh"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cluster_id",
+          "label",
+          "label_vi",
+          "description",
+          "student_count",
+          "avg_late_count",
+          "avg_unpaid_ratio",
+          "avg_power_kwh"
+        ],
+        "title": "ClusterSummaryItem"
+      },
+      "DashboardSummaryOut": {
+        "properties": {
+          "total_buildings": {
+            "type": "integer",
+            "title": "Total Buildings"
+          },
+          "total_rooms": {
+            "type": "integer",
+            "title": "Total Rooms"
+          },
+          "total_capacity": {
+            "type": "integer",
+            "title": "Total Capacity"
+          },
+          "total_occupancy": {
+            "type": "integer",
+            "title": "Total Occupancy"
+          },
+          "occupancy_rate": {
+            "type": "number",
+            "title": "Occupancy Rate"
+          },
+          "total_students": {
+            "type": "integer",
+            "title": "Total Students"
+          },
+          "total_unpaid_debt": {
+            "type": "number",
+            "title": "Total Unpaid Debt"
+          },
+          "total_power_kwh": {
+            "type": "number",
+            "title": "Total Power Kwh"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_buildings",
+          "total_rooms",
+          "total_capacity",
+          "total_occupancy",
+          "occupancy_rate",
+          "total_students",
+          "total_unpaid_debt",
+          "total_power_kwh"
+        ],
+        "title": "DashboardSummaryOut"
+      },
+      "DebtItem": {
+        "properties": {
+          "debt_id": {
+            "type": "integer",
+            "title": "Debt Id"
+          },
+          "student_id": {
+            "type": "string",
+            "title": "Student Id"
+          },
+          "assigned_amount": {
+            "type": "number",
+            "title": "Assigned Amount"
+          },
+          "paid_amount": {
+            "type": "number",
+            "title": "Paid Amount"
+          },
+          "debt_status": {
+            "type": "string",
+            "title": "Debt Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "debt_id",
+          "student_id",
+          "assigned_amount",
+          "paid_amount",
+          "debt_status"
+        ],
+        "title": "DebtItem"
+      },
+      "ForecastFuturePoint": {
+        "properties": {
+          "month_year": {
+            "type": "string",
+            "title": "Month Year"
+          },
+          "predicted_kwh": {
+            "type": "number",
+            "title": "Predicted Kwh"
+          }
+        },
+        "type": "object",
+        "required": [
+          "month_year",
+          "predicted_kwh"
+        ],
+        "title": "ForecastFuturePoint"
+      },
+      "ForecastHistoryPoint": {
+        "properties": {
+          "month_year": {
+            "type": "string",
+            "title": "Month Year"
+          },
+          "actual_kwh": {
+            "type": "number",
+            "title": "Actual Kwh"
+          },
+          "total_bill": {
+            "type": "number",
+            "title": "Total Bill"
+          }
+        },
+        "type": "object",
+        "required": [
+          "month_year",
+          "actual_kwh",
+          "total_bill"
+        ],
+        "title": "ForecastHistoryPoint"
+      },
+      "ForecastOut": {
+        "properties": {
+          "building_id": {
+            "type": "string",
+            "title": "Building Id"
+          },
+          "building_name": {
+            "type": "string",
+            "title": "Building Name"
+          },
+          "model_name": {
+            "type": "string",
+            "title": "Model Name"
+          },
+          "mae": {
+            "type": "number",
+            "title": "Mae"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastHistoryPoint"
+            },
+            "type": "array",
+            "title": "History"
+          },
+          "predictions": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastFuturePoint"
+            },
+            "type": "array",
+            "title": "Predictions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "building_id",
+          "building_name",
+          "model_name",
+          "mae",
+          "history",
+          "predictions"
+        ],
+        "title": "ForecastOut"
+      },
+      "GenerateBillIn": {
+        "properties": {
+          "room_id": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Room Id"
+          },
+          "month_year": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+            "title": "Month Year"
+          },
+          "prev_electric": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Prev Electric"
+          },
+          "curr_electric": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Curr Electric"
+          },
+          "prev_water": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Prev Water"
+          },
+          "curr_water": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Curr Water"
+          }
+        },
+        "type": "object",
+        "required": [
+          "room_id",
+          "month_year",
+          "prev_electric",
+          "curr_electric",
+          "prev_water",
+          "curr_water"
+        ],
+        "title": "GenerateBillIn"
+      },
+      "GenerateBillOut": {
+        "properties": {
+          "bill_id": {
+            "type": "integer",
+            "title": "Bill Id"
+          },
+          "room_id": {
+            "type": "integer",
+            "title": "Room Id"
+          },
+          "month_year": {
+            "type": "string",
+            "title": "Month Year"
+          },
+          "total_amount": {
+            "type": "number",
+            "title": "Total Amount"
+          },
+          "split_amount": {
+            "type": "number",
+            "title": "Split Amount"
+          },
+          "student_count": {
+            "type": "integer",
+            "title": "Student Count"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "debts": {
+            "items": {
+              "$ref": "#/components/schemas/DebtItem"
+            },
+            "type": "array",
+            "title": "Debts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bill_id",
+          "room_id",
+          "month_year",
+          "total_amount",
+          "split_amount",
+          "student_count",
+          "status_code",
+          "message",
+          "debts"
+        ],
+        "title": "GenerateBillOut"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "MeterUpdateIn": {
+        "properties": {
+          "curr_electric": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Curr Electric"
+          },
+          "curr_water": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Curr Water"
+          }
+        },
+        "type": "object",
+        "required": [
+          "curr_electric",
+          "curr_water"
+        ],
+        "title": "MeterUpdateIn"
+      },
+      "MeterUpdateOut": {
+        "properties": {
+          "bill_id": {
+            "type": "integer",
+            "title": "Bill Id"
+          },
+          "room_id": {
+            "type": "integer",
+            "title": "Room Id"
+          },
+          "month_year": {
+            "type": "string",
+            "title": "Month Year"
+          },
+          "prev_electric": {
+            "type": "integer",
+            "title": "Prev Electric"
+          },
+          "curr_electric": {
+            "type": "integer",
+            "title": "Curr Electric"
+          },
+          "prev_water": {
+            "type": "integer",
+            "title": "Prev Water"
+          },
+          "curr_water": {
+            "type": "integer",
+            "title": "Curr Water"
+          },
+          "total_amount": {
+            "type": "number",
+            "title": "Total Amount"
+          },
+          "paid_amount": {
+            "type": "number",
+            "title": "Paid Amount"
+          },
+          "bill_status": {
+            "type": "string",
+            "title": "Bill Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bill_id",
+          "room_id",
+          "month_year",
+          "prev_electric",
+          "curr_electric",
+          "prev_water",
+          "curr_water",
+          "total_amount",
+          "paid_amount",
+          "bill_status"
+        ],
+        "title": "MeterUpdateOut"
+      },
+      "PaymentIn": {
+        "properties": {
+          "student_id": {
+            "type": "string",
+            "title": "Student Id"
+          },
+          "debt_id": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Debt Id"
+          },
+          "amount": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "student_id",
+          "debt_id",
+          "amount"
+        ],
+        "title": "PaymentIn"
+      },
+      "PaymentOut": {
+        "properties": {
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code"
+          },
+          "tx_code": {
+            "type": "string",
+            "title": "Tx Code"
+          },
+          "student_id": {
+            "type": "string",
+            "title": "Student Id"
+          },
+          "debt_id": {
+            "type": "integer",
+            "title": "Debt Id"
+          },
+          "amount_paid": {
+            "type": "number",
+            "title": "Amount Paid"
+          },
+          "remaining_balance": {
+            "type": "number",
+            "title": "Remaining Balance"
+          },
+          "remaining_debt": {
+            "type": "number",
+            "title": "Remaining Debt"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status_code",
+          "tx_code",
+          "student_id",
+          "debt_id",
+          "amount_paid",
+          "remaining_balance",
+          "remaining_debt",
+          "message"
+        ],
+        "title": "PaymentOut"
+      },
+      "TopupIn": {
+        "properties": {
+          "amount": {
+            "type": "number",
+            "maximum": 10000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "amount"
+        ],
+        "title": "TopupIn"
+      },
+      "TopupOut": {
+        "properties": {
+          "student_id": {
+            "type": "string",
+            "title": "Student Id"
+          },
+          "amount_added": {
+            "type": "number",
+            "title": "Amount Added"
+          },
+          "new_balance": {
+            "type": "number",
+            "title": "New Balance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "student_id",
+          "amount_added",
+          "new_balance"
+        ],
+        "title": "TopupOut"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

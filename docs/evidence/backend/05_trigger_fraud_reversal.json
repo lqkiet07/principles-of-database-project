@@ -1,0 +1,11 @@
+{
+  "description": "Trigger trg_validate_utility_meter_fraud chặn số điện lùi (curr < prev) ném lỗi 422.",
+  "http_status": 422,
+  "response": {
+    "success": false,
+    "status_code": null,
+    "error_code": "FRAUD_METER_REVERSAL",
+    "message": "Lỗi gian lận: Chỉ số điện mới (50) không được nhỏ hơn chỉ số cũ (100)!",
+    "data": null
+  }
+}

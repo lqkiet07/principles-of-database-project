@@ -1,0 +1,12 @@
+{
+  "description": "Kịch bản thanh toán vượt số dư ví (INSUFFICIENT_FUNDS - Code 4). Số dư và công nợ được bảo toàn nguyên tử (Rollback).",
+  "wallet_balance_before": 500000.0,
+  "wallet_balance_after": 500000.0,
+  "payment_response": {
+    "success": false,
+    "status_code": 4,
+    "error_code": "INSUFFICIENT_FUNDS",
+    "message": "Lỗi: Số dư ví (500000.00 đ) không đủ để thanh toán 1075000 đ (INSUFFICIENT_FUNDS)",
+    "data": null
+  }
+}
