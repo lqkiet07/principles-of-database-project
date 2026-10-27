@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 
 from app.db import close_pool, fetch_all, fetch_one, get_pool
 from app.errors import ApiError, raise_sp1_error
+from app.routers import students
 
 
 @asynccontextmanager
@@ -35,6 +36,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(students.router)
 
 
 @app.exception_handler(ApiError)
