@@ -1,7 +1,7 @@
 {
   "mode": "index",
-  "execution_time_ms": 6.555,
-  "planning_time_ms": 0.252,
+  "execution_time_ms": 7.982,
+  "planning_time_ms": 0.441,
   "node_type": "Index Scan",
   "shared_hit_blocks": 4655,
   "shared_read_blocks": 0,
@@ -20,8 +20,8 @@
       "Total Cost": 2376.91,
       "Plan Rows": 4059,
       "Plan Width": 31,
-      "Actual Startup Time": 0.039,
-      "Actual Total Time": 6.289,
+      "Actual Startup Time": 0.11,
+      "Actual Total Time": 7.726,
       "Actual Rows": 3825,
       "Actual Loops": 1,
       "Index Cond": "((is_late = true) AND (check_time >= '2026-09-01 00:00:00'::timestamp without time zone) AND (check_time <= '2026-10-01 23:59:59'::timestamp without time zone))",
@@ -49,8 +49,8 @@
       "Temp Read Blocks": 0,
       "Temp Written Blocks": 0
     },
-    "Planning Time": 0.252,
+    "Planning Time": 0.441,
     "Triggers": [],
-    "Execution Time": 6.555
+    "Execution Time": 7.982
   }
 }

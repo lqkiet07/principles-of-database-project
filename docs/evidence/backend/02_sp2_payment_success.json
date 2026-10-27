@@ -2,15 +2,15 @@
   "success": true,
   "status_code": 0,
   "error_code": null,
-  "message": "Thanh toán thành công 375000 đ. Biên lai: TX-20261027-070457-E3AB61 (SUCCESS)",
+  "message": "Thanh toán thành công 375000 đ. Biên lai: TX-20261027-071359-1A7335 (SUCCESS)",
   "data": {
     "status_code": 0,
-    "tx_code": "TX-20261027-070457-E3AB61",
+    "tx_code": "TX-20261027-071359-1A7335",
     "student_id": "B2100001",
-    "debt_id": 7018,
+    "debt_id": 8221,
     "amount_paid": 375000.0,
-    "remaining_balance": 11750000.0,
+    "remaining_balance": 12375000.0,
     "remaining_debt": 0.0,
-    "message": "Thanh toán thành công 375000 đ. Biên lai: TX-20261027-070457-E3AB61 (SUCCESS)"
+    "message": "Thanh toán thành công 375000 đ. Biên lai: TX-20261027-071359-1A7335 (SUCCESS)"
   }
 }

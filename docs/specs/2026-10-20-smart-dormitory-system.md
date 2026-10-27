@@ -206,7 +206,8 @@ Hệ thống được chuẩn hóa chặt chẽ theo dạng chuẩn 3NF bao gồ
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
 | :--- | :--- | :--- | :--- |
 | `tx_id` | `SERIAL` | PRIMARY KEY | Khóa chính tự tăng |
-| `bill_id` | `INT` | NOT NULL, REFERENCES `utility_bills(bill_id)` | Hóa đơn phòng được gạch nợ |
+| `debt_id` | `INT` | NULL, REFERENCES `student_utility_debts(debt_id)` ON DELETE SET NULL | Khoản nợ cá nhân được thanh toán |
+| `bill_id` | `INT` | NULL, REFERENCES `utility_bills(bill_id)` ON DELETE SET NULL | Hóa đơn phòng được gạch nợ |
 | `student_id` | `VARCHAR(20)` | NOT NULL, REFERENCES `students(student_id)` | Sinh viên thực hiện giao dịch nộp tiền |
 | `amount` | `NUMERIC(12, 2)` | NOT NULL, CHECK (`amount > 0`) | Số tiền nộp trong giao dịch này (VNĐ) |
 | `tx_time` | `TIMESTAMP WITH TIME ZONE` | NOT NULL DEFAULT CURRENT_TIMESTAMP | Thời điểm giao dịch phát sinh |
@@ -261,35 +262,34 @@ Thay vì chỉ có một thủ tục đơn lẻ, kiến trúc hệ thống tri�
   ```
 - **Bảng mã trạng thái đầu ra (Status Codes):**
   - `0`: Thành công (`SUCCESS`). Lập hóa đơn và chia nợ thành công.
-  - `1`: Chỉ số đo không hợp lệ (`INVALID_METERS` - chỉ số mới nhỏ hơn chỉ số cũ).
-  - `2`: Hóa đơn tháng của phòng này đã được phát hành trước đó (`BILL_ALREADY_EXISTS`).
-  - `3`: Phòng không tồn tại trong hệ thống (`ROOM_NOT_FOUND`).
-  - `4`: Phòng hiện không có sinh viên nào lưu trú hợp lệ (`NO_ACTIVE_STUDENTS`).
+  - `1`: Phòng hiện không có sinh viên nào lưu trú hợp lệ (`NO_STUDENTS`).
+  - `2`: Hóa đơn tháng của phòng này đã được phát hành trước đó (`BILL_EXISTS`).
+  - `3`: Chỉ số đo không hợp lệ (`INVALID_METERS` - chỉ số mới nhỏ hơn chỉ số cũ).
   - `99`: Lỗi hệ thống bất ngờ (`SYSTEM_ERROR`).
 - **Quy trình xử lý nghiệp vụ (Execution Logic):**
-  1. Kiểm tra tham số đầu vào: nếu `p_curr_elec < p_prev_elec` hoặc `p_curr_water < p_prev_water` $\rightarrow$ gán `p_status_code = 1`, trả về thông báo lỗi chỉ số.
+  1. Kiểm tra tham số đầu vào: nếu `p_curr_elec < p_prev_elec` hoặc `p_curr_water < p_prev_water` $\rightarrow$ gán `p_status_code = 3`, trả về thông báo lỗi chỉ số.
   2. Kiểm tra trùng lặp: nếu đã tồn tại bản ghi trong `utility_bills` với `room_id = p_room_id` và `month_year = p_month_year` $\rightarrow$ gán `p_status_code = 2`, dừng thủ tục.
-  3. Tính toán sản lượng tiêu thụ:
-     $$\Delta E = p\_curr\_elec - p\_prev\_elec \quad (\text{kWh})$$
-     $$\Delta W = p\_curr\_water - p\_prev\_water \quad (\text{m}^3)$$
-  4. Tính tiền điện theo biểu giá bậc thang 3 mức:
-     - Mức 1 (0 – 50 kWh): 1.800 VNĐ/kWh.
-     - Mức 2 (51 – 100 kWh): 2.100 VNĐ/kWh.
-     - Mức 3 (trên 100 kWh): 2.600 VNĐ/kWh.
-  5. Tính tiền nước: Đơn giá cố định 10.000 VNĐ/$\text{m}^3$.
-  6. Tổng tiền toàn phòng: $Total = Cost_{Electric} + Cost_{Water}$.
-  7. Xác định số lượng sinh viên đang lưu trú hợp lệ trong phòng:
+  3. Xác định số lượng sinh viên đang lưu trú hợp lệ trong phòng:
      ```sql
      SELECT COUNT(*) INTO v_student_count 
      FROM room_assignments 
      WHERE room_id = p_room_id AND is_active = TRUE;
      ```
-     Nếu $v\_student\_count = 0 \rightarrow$ gán `p_status_code = 4`, dừng thủ tục.
+     Nếu $v\_student\_count = 0 \rightarrow$ gán `p_status_code = 1`, dừng thủ tục.
+  4. Tính toán sản lượng tiêu thụ:
+     $$\Delta E = p\_curr\_elec - p\_prev\_elec \quad (\text{kWh})$$
+     $$\Delta W = p\_curr\_water - p\_prev\_water \quad (\text{m}^3)$$
+  5. Tính tiền điện theo biểu giá bậc thang 3 mức chuẩn hóa:
+     - Mức 1 (0 – 100 kWh): 2.000 VNĐ/kWh.
+     - Mức 2 (101 – 200 kWh): 2.500 VNĐ/kWh.
+     - Mức 3 (trên 200 kWh): 3.000 VNĐ/kWh.
+  6. Tính tiền nước: Đơn giá cố định 10.000 VNĐ/$\text{m}^3$.
+  7. Tổng tiền toàn phòng: $Total = Cost_{Electric} + Cost_{Water}$.
   8. Tính tiền phân bổ đều cho mỗi sinh viên:
      $$p\_split\_amount = \text{ROUND}(Total / v\_student\_count, 2)$$
   9. Thao tác ghi CSDL trong Transaction:
      - Thêm bản ghi mới vào `utility_bills` với trạng thái `'UNPAID'` và `paid_amount = 0.00`, lấy về `bill_id`.
-     - Chạy vòng lặp duyệt qua danh sách sinh viên đang lưu trú (`is_active = TRUE`), thêm bản ghi tương ứng vào bảng `student_utility_debts` với `assigned_amount = p_split_amount`, `paid_amount = 0.00`, `debt_status = 'UNPAID'`.
+     - Phân bổ công nợ vào bảng `student_utility_debts`: $N-1$ sinh viên đầu nhận định mức `p_split_amount`, sinh viên cuối cùng nhận phần bù chênh lệch $Total - (p\_split\_amount \times (N-1))$ để bảo toàn tuyệt đối 100% tổng tiền phòng không bị thất thoát do làm tròn số lẻ.
   10. Trả về `p_status_code = 0`, gán các giá trị `p_total_amount`, `p_split_amount`, `p_student_count` và kết thúc.
 
 ---

@@ -133,6 +133,7 @@ BEGIN
     RETURNING bill_id INTO v_bill_id;
 
     -- 9. Insert Child Debt Allocations for each active student in the room
+    -- Accurately distributes exact total with remainder allocated to the last student
     INSERT INTO student_utility_debts (
         bill_id,
         student_id,
@@ -143,7 +144,11 @@ BEGIN
     SELECT 
         v_bill_id,
         student_id,
-        p_split_amount,
+        CASE 
+            WHEN row_number() OVER (ORDER BY student_id) = p_student_count 
+            THEN p_total_amount - (p_split_amount * (p_student_count - 1))
+            ELSE p_split_amount
+        END AS assigned_amount,
         0.00,
         'UNPAID'
     FROM room_assignments

@@ -2,15 +2,15 @@
   "description": "Trigger trg_audit_utility_meter_update tự động ghi vết thay đổi trạng thái trước/sau dạng JSONB vào audit_logs.",
   "audit_trail": [
     {
-      "log_id": 17,
+      "log_id": 20,
       "table_name": "utility_bills",
       "action_type": "UPDATE",
-      "record_id": "3509",
+      "record_id": "4110",
       "changed_by": "postgres",
-      "changed_at": "2026-10-27T07:04:57.770940+00:00",
+      "changed_at": "2026-10-27T07:13:59.862426+00:00",
       "reason": "Điều chỉnh chỉ số công tơ phòng 1 kỳ 2026-11 (Điện: 350 -> 360, Nước: 35 -> 38)",
       "old_data": {
-        "bill_id": 3509,
+        "bill_id": 4110,
         "room_id": 1,
         "curr_water": 35,
         "month_year": "2026-11",
@@ -22,7 +22,7 @@
         "prev_electric": 100
       },
       "new_data": {
-        "bill_id": 3509,
+        "bill_id": 4110,
         "room_id": 1,
         "curr_water": 38,
         "month_year": "2026-11",

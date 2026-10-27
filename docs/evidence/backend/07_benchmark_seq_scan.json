@@ -1,7 +1,7 @@
 {
   "mode": "seq",
-  "execution_time_ms": 39.696,
-  "planning_time_ms": 0.244,
+  "execution_time_ms": 47.44,
+  "planning_time_ms": 0.235,
   "node_type": "Gather",
   "shared_hit_blocks": 19066,
   "shared_read_blocks": 0,
@@ -16,8 +16,8 @@
       "Total Cost": 17313.96,
       "Plan Rows": 4059,
       "Plan Width": 31,
-      "Actual Startup Time": 0.678,
-      "Actual Total Time": 39.477,
+      "Actual Startup Time": 1.47,
+      "Actual Total Time": 47.225,
       "Actual Rows": 3825,
       "Actual Loops": 1,
       "Workers Planned": 2,
@@ -45,8 +45,8 @@
           "Total Cost": 15908.06,
           "Plan Rows": 1691,
           "Plan Width": 31,
-          "Actual Startup Time": 0.162,
-          "Actual Total Time": 33.004,
+          "Actual Startup Time": 0.072,
+          "Actual Total Time": 37.085,
           "Actual Rows": 1275,
           "Actual Loops": 3,
           "Filter": "(is_late AND (check_time >= '2026-09-01 00:00:00'::timestamp without time zone) AND (check_time <= '2026-10-01 23:59:59'::timestamp without time zone))",
@@ -77,8 +77,8 @@
       "Temp Read Blocks": 0,
       "Temp Written Blocks": 0
     },
-    "Planning Time": 0.244,
+    "Planning Time": 0.235,
     "Triggers": [],
-    "Execution Time": 39.696
+    "Execution Time": 47.44
   }
 }
