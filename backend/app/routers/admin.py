@@ -1,18 +1,61 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
-from app.schemas import ApiResponse, GenerateBillIn, GenerateBillOut
+from app.schemas import (
+    ApiResponse,
+    AssignmentIn,
+    AssignmentOut,
+    DashboardSummaryOut,
+    GenerateBillIn,
+    GenerateBillOut,
+)
+from app.services import admin as admin_service
 from app.services import billing as billing_service
+from app.services import rooms as room_service
 from app.services.security import require_admin_role
 
-router = APIRouter(prefix="/api/admin", tags=["Admin"])
+router = APIRouter(
+    prefix="/api/admin", tags=["Admin"], dependencies=[Depends(require_admin_role)]
+)
 
 
 @router.post(
     "/bills",
     response_model=ApiResponse[GenerateBillOut],
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_admin_role)],
 )
 async def generate_bill(payload: GenerateBillIn):
     data = await billing_service.generate_and_split_bill(payload)
     return ApiResponse(message=data["message"], data=data)
+
+
+@router.get("/rooms", response_model=ApiResponse[list])
+async def list_rooms(
+    building_id: str | None = Query(None),
+    status_filter: str | None = Query(None, alias="status"),
+):
+    data = await room_service.get_rooms_list(
+        building_id=building_id, status=status_filter
+    )
+    return ApiResponse(data=data)
+
+
+@router.post(
+    "/assignments",
+    response_model=ApiResponse[AssignmentOut],
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_assignment(payload: AssignmentIn):
+    data = await room_service.assign_student(payload)
+    return ApiResponse(message="Xếp chỗ lưu trú thành công", data=data)
+
+
+@router.delete("/assignments/{assignment_id}", response_model=ApiResponse[dict])
+async def checkout_assignment(assignment_id: int):
+    data = await room_service.unassign_student(assignment_id)
+    return ApiResponse(message="Thanh lý hợp đồng lưu trú thành công", data=data)
+
+
+@router.get("/dashboard", response_model=ApiResponse[DashboardSummaryOut])
+async def get_dashboard():
+    data = await admin_service.get_dashboard_summary()
+    return ApiResponse(data=data)

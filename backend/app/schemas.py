@@ -76,3 +76,32 @@ class PaymentOut(BaseModel):
     remaining_balance: float
     remaining_debt: float
     message: str
+
+
+class AssignmentIn(BaseModel):
+    room_id: int = Field(..., ge=1)
+    student_id: str
+    bed_number: int = Field(..., ge=1)
+    start_date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
+    end_date: str | None = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+
+
+class AssignmentOut(BaseModel):
+    assignment_id: int
+    room_id: int
+    student_id: str
+    bed_number: int
+    start_date: str
+    end_date: str | None = None
+    is_active: bool
+
+
+class DashboardSummaryOut(BaseModel):
+    total_buildings: int
+    total_rooms: int
+    total_capacity: int
+    total_occupancy: int
+    occupancy_rate: float
+    total_students: int
+    total_unpaid_debt: float
+    total_power_kwh: float
