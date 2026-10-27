@@ -12,7 +12,7 @@
 | STT | Thành viên / Vai trò | Nhiệm vụ chính phụ trách |
 |:---:|:---|:---|
 | 1 | **Thành viên 1**<br>*(Database Architect & Indexing Lead)* | - Thiết kế DDL 10 bảng chuẩn hóa 3NF, tích hợp extension `pgvector(384)`.<br>- Cài đặt Bộ đôi Stored Procedure (`sp_generate_and_split_utility_bill` & `sp_pay_student_utility_bill`).<br>- Cài đặt 2 Triggers (bẫy gian lận số lùi và Audit Log lưu vết JSONB).<br>- Sinh 1.000.000 dòng log và đánh Composite B-Tree Index `(is_late, check_time)`. |
-| 2 | **Thành viên 2**<br>*(Backend & AI Engine Lead)* | - Xây dựng Backend API FastAPI với `psycopg3` Async Connection Pool (21 endpoints).<br>- Tích hợp 3 mô hình AI: Semantic Search (Sentence-Transformers), Dự báo sản lượng điện (RandomForest), Phân cụm sinh viên (KMeans).<br>- Viết trọn bộ 55 automated test cases đạt 100% test coverage trên PostgreSQL thật.<br>- Phát triển công cụ tự động xuất 11 bộ JSON minh chứng thực nghiệm cho báo cáo. |
+| 2 | **Thành viên 2**<br>*(Backend & AI Engine Lead)* | - Xây dựng Backend API FastAPI với `psycopg3` Async Connection Pool (21 endpoints).<br>- Tích hợp 3 mô hình AI: Semantic Search (Sentence-Transformers), Dự báo sản lượng điện (RandomForest), Phân cụm sinh viên (KMeans).<br>- Viết trọn bộ 56 automated test cases đạt 100% test coverage trên PostgreSQL thật.<br>- Phát triển công cụ tự động xuất 11 bộ JSON minh chứng thực nghiệm cho báo cáo. |
 | 3 | **Thành viên 3**<br>*(Frontend SaaS & Report Lead)* | - Phát triển giao diện Web chuẩn SaaS (React + Vite + Tailwind CSS + shadcn/ui).<br>- Xây dựng 2 không gian làm việc: **Sinh viên** và **Quản lý KTX** kèm công cụ **Role Switcher** và **Demo Checkpoints** cho hội đồng chấm thi.<br>- Tích hợp biểu đồ trực quan hóa dữ liệu (Recharts).<br>- Tổng hợp và chắp bút toàn bộ báo cáo đồ án 20 trang theo chuẩn barem CT221H và thiết kế slide thuyết trình. |
 
 ---
@@ -51,11 +51,12 @@ uvicorn app.main:app --reload --port 8000
 - **Tài liệu API Swagger UI:** `http://localhost:8000/docs`
 - **Kiểm tra trạng thái:** `http://localhost:8000/health`
 
-### Bước 3: Chạy Kiểm thử Tự động (55 Test Cases)
+### Bước 3: Chạy Kiểm thử Tự động (56 Test Cases)
 ```powershell
 cd backend
-pytest -v
+.\scripts\run_tests.ps1
 ```
+Script tự tạo lại `smart_dormitory_test`, nạp 1.000.000 log + 24 tháng lịch sử rồi chạy pytest. Không chạy test trực tiếp trên `smart_dormitory_db`.
 
 ### Bước 4: Xuất Minh chứng Thực nghiệm
 ```powershell
@@ -81,7 +82,7 @@ project/
 ├── backend/                        # TẦNG BACKEND & AI ENGINE (PYTHON FASTAPI)
 │   ├── app/                        # Routers, Services, Schemas, AI Models
 │   ├── scripts/                    # Script nạp 24 tháng lịch sử & capture evidence
-│   ├── tests/                      # 55 automated tests (pytest)
+│   ├── tests/                      # 56 automated tests (pytest)
 │   ├── requirements.txt            # Thư viện Python
 │   └── README.md                   # Hướng dẫn chi tiết phân hệ Backend
 ├── docs/                           # TÀI LIỆU & MINH CHỨNG

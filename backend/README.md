@@ -24,10 +24,10 @@ uvicorn app.main:app --reload --port 8000
 
 ## 4. Chạy Automated Tests (Pytest)
 ```powershell
-# Chạy toàn bộ 54 test cases
-pytest -v
+# Chạy toàn bộ 56 test cases trên DB test sạch (reset + seed + pytest)
+.\scripts\run_tests.ps1
 
-# Chạy riêng từng module kiểm thử
+# Chạy riêng từng module sau khi DB test đã được seed
 pytest tests/test_billing.py -v       # SP1 test cases
 pytest tests/test_payments.py -v      # SP2 & Concurrency lock tests
 pytest tests/test_meters_audit.py -v  # Triggers & Audit log tests
@@ -36,6 +36,7 @@ pytest tests/test_ai_search.py -v     # pgvector Semantic Search
 pytest tests/test_ai_forecast.py -v   # Scikit-learn Forecasting
 pytest tests/test_ai_clusters.py -v   # KMeans Clustering
 ```
+`conftest.py` luôn trỏ pytest sang `smart_dormitory_test`; chạy `pytest` trực tiếp trên DB chưa seed sẽ fail sớm với hướng dẫn.
 
 ## 5. Xuất Minh chứng Báo cáo (Evidence Artifacts)
 Chạy script tự động thu thập và xuất 11 bộ dữ liệu kiểm chứng sang thư mục `docs/evidence/backend/`:
@@ -49,8 +50,10 @@ Bộ minh chứng bao gồm:
 4. `04_sp2_insufficient_funds_rollback.json`: Bẫy thiếu tiền ví (Code 4), bảo toàn số dư (Rollback).
 5. `05_trigger_fraud_reversal.json`: Bẫy chỉ số lùi của trigger `trg_validate_utility_meter_fraud`.
 6. `06_trigger_audit_log_jsonb.json`: Nhật ký kiểm toán lưu vết JSONB của `trg_audit_utility_meter_update`.
-7. `07_benchmark_seq_scan.json`: Kế hoạch thực thi Parallel Seq Scan (9.346 buffers).
-8. `08_benchmark_index_scan.json`: Kế hoạch thực thi Bitmap Index Scan (3.839 buffers).
+7. `07_benchmark_seq_scan.json`: Kế hoạch thực thi Parallel Seq Scan (19.066 buffers, ~47 ms).
+8. `08_benchmark_index_scan.json`: Kế hoạch thực thi Bitmap/Index Scan (4.655 buffers, ~8 ms).
 9. `09_ai_semantic_search.json`: Tìm kiếm phòng bằng ngôn ngữ tự nhiên qua khoảng cách Cosine `<=>`.
 10. `10_ai_forecasting_kwh.json`: Dự báo phụ tải điện 3 tháng tới bằng RandomForest.
 11. `11_ai_student_clusters.json`: Phân cụm 3 nhóm hành vi sinh viên kết hợp tọa độ PCA 2D.
+
+> Lưu ý: `05_test_cases.sql` đo trực tiếp bằng psql trên DB sạch cho số khác (Seq ~9.346 buffers; Bitmap ~590 buffers). Hai harness khác nhau, không trộn số liệu khi viết báo cáo.

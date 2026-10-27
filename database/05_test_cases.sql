@@ -14,6 +14,17 @@
 
 \timing on
 
+-- Safety guard: this suite writes and must only run on a disposable database.
+DO $$
+BEGIN
+    IF current_database() = 'smart_dormitory_db' THEN
+        RAISE EXCEPTION 'Refusing to run 05_test_cases.sql on the main database. Use a disposable test database.';
+    END IF;
+END $$;
+
+-- Keep the whole suite atomic: every test change is rolled back at the end.
+BEGIN;
+
 -- ============================================================================
 -- TEST CASE 1: GENERATE BILL AND SPLIT FOR ROOM 1
 -- Objective:
@@ -100,17 +111,20 @@ DECLARE
     v_rem_debt  NUMERIC(12, 2);
     v_msg       VARCHAR(255);
     v_bill_st   VARCHAR(20);
+    v_bill_id   INT;
 BEGIN
-    -- Get debt IDs for the 2 students of room 1
-    SELECT debt_id INTO v_debt_id_1 
-    FROM student_utility_debts 
-    WHERE student_id = 'B2100001' AND debt_status = 'UNPAID'
-    LIMIT 1;
+    -- Get the bill created in Test 1, then its two specific debts.
+    SELECT bill_id INTO v_bill_id
+    FROM utility_bills
+    WHERE room_id = 1 AND month_year = '2026-10';
 
-    SELECT debt_id INTO v_debt_id_2 
-    FROM student_utility_debts 
-    WHERE student_id = 'B2100002' AND debt_status = 'UNPAID'
-    LIMIT 1;
+    SELECT debt_id INTO v_debt_id_1
+    FROM student_utility_debts
+    WHERE student_id = 'B2100001' AND bill_id = v_bill_id;
+
+    SELECT debt_id INTO v_debt_id_2
+    FROM student_utility_debts
+    WHERE student_id = 'B2100002' AND bill_id = v_bill_id;
 
     -- 1. Student 1 pays 375,000 VND
     CALL sp_pay_student_utility_bill(
@@ -249,17 +263,41 @@ END $$;
 
 -- Test 4.1: Attempt to enter negative/reversal electric meter
 DO $$
+DECLARE
+    v_total     NUMERIC(12, 2);
+    v_split     NUMERIC(12, 2);
+    v_count     INT;
+    v_status    INT;
+    v_msg       VARCHAR(255);
+    v_bill_id   INT;
 BEGIN
-    UPDATE utility_bills 
-    SET curr_electric = 50 -- prev_electric was 100
-    WHERE room_id = 2 AND month_year = '2026-10';
+    -- Dedicated bill with prev_electric = 100 so the update below is a real reversal.
+    CALL sp_generate_and_split_utility_bill(
+        p_room_id       => 3,
+        p_month_year    => '2026-10',
+        p_prev_elec     => 100,
+        p_curr_elec     => 350,
+        p_prev_water    => 20,
+        p_curr_water    => 35,
+        p_total_amount  => v_total,
+        p_split_amount  => v_split,
+        p_student_count => v_count,
+        p_status_code   => v_status,
+        p_message       => v_msg
+    );
+
+    SELECT bill_id INTO v_bill_id
+    FROM utility_bills
+    WHERE room_id = 3 AND month_year = '2026-10';
+
+    UPDATE utility_bills
+    SET curr_electric = 50
+    WHERE bill_id = v_bill_id;
 
     RAISE EXCEPTION '>>> TEST 4.1 RESULT: [FAIL] - Trigger không chặn được số điện lùi!';
-EXCEPTION 
+EXCEPTION
     WHEN check_violation THEN
         RAISE NOTICE '>>> TEST 4.1 RESULT: [PASS] - Trigger chặn đứng thành công số điện lùi: %', SQLERRM;
-    WHEN OTHERS THEN
-        RAISE NOTICE '>>> TEST 4.1 RESULT: [PASS] - Trigger chặn với ngoại lệ: %', SQLERRM;
 END $$;
 
 -- Test 4.2: Attempt to alter meters on a settled 'PAID' bill (Room 1)
@@ -273,8 +311,6 @@ BEGIN
 EXCEPTION 
     WHEN integrity_constraint_violation THEN
         RAISE NOTICE '>>> TEST 4.2 RESULT: [PASS] - Trigger chặn can thiệp hóa đơn đã quyết toán: %', SQLERRM;
-    WHEN OTHERS THEN
-        RAISE NOTICE '>>> TEST 4.2 RESULT: [PASS] - Trigger chặn với ngoại lệ: %', SQLERRM;
 END $$;
 
 
@@ -309,12 +345,41 @@ FROM audit_logs
 ORDER BY log_id DESC
 LIMIT 1;
 
+DO $$
+DECLARE
+    v_bill_id   INT;
+    v_log_count INT;
+    v_old       JSONB;
+    v_new       JSONB;
+BEGIN
+    SELECT bill_id INTO v_bill_id
+    FROM utility_bills
+    WHERE room_id = 2 AND month_year = '2026-10';
+
+    SELECT count(*) INTO v_log_count
+    FROM audit_logs
+    WHERE table_name = 'utility_bills' AND record_id = v_bill_id::TEXT;
+
+    SELECT old_data, new_data INTO v_old, v_new
+    FROM audit_logs
+    WHERE table_name = 'utility_bills' AND record_id = v_bill_id::TEXT
+    ORDER BY log_id DESC
+    LIMIT 1;
+
+    IF v_log_count >= 1 AND v_old IS DISTINCT FROM v_new THEN
+        RAISE NOTICE '>>> TEST 5 RESULT: [PASS] - Audit log JSONB ghi nhận đúng old/new state.';
+    ELSE
+        RAISE EXCEPTION '>>> TEST 5 RESULT: [FAIL] - Không tìm thấy audit log JSONB hợp lệ!';
+    END IF;
+END $$;
+
 
 -- ============================================================================
 -- TEST CASE 6: 1,000,000 LOGS INDEX BENCHMARK
 -- Objective:
 --   Compare execution plan and buffer hits between Sequential Scan (No Index)
 --   and Index Scan (Composite B-Tree on is_late, check_time).
+-- NOTE: This is a manual benchmark, not an automated PASS/FAIL test.
 -- ============================================================================
 \echo '============================================================'
 \echo 'TEST 6: Thực nghiệm đo lường hiệu năng Index trên 1.000.000 dòng log'
@@ -341,3 +406,11 @@ SELECT student_id, check_time, gate_name
 FROM dorm_access_logs
 WHERE is_late = TRUE 
   AND check_time >= '2026-09-01 00:00:00' AND check_time <= '2026-10-01 23:59:59';
+
+-- ============================================================================
+-- ROLLBACK: keep the disposable database unchanged after verification.
+-- ============================================================================
+\echo '============================================================'
+\echo 'ALL TEST DATA ROLLED BACK - DATABASE STATE UNCHANGED'
+\echo '============================================================'
+ROLLBACK;

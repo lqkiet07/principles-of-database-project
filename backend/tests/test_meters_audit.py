@@ -80,24 +80,16 @@ async def test_patch_meters_fraud_reversal_rejected(client):
 @pytest.mark.asyncio
 async def test_patch_meters_paid_bill_tamper_rejected(client):
     headers = {"X-Role": "admin"}
-    # Bill 1 from Seed / Test 2 is PAID
-    bill = await fetch_one(
-        "SELECT bill_id FROM utility_bills WHERE bill_status = 'PAID' LIMIT 1;"
+    bill_id = await setup_test_bill(room_id=2)
+    await execute(
+        "UPDATE utility_bills SET bill_status = 'PAID' WHERE bill_id = %s;",
+        (bill_id,),
     )
-    if not bill:
-        # Create and mark a bill as PAID
-        b_id = await setup_test_bill(room_id=1)
-        await execute(
-            "UPDATE utility_bills SET bill_status = 'PAID' WHERE bill_id = %s;", (b_id,)
-        )
-        paid_bill_id = b_id
-    else:
-        paid_bill_id = bill["bill_id"]
 
-    # Attempt to tamper with settled bill
-    payload = {"curr_electric": 999, "curr_water": 99}
+    # Keep both readings above their previous values so only the PAID-bill rule fires.
+    payload = {"curr_electric": 360, "curr_water": 38}
     res = await client.patch(
-        f"/api/admin/bills/{paid_bill_id}/meters", json=payload, headers=headers
+        f"/api/admin/bills/{bill_id}/meters", json=payload, headers=headers
     )
     assert res.status_code == 422
     body = res.json()

@@ -1,8 +1,10 @@
 # Session Handoff: Hoàn Thành Toàn Bộ Phân Hệ Backend & AI Engine
 
 - **Date:** 2026-10-27
-- **Branch:** `main` (clean, 15 commits ahead of `origin/main`)
+- **Branch:** `main` (16 commits ahead of `origin/main`, including this handoff commit; hardening changes uncommitted)
 - **Author/Session ID:** Antigravity / Task Implementation & Verification Session
+
+> **Correction (2026-10-27 hardening):** The test suite is now isolated to `smart_dormitory_test`; 56/56 tests pass on a clean database. The working tree currently contains the uncommitted hardening changes. Benchmark evidence remains `19.066 -> 4.655` buffers, while the clean-room `05_test_cases.sql` harness measures `9.346 -> 590`. On Windows, uvicorn 0.54 requires `--reload` to avoid `ProactorEventLoop`. See `docs/verification/2026-10-27-backend-verification.md`.
 
 ---
 
@@ -20,7 +22,7 @@ Xây dựng trọn vẹn tầng Backend API (FastAPI) và AI Engine (Scikit-lear
   - `d6dd6b7` feat(ai): student behavioral clustering with KMeans, PCA, and semantic labels
   - `1c93d28` feat(ai): electricity consumption forecasting with RandomForestRegressor
   - `323ee33` feat(ai): sentence-transformers embeddings and pgvector semantic room search
-- **Blockers / In-Flight Status:** Không có blocker. Toàn bộ 56/56 automated tests đã pass 100% trên PostgreSQL thật.
+- **Blockers / In-Flight Status:** Sau hardening 2026-10-27: 56/56 automated tests pass 100% trên `smart_dormitory_test` sạch.
 
 ---
 
@@ -76,8 +78,9 @@ Xây dựng trọn vẹn tầng Backend API (FastAPI) và AI Engine (Scikit-lear
   - Bảng mã SP1: `0 = SUCCESS`, `1 = NO_STUDENTS`, `2 = BILL_EXISTS`, `3 = INVALID_METERS`, `99 = SYSTEM_ERROR`.
   - Bảng `payment_transactions`: có cả `debt_id` và `bill_id`.
 - **Benchmark Index:**
-  - Bảng 1 triệu dòng log (~75 MB) nằm trọn trong RAM cache sau lần truy vấn đầu (`shared hit = 9346`).
-  - Trong điều kiện RAM cache, `Parallel Seq Scan` chạy mất ~60ms; `Bitmap Index Scan` chạy mất ~3ms và giảm số khối đọc từ 9.346 xuống 3.839 buffers (tiết kiệm gần 60% I/O bộ nhớ). Báo cáo sử dụng trực tiếp số liệu đo thật này từ file `07_benchmark_seq_scan.json` và `08_benchmark_index_scan.json`.
+  - Evidence API (`07/08`): `Parallel Seq Scan` ~47 ms / 19.066 buffers; `Bitmap/Index Scan` ~8 ms / 4.655 buffers.
+  - Clean-room `05_test_cases.sql` (psql, DB sạch): Seq ~39 ms / ~9.3k–9.5k buffers; Bitmap ~1.5–2 ms / ~590–770 buffers.
+  - Đây là hai harness khác nhau; báo cáo phải ghi rõ nguồn, không trộn số.
 
 ---
 
