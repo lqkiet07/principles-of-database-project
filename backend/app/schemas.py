@@ -167,3 +167,33 @@ class ForecastOut(BaseModel):
     mae: float
     history: list[ForecastHistoryPoint]
     predictions: list[ForecastFuturePoint]
+
+
+class ClusterSummaryItem(BaseModel):
+    cluster_id: int
+    label: str
+    label_vi: str
+    description: str
+    student_count: int
+    avg_late_count: float
+    avg_unpaid_ratio: float
+    avg_power_kwh: float
+
+
+class ClusterStudentPoint(BaseModel):
+    student_id: str
+    full_name: str
+    room_number: str
+    late_count: int
+    unpaid_ratio: float
+    avg_power_kwh: float
+    cluster_id: int
+    cluster_label: str
+    pca_x: float
+    pca_y: float
+
+
+class ClusterAnalysisOut(BaseModel):
+    total_students: int
+    clusters: list[ClusterSummaryItem]
+    points: list[ClusterStudentPoint]

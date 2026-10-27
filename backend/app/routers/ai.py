@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Query
 
+from app.ai.clustering import perform_student_clustering
 from app.ai.forecasting import predict_building_consumption
 from app.ai.semantic_search import search_available_rooms
-from app.schemas import ApiResponse, ForecastOut
+from app.schemas import ApiResponse, ClusterAnalysisOut, ForecastOut
 
 router = APIRouter(prefix="/api/ai", tags=["AI"])
 
@@ -23,4 +24,10 @@ async def forecast_consumption(
     building_id: str = Query(..., min_length=1, max_length=10),
 ):
     data = await predict_building_consumption(building_id=building_id)
+    return ApiResponse(data=data)
+
+
+@router.get("/clusters", response_model=ApiResponse[ClusterAnalysisOut])
+async def student_clusters():
+    data = await perform_student_clustering()
     return ApiResponse(data=data)
