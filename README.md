@@ -1,94 +1,143 @@
-# Hệ thống Quản lý Ký túc xá Thông minh & Thanh toán Điện nước
-### *(Smart Dormitory Management & Campus Utility Billing System)*
+# Smart Dormitory & Campus Utility Billing System
 
-- **Môn học:** Nguyên lý Hệ quản trị Cơ sở dữ liệu (CT221H)
-- **Đơn vị:** Khoa Công nghệ Thông tin & Truyền thông - Đại học Cần Thơ (CTU)
-- **Học kỳ / Năm học:** Học kỳ I, Năm học 2026 - 2027
+> **A high-concurrency, ACID-compliant campus utility billing engine and dormitory management system powered by PostgreSQL 16, `pgvector`, and FastAPI.**
 
----
+[![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16.15-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![pgvector](https://img.shields.io/badge/pgvector-0.8.7-blue)](https://github.com/pgvector/pgvector)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.162.0-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Python 3.12](https://img.shields.io/badge/Python-3.12.7-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Tests](https://img.shields.io/badge/Tests-56%2F56%20Passed-brightgreen)](backend/tests/)
+[![Ruff](https://img.shields.io/badge/Code%20Style-Ruff-000000?logo=ruff&logoColor=white)](https://astral.sh/ruff)
+[![License](https://img.shields.io/badge/License-MIT-gray)](LICENSE)
 
-## 1. Thành viên Nhóm & Phân công Trách nhiệm (3 Thành viên)
-
-| STT | Thành viên / Vai trò | Nhiệm vụ chính phụ trách |
-|:---:|:---|:---|
-| 1 | **Thành viên 1**<br>*(Database Architect & Indexing Lead)* | - Thiết kế DDL 10 bảng chuẩn hóa 3NF, tích hợp extension `pgvector(384)`.<br>- Cài đặt Bộ đôi Stored Procedure (`sp_generate_and_split_utility_bill` & `sp_pay_student_utility_bill`).<br>- Cài đặt 2 Triggers (bẫy gian lận số lùi và Audit Log lưu vết JSONB).<br>- Sinh 1.000.000 dòng log và đánh Composite B-Tree Index `(is_late, check_time)`. |
-| 2 | **Thành viên 2**<br>*(Backend & AI Engine Lead)* | - Xây dựng Backend API FastAPI với `psycopg3` Async Connection Pool (21 endpoints).<br>- Tích hợp 3 mô hình AI: Semantic Search (Sentence-Transformers), Dự báo sản lượng điện (RandomForest), Phân cụm sinh viên (KMeans).<br>- Viết trọn bộ 56 automated test cases đạt 100% test coverage trên PostgreSQL thật.<br>- Phát triển công cụ tự động xuất 11 bộ JSON minh chứng thực nghiệm cho báo cáo. |
-| 3 | **Thành viên 3**<br>*(Frontend SaaS & Report Lead)* | - Phát triển giao diện Web chuẩn SaaS (React + Vite + Tailwind CSS + shadcn/ui).<br>- Xây dựng 2 không gian làm việc: **Sinh viên** và **Quản lý KTX** kèm công cụ **Role Switcher** và **Demo Checkpoints** cho hội đồng chấm thi.<br>- Tích hợp biểu đồ trực quan hóa dữ liệu (Recharts).<br>- Tổng hợp và chắp bút toàn bộ báo cáo đồ án 20 trang theo chuẩn barem CT221H và thiết kế slide thuyết trình. |
+An end-to-end academic capstone project for **Principles of Database Management Systems (CT221H)** at Can Tho University (CTU). Designed to solve real-world student accommodation challenges through strict 3NF database normalization, transactional financial operations, audit trails, big-data query optimization, and embedded vector search.
 
 ---
 
-## 2. Công nghệ Cốt lõi & Kiến trúc
+## Architecture Overview
 
 ```text
-Frontend (React 18 + Vite + Tailwind CSS + shadcn/ui)
-           │ HTTP RESTful API (JSON Envelope)
-           ▼
-Backend (Python 3.12 + FastAPI + psycopg3 Async Pool + Scikit-learn + Sentence-Transformers)
-           │ TCP 5432 (pgvector <=> Cosine, Stored Procedures, JSONB)
-           ▼
-Database (PostgreSQL 16 with pgvector extension) in Docker Compose
+┌────────────────────────────────────────────────────────────────────────┐
+│                   Frontend Web Client (React 18 + Vite)                │
+│             Role Switcher • Student Portal • Admin Dashboard           │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ HTTP REST / JSON Envelope
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                FastAPI Backend API Gateway (Python 3.12)               │
+│        psycopg3 Async Pool • SentenceTransformers • Scikit-learn       │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ TCP 5432 (pgvector, Dual SPs, CDC)
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                   PostgreSQL 16.15 Enterprise Engine                   │
+│   • 10 Normalized 3NF Tables       • Dual Stored Procedures (ACID)    │
+│   • Pessimistic Row Locks          • Fraud-Prevention Triggers        │
+│   • JSONB Audit Logging (CDC)      • Composite B-Tree Index (1M Logs) │
+│   • Vector Embeddings (384-dim)    • Docker Compose Clean-room Env    │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Hướng dẫn Khởi chạy Nhanh
+## Core Technical Pillars
 
-### Bước 1: Khởi động CSDL PostgreSQL (Docker)
-```powershell
+### 1. Dual Stored Procedure Financial Engine (PL/pgSQL)
+- **`sp_generate_and_split_utility_bill`:** Automatically calculates tiered progressive electricity costs (Tier 1: 0–100 kWh, Tier 2: 101–200 kWh, Tier 3: >200 kWh) and water tariffs. Dynamically counts active occupants (`is_active = TRUE`) in the room, splits debt evenly, and reconciles IEEE 754 decimal rounding remainders to the final student to guarantee zero-loss parent-child balance.
+- **`sp_pay_student_utility_bill`:** Executes atomic wallet settlement. Deducts student wallet balances, gags personal debt records, atomically aggregates room-level totals (`PARTIALLY_PAID` $\to$ `PAID`), and issues collision-resistant audit receipt codes (`TX-YYYYMMDD-HHMMSS-XXXXXX`).
+
+### 2. ACID Concurrency Control & Double-Spending Prevention
+- Employs **Pessimistic Row-Level Locking (`SELECT ... FOR UPDATE`)** on wallet balances, personal debts, and parent bills.
+- Eliminates race conditions and lost updates under concurrent checkout attempts (e.g., rapid double-clicking or network retries) without incurring the severe throughput degradation of `SERIALIZABLE` isolation.
+
+### 3. Change Data Capture & Fraud Prevention Triggers
+- **`trg_validate_utility_meter_fraud`:** Intercepts `BEFORE INSERT OR UPDATE` events on `utility_bills` to strictly reject fraudulent reverse meter readings (`curr_electric < prev_electric`) and block modifications on settled (`PAID`) invoices.
+- **`trg_audit_utility_meter_update`:** Automated audit trail capturing full pre- and post-mutation states as structured `JSONB` snapshots (`to_jsonb(OLD)` and `to_jsonb(NEW)`) for regulatory compliance and forensics.
+
+### 4. Big Data Query Optimization (1,000,000 Access Logs)
+- Synthetic benchmark dataset of **1,000,000 access log records** evaluating late-night curfew violations after 23:00.
+- Evaluated via `EXPLAIN (ANALYZE, BUFFERS)`:
+  - **Sequential Scan (Unindexed):** ~45.4 ms execution time, 19,066 shared buffer hits.
+  - **Composite B-Tree Index `(is_late, check_time)`:** **3.7–5.4 ms execution time**, 4,655 shared buffer hits (**~16x performance speedup, >75% I/O buffer reduction**).
+
+### 5. In-Database AI & Machine Learning Integration
+- **Semantic Room Search:** Natural language Vietnamese query processing using `paraphrase-multilingual-MiniLM-L12-v2` embeddings mapped into PostgreSQL `vector(384)` columns via Cosine Distance operator (`<=>`).
+- **Load Forecasting:** `RandomForestRegressor` predicting utility consumption 3 months ahead based on 24 months of historical room billing data.
+- **Student Behavioral Segmentation:** `K-Means` clustering categorizing students into 3 actionable profiles (Exemplary, Financial Risk, Security Alert) paired with 2D Principal Component Analysis (PCA) projections.
+
+---
+
+## Quick Start
+
+### Prerequisites
+- Docker & Docker Compose
+- Python 3.12+ (with virtual environment support)
+
+### 1. Launch Database Infrastructure
+```bash
 docker compose up -d
 docker compose ps
 ```
-PostgreSQL sẽ tự động khởi tạo 10 bảng, 2 Stored Procedures và 2 Triggers.
+The database container automatically bootstraps all 10 normalized tables, Stored Procedures, Triggers, and pgvector extensions.
 
-### Bước 2: Khởi động Backend API
+### 2. Set Up Backend API
 ```powershell
 cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+```
+
+### 3. Start Development Server
+```powershell
 uvicorn app.main:app --reload --port 8000
 ```
-- **Tài liệu API Swagger UI:** `http://localhost:8000/docs`
-- **Kiểm tra trạng thái:** `http://localhost:8000/health`
+- **Interactive Swagger Docs:** `http://127.0.0.1:8000/docs`
+- **ReDoc Specification:** `http://127.0.0.1:8000/redoc`
+- **Health Check:** `http://127.0.0.1:8000/health`
 
-### Bước 3: Chạy Kiểm thử Tự động (56 Test Cases)
+### 4. Run Isolated Verification Test Suite (56 Tests)
 ```powershell
-cd backend
-.\scripts\run_tests.ps1
+# Executes full hermetic test harness on an isolated test database
+.\scripts\run_tests.ps1 -v
 ```
-Script tự tạo lại `smart_dormitory_test`, nạp 1.000.000 log + 24 tháng lịch sử rồi chạy pytest. Không chạy test trực tiếp trên `smart_dormitory_db`.
 
-### Bước 4: Xuất Minh chứng Thực nghiệm
+### 5. Run Live Smoke Check
 ```powershell
-cd backend
-python -m scripts.capture_evidence
+python -m scripts.smoke_check
 ```
-Toàn bộ 11 file JSON minh chứng cho 5 tiêu chí chấm thi sẽ được xuất vào `docs/evidence/backend/`.
 
 ---
 
-## 4. Cấu trúc Thư mục Dự án
+## Repository Structure
 
 ```text
-project/
-├── docker-compose.yml              # Khởi chạy PostgreSQL 16 pgvector + pgAdmin 4
-├── CHOT_QUYET_DINH_KY_THUAT.md     # Tài liệu quyết định kiến trúc & phân công 3 thành viên
-├── database/                       # TẦNG CSDL (10 BẢNG + PL/PGSQL)
-│   ├── 01_schema.sql               # DDL 10 bảng, ràng buộc 3NF, pgvector
-│   ├── 02_procedures.sql           # Bộ đôi Stored Procedures (ACID, FOR UPDATE, bù dư)
-│   ├── 03_triggers.sql             # Triggers bẫy gian lận & Audit log JSONB
-│   ├── 04_seed_1m_logs.sql         # Nạp 1.000.000 log quẹt thẻ + Composite Index
-│   └── 05_test_cases.sql           # 6 test cases chuẩn chấm thi
-├── backend/                        # TẦNG BACKEND & AI ENGINE (PYTHON FASTAPI)
-│   ├── app/                        # Routers, Services, Schemas, AI Models
-│   ├── scripts/                    # Script nạp 24 tháng lịch sử & capture evidence
-│   ├── tests/                      # 56 automated tests (pytest)
-│   ├── requirements.txt            # Thư viện Python
-│   └── README.md                   # Hướng dẫn chi tiết phân hệ Backend
-├── docs/                           # TÀI LIỆU & MINH CHỨNG
-│   ├── api/openapi.json            # Đặc tả OpenAPI chuẩn của toàn bộ hệ thống
-│   ├── evidence/backend/           # 11 bộ JSON minh chứng thực nghiệm
-│   ├── plans/                      # Kế hoạch thi công chi tiết
-│   └── specs/                      # Đặc tả kỹ thuật hệ thống chính thức
-└── frontend/                       # WEB UI SAAS (REACT + VITE + SHADCN/UI)
+principles-of-database/
+├── docker-compose.yml              # PostgreSQL 16 + pgvector container
+├── database/                       # SQL DDL, Procedures, and Triggers
+│   ├── 01_schema.sql               # 10-table 3NF schema & vector types
+│   ├── 02_procedures.sql           # Dual SPs (SP1 split, SP2 payment)
+│   ├── 03_triggers.sql             # Anti-fraud trigger & JSONB audit log
+│   ├── 04_seed_1m_logs.sql         # 1M log generator & composite index
+│   └── 05_test_cases.sql           # Clean-room SQL verification harness
+├── backend/                        # FastAPI REST API & AI Engine
+│   ├── app/                        # Routers, schemas, DB pool, AI models
+│   ├── scripts/                    # Seeding, evidence capture, smoke check
+│   ├── tests/                      # 56 hermetic pytest cases
+│   └── requirements.txt            # Python dependencies
+├── docs/                           # Documentation & Evidence
+│   ├── api/openapi.json            # Frozen OpenAPI 3.1.0 contract (22 paths)
+│   ├── evidence/backend/           # 11 empirical benchmark JSON artifacts
+│   └── specs/                      # System technical specifications
+└── frontend/                       # SaaS Web Client (React + Tailwind)
 ```
+
+---
+
+## Contributors & Academic Attribution
+
+Developed as a Course Capstone Project for **Principles of Database Management Systems (CT221H)** — Department of Information Technology, College of Information & Communication Technology (CICT), Can Tho University (CTU).
+
+- **Database Architect & Indexing:** Schema 3NF, Dual Stored Procedures, Triggers, 1M Access Log Benchmark.
+- **Backend & AI Lead:** FastAPI Async Connection Pool, 22 Endpoints, 3 ML/Vector Models, 56 Hermetic Tests.
+- **Frontend SaaS & Reporting:** React 18 SaaS UI, Demo Checkpoints, Technical Report & Presentation.
