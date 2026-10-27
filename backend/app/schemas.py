@@ -147,3 +147,23 @@ class BenchmarkOut(BaseModel):
     total_buffers: int
     rows_returned: int
     plan: dict[str, Any]
+
+
+class ForecastHistoryPoint(BaseModel):
+    month_year: str
+    actual_kwh: float
+    total_bill: float
+
+
+class ForecastFuturePoint(BaseModel):
+    month_year: str
+    predicted_kwh: float
+
+
+class ForecastOut(BaseModel):
+    building_id: str
+    building_name: str
+    model_name: str
+    mae: float
+    history: list[ForecastHistoryPoint]
+    predictions: list[ForecastFuturePoint]

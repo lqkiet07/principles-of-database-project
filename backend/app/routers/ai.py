@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Query
 
+from app.ai.forecasting import predict_building_consumption
 from app.ai.semantic_search import search_available_rooms
-from app.schemas import ApiResponse
+from app.schemas import ApiResponse, ForecastOut
 
 router = APIRouter(prefix="/api/ai", tags=["AI"])
 
@@ -14,4 +15,12 @@ async def semantic_search(
     limit: int = Query(5, ge=1, le=20),
 ):
     data = await search_available_rooms(query=q, limit=limit)
+    return ApiResponse(data=data)
+
+
+@router.get("/forecast", response_model=ApiResponse[ForecastOut])
+async def forecast_consumption(
+    building_id: str = Query(..., min_length=1, max_length=10),
+):
+    data = await predict_building_consumption(building_id=building_id)
     return ApiResponse(data=data)
