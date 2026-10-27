@@ -135,3 +135,15 @@ class AuditLogItem(BaseModel):
     reason: str | None = None
     old_data: dict[str, Any] | None = None
     new_data: dict[str, Any] | None = None
+
+
+class BenchmarkOut(BaseModel):
+    mode: str
+    execution_time_ms: float
+    planning_time_ms: float
+    node_type: str
+    shared_hit_blocks: int
+    shared_read_blocks: int
+    total_buffers: int
+    rows_returned: int
+    plan: dict[str, Any]

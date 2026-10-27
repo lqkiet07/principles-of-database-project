@@ -5,6 +5,7 @@ from app.schemas import (
     AssignmentIn,
     AssignmentOut,
     AuditLogItem,
+    BenchmarkOut,
     DashboardSummaryOut,
     GenerateBillIn,
     GenerateBillOut,
@@ -12,6 +13,7 @@ from app.schemas import (
     MeterUpdateOut,
 )
 from app.services import admin as admin_service
+from app.services import benchmark as benchmark_service
 from app.services import billing as billing_service
 from app.services import rooms as room_service
 from app.services.security import require_admin_role
@@ -89,4 +91,38 @@ async def checkout_assignment(assignment_id: int):
 @router.get("/dashboard", response_model=ApiResponse[DashboardSummaryOut])
 async def get_dashboard():
     data = await admin_service.get_dashboard_summary()
+    return ApiResponse(data=data)
+
+
+@router.get("/access-logs", response_model=ApiResponse[dict])
+async def search_access_logs(
+    student_id: str | None = Query(None),
+    gate_name: str | None = Query(None),
+    from_date: str | None = Query(None, alias="from"),
+    to_date: str | None = Query(None, alias="to"),
+    late_only: bool = Query(False, alias="late"),
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+):
+    data = await admin_service.search_all_access_logs(
+        student_id=student_id,
+        gate_name=gate_name,
+        from_date=from_date,
+        to_date=to_date,
+        late_only=late_only,
+        limit=limit,
+        offset=offset,
+    )
+    return ApiResponse(data=data)
+
+
+@router.get("/benchmark", response_model=ApiResponse[BenchmarkOut])
+async def benchmark_index(
+    mode: str = Query("natural", pattern=r"^(seq|index|natural)$"),
+    from_time: str = Query("2026-09-01 00:00:00"),
+    to_time: str = Query("2026-10-01 23:59:59"),
+):
+    data = await benchmark_service.run_index_benchmark(
+        mode=mode, from_time=from_time, to_time=to_time
+    )
     return ApiResponse(data=data)

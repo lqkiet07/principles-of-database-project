@@ -153,3 +153,74 @@ async def get_audit_logs(
         }
         for r in rows
     ]
+
+
+async def search_all_access_logs(
+    student_id: str | None = None,
+    gate_name: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    late_only: bool = False,
+    limit: int = 50,
+    offset: int = 0,
+) -> dict[str, Any]:
+    clauses = ["1=1"]
+    params: list[Any] = []
+
+    if student_id:
+        clauses.append("l.student_id = %s")
+        params.append(student_id)
+    if gate_name:
+        clauses.append("l.gate_name = %s")
+        params.append(gate_name)
+    if late_only:
+        clauses.append("l.is_late = TRUE")
+    if from_date:
+        clauses.append("l.check_time >= %s::timestamp")
+        params.append(from_date)
+    if to_date:
+        clauses.append("l.check_time <= %s::timestamp")
+        params.append(to_date)
+
+    where_sql = " AND ".join(clauses)
+
+    count_row = await fetch_one(
+        f"""
+        SELECT count(*) AS total,
+               count(*) FILTER (WHERE l.is_late = TRUE) AS late_count
+        FROM dorm_access_logs l
+        WHERE {where_sql};
+        """,
+        tuple(params),
+    )
+
+    query_params = list(params)
+    query_params.extend([limit, offset])
+
+    items = await fetch_all(
+        f"""
+        SELECT l.log_id, l.student_id, s.full_name AS student_name, l.gate_name, l.check_time, l.is_late
+        FROM dorm_access_logs l
+        JOIN students s ON s.student_id = l.student_id
+        WHERE {where_sql}
+        ORDER BY l.check_time DESC
+        LIMIT %s OFFSET %s;
+        """,
+        tuple(query_params),
+    )
+
+    return {
+        "total": count_row["total"] if count_row else 0,
+        "late_count": count_row["late_count"] if count_row else 0,
+        "items": [
+            {
+                "log_id": r["log_id"],
+                "student_id": r["student_id"],
+                "student_name": r["student_name"],
+                "gate_name": r["gate_name"],
+                "check_time": r["check_time"].isoformat(),
+                "is_late": r["is_late"],
+            }
+            for r in items
+        ],
+    }
