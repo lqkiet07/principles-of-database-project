@@ -6,10 +6,12 @@ if sys.platform == "win32":
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.db import close_pool, fetch_all, fetch_one, get_pool
+from app.errors import ApiError, raise_sp1_error
 
 
 @asynccontextmanager
@@ -33,6 +35,25 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(ApiError)
+async def api_error_handler(request: Request, exc: ApiError):
+    return JSONResponse(
+        status_code=exc.http_status,
+        content={
+            "success": False,
+            "status_code": exc.status_code,
+            "error_code": exc.error_code,
+            "message": exc.message,
+            "data": exc.data,
+        },
+    )
+
+
+@app.get("/api/test-error", tags=["System"])
+async def trigger_test_error():
+    raise_sp1_error(2, "Hóa đơn đã tồn tại")
 
 
 @app.get("/health", tags=["System"])

@@ -1,14 +1,10 @@
 import asyncio
+import selectors
 import sys
 from pathlib import Path
 
-
-def pytest_configure(config):
-    if sys.platform == "win32":
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-
 import httpx
+import pytest
 import pytest_asyncio
 
 # Ensure backend root is on sys.path
@@ -20,15 +16,24 @@ from app.db import close_pool, get_pool
 from app.main import app
 
 
-@pytest_asyncio.fixture(autouse=True)
-async def manage_pool():
-    pool = await get_pool()
-    yield pool
+@pytest.hookimpl
+def pytest_asyncio_loop_factories():
+    if sys.platform == "win32":
+        return {
+            "default": lambda: asyncio.SelectorEventLoop(selectors.SelectSelector())
+        }
+    return {"default": asyncio.new_event_loop}
+
+
+@pytest_asyncio.fixture(scope="session")
+async def pool():
+    p = await get_pool()
+    yield p
     await close_pool()
 
 
 @pytest_asyncio.fixture
-async def client():
+async def client(pool):
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as ac:
