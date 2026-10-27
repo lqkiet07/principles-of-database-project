@@ -177,13 +177,14 @@ SELECT
 FROM (
     VALUES
     ('B1', 'B1-101', 1200000.00, 'Phòng nam tầng 1, ban công thoáng mát, gần căng-tin và nhà xe', 1.1),
-    ('B1-102', 'B1-102', 1200000.00, 'Phòng nam tầng 1, yên tĩnh, view sân bóng rổ, có wifi tốc độ cao', 1.2),
-    ('B2-201', 'B2-201', 1300000.00, 'Phòng nữ tầng 2, thoáng mát đón gió tự nhiên, gần thư viện ký túc xá', 2.1),
-    ('B2-202', 'B2-202', 1300000.00, 'Phòng nữ tầng 2, phòng góc có cửa sổ lớn hướng đông, view vườn hoa', 2.2),
-    ('B3-301', 'B3-301', 1500000.00, 'Phòng dịch vụ tầng 3 chất lượng cao, có điều hòa và bình nóng lạnh', 3.1),
-    ('B3-302', 'B3-302', 1500000.00, 'Phòng dịch vụ tầng 3 khép kín, tiện nghi hiện đại, không gian yên tĩnh', 3.2)
+    ('B1', 'B1-102', 1200000.00, 'Phòng nam tầng 1, yên tĩnh, view sân bóng rổ, có wifi tốc độ cao', 1.2),
+    ('B2', 'B2-201', 1300000.00, 'Phòng nữ tầng 2, thoáng mát đón gió tự nhiên, gần thư viện ký túc xá', 2.1),
+    ('B2', 'B2-202', 1300000.00, 'Phòng nữ tầng 2, phòng góc có cửa sổ lớn hướng đông, view vườn hoa', 2.2),
+    ('B3', 'B3-301', 1500000.00, 'Phòng dịch vụ tầng 3 chất lượng cao, có điều hòa và bình nóng lạnh', 3.1),
+    ('B3', 'B3-302', 1500000.00, 'Phòng dịch vụ tầng 3 khép kín, tiện nghi hiện đại, không gian yên tĩnh', 3.2)
 ) AS r(b_id, room_number, base_price, description, seed_val)
-JOIN dorm_buildings b ON b.building_id = SUBSTRING(r.room_number, 1, 2);
+JOIN dorm_buildings b ON b.building_id = SUBSTRING(r.room_number, 1, 2)
+ORDER BY r.room_number;
 
 -- Seed 3: Students (12 students)
 INSERT INTO students (student_id, full_name, email, phone, major, status) VALUES

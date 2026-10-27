@@ -28,9 +28,9 @@
 --     => Total Room Bill = 750,000 VND
 --     => Split per student (2 students) = 375,000 VND each
 -- ============================================================================
-RAISE NOTICE '============================================================';
-RAISE NOTICE 'TEST 1: Chốt chỉ số, tính tiền lũy tiến và chia nợ Phòng 1';
-RAISE NOTICE '============================================================';
+\echo '============================================================'
+\echo 'TEST 1: Chốt chỉ số, tính tiền lũy tiến và chia nợ Phòng 1'
+\echo '============================================================'
 
 DO $$
 DECLARE
@@ -86,9 +86,9 @@ ORDER BY student_id;
 --   2. Student B2100002 pays 375,000 VND (remaining roommate debt).
 --      Verify: Room bill synchronized to PAID!
 -- ============================================================================
-RAISE NOTICE '============================================================';
-RAISE NOTICE 'TEST 2: Thanh toán nợ cá nhân, trừ ví và đồng bộ trạng thái';
-RAISE NOTICE '============================================================';
+\echo '============================================================'
+\echo 'TEST 2: Thanh toán nợ cá nhân, trừ ví và đồng bộ trạng thái'
+\echo '============================================================'
 
 DO $$
 DECLARE
@@ -174,9 +174,9 @@ LIMIT 2;
 --   When B2100004 attempts payment -> Expected status code 4 (INSUFFICIENT_FUNDS).
 --   Verify: Wallet balance and debt amounts remain completely unmodified.
 -- ============================================================================
-RAISE NOTICE '============================================================';
-RAISE NOTICE 'TEST 3: Kiểm tra bẫy thiếu số dư ví (INSUFFICIENT_FUNDS - Code 4)';
-RAISE NOTICE '============================================================';
+\echo '============================================================'
+\echo 'TEST 3: Kiểm tra bẫy thiếu số dư ví (INSUFFICIENT_FUNDS - Code 4)'
+\echo '============================================================'
 
 DO $$
 DECLARE
@@ -243,9 +243,9 @@ END $$;
 --   1. Fraud Rule 1: Attempt to set curr_electric < prev_electric -> Trigger MUST throw Exception.
 --   2. Fraud Rule 2: Attempt to modify meters on a 'PAID' bill -> Trigger MUST throw Exception.
 -- ============================================================================
-RAISE NOTICE '============================================================';
-RAISE NOTICE 'TEST 4: Kiểm tra Trigger trg_validate_utility_meter_fraud';
-RAISE NOTICE '============================================================';
+\echo '============================================================'
+\echo 'TEST 4: Kiểm tra Trigger trg_validate_utility_meter_fraud'
+\echo '============================================================'
 
 -- Test 4.1: Attempt to enter negative/reversal electric meter
 DO $$
@@ -284,9 +284,9 @@ END $$;
 --   Perform a legitimate adjustment on an UNPAID bill (Room 2).
 --   Verify trg_audit_utility_meter_update writes JSONB snapshots into audit_logs.
 -- ============================================================================
-RAISE NOTICE '============================================================';
-RAISE NOTICE 'TEST 5: Kiểm tra Trigger Audit Log ghi vết JSONB';
-RAISE NOTICE '============================================================';
+\echo '============================================================'
+\echo 'TEST 5: Kiểm tra Trigger Audit Log ghi vết JSONB'
+\echo '============================================================'
 
 -- Legitimate meter adjustment on UNPAID bill
 UPDATE utility_bills 
@@ -316,14 +316,14 @@ LIMIT 1;
 --   Compare execution plan and buffer hits between Sequential Scan (No Index)
 --   and Index Scan (Composite B-Tree on is_late, check_time).
 -- ============================================================================
-RAISE NOTICE '============================================================';
-RAISE NOTICE 'TEST 6: Thực nghiệm đo lường hiệu năng Index trên 1.000.000 dòng log';
-RAISE NOTICE '============================================================';
+\echo '============================================================'
+\echo 'TEST 6: Thực nghiệm đo lường hiệu năng Index trên 1.000.000 dòng log'
+\echo '============================================================'
 
 -- Part 6.1: Measure WITHOUT Index (Simulate Full Table Scan)
 DROP INDEX IF EXISTS idx_access_late_time;
 
-RAISE NOTICE '--- BƯỚC 1: Kế hoạch thực thi khi CHƯA CÓ INDEX (Seq Scan on 1M rows) ---';
+\echo '--- BƯỚC 1: Kế hoạch thực thi khi CHƯA CÓ INDEX (Seq Scan on 1M rows) ---'
 EXPLAIN (ANALYZE, BUFFERS)
 SELECT student_id, check_time, gate_name
 FROM dorm_access_logs
@@ -335,8 +335,7 @@ CREATE INDEX IF NOT EXISTS idx_access_late_time
 ON dorm_access_logs (is_late, check_time);
 ANALYZE dorm_access_logs;
 
--- Part 6.3: Measure WITH Composite Index (Bitmap Index Scan / Index Scan)
-RAISE NOTICE '--- BƯỚC 2: Kế hoạch thực thi sau khi ĐÃ CÓ B-TREE COMPOSITE INDEX ---';
+\echo '--- BƯỚC 2: Kế hoạch thực thi sau khi ĐÃ CÓ B-TREE COMPOSITE INDEX ---'
 EXPLAIN (ANALYZE, BUFFERS)
 SELECT student_id, check_time, gate_name
 FROM dorm_access_logs
