@@ -1,6 +1,6 @@
 from typing import Any, Generic, TypeVar
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 T = TypeVar("T")
 
@@ -20,3 +20,13 @@ class ApiErrorResponse(BaseModel):
     error_code: str
     message: str
     data: Any = None
+
+
+class TopupIn(BaseModel):
+    amount: float = Field(..., gt=0, le=10_000_000)
+
+
+class TopupOut(BaseModel):
+    student_id: str
+    amount_added: float
+    new_balance: float

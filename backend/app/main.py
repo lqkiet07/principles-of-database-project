@@ -7,6 +7,7 @@ if sys.platform == "win32":
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -50,6 +51,20 @@ async def api_error_handler(request: Request, exc: ApiError):
             "error_code": exc.error_code,
             "message": exc.message,
             "data": exc.data,
+        },
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={
+            "success": False,
+            "status_code": 422,
+            "error_code": "VALIDATION_ERROR",
+            "message": "Dữ liệu yêu cầu không hợp lệ",
+            "data": exc.errors(),
         },
     )
 
