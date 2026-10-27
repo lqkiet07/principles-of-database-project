@@ -105,3 +105,33 @@ class DashboardSummaryOut(BaseModel):
     total_students: int
     total_unpaid_debt: float
     total_power_kwh: float
+
+
+class MeterUpdateIn(BaseModel):
+    curr_electric: int = Field(..., ge=0)
+    curr_water: int = Field(..., ge=0)
+
+
+class MeterUpdateOut(BaseModel):
+    bill_id: int
+    room_id: int
+    month_year: str
+    prev_electric: int
+    curr_electric: int
+    prev_water: int
+    curr_water: int
+    total_amount: float
+    paid_amount: float
+    bill_status: str
+
+
+class AuditLogItem(BaseModel):
+    log_id: int
+    table_name: str
+    action_type: str
+    record_id: str
+    changed_by: str
+    changed_at: str
+    reason: str | None = None
+    old_data: dict[str, Any] | None = None
+    new_data: dict[str, Any] | None = None

@@ -1,6 +1,9 @@
 from typing import Any
 
-from app.db import fetch_one
+import psycopg.errors
+
+from app.db import fetch_all, fetch_one, get_connection
+from app.errors import ApiError
 
 
 async def get_dashboard_summary() -> dict[str, Any]:
@@ -56,3 +59,97 @@ async def get_dashboard_summary() -> dict[str, Any]:
         "total_unpaid_debt": total_unpaid_debt,
         "total_power_kwh": total_power_kwh,
     }
+
+
+async def update_bill_meters(
+    bill_id: int,
+    curr_electric: int,
+    curr_water: int,
+) -> dict[str, Any]:
+    existing = await fetch_one(
+        "SELECT bill_id FROM utility_bills WHERE bill_id = %s;", (bill_id,)
+    )
+    if not existing:
+        raise ApiError(404, "BILL_NOT_FOUND", f"Hóa đơn #{bill_id} không tồn tại.")
+
+    try:
+        async with get_connection() as conn, conn.cursor() as cur:
+            await cur.execute(
+                """
+                UPDATE utility_bills 
+                SET curr_electric = %s, curr_water = %s 
+                WHERE bill_id = %s 
+                RETURNING bill_id, room_id, month_year, prev_electric, curr_electric, prev_water, curr_water, total_amount, paid_amount, bill_status;
+                """,
+                (curr_electric, curr_water, bill_id),
+            )
+            row = await cur.fetchone()
+    except psycopg.errors.CheckViolation as ex:
+        msg = str(ex).split("\n")[0].strip()
+        raise ApiError(422, "FRAUD_METER_REVERSAL", msg) from ex
+    except psycopg.errors.IntegrityConstraintViolation as ex:
+        msg = str(ex).split("\n")[0].strip()
+        raise ApiError(422, "FRAUD_PAID_BILL_TAMPER", msg) from ex
+
+    return {
+        "bill_id": row["bill_id"],
+        "room_id": row["room_id"],
+        "month_year": row["month_year"],
+        "prev_electric": row["prev_electric"],
+        "curr_electric": row["curr_electric"],
+        "prev_water": row["prev_water"],
+        "curr_water": row["curr_water"],
+        "total_amount": float(row["total_amount"]),
+        "paid_amount": float(row["paid_amount"]),
+        "bill_status": row["bill_status"],
+    }
+
+
+async def get_audit_logs(
+    record_id: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[dict[str, Any]]:
+    clauses = ["table_name = 'utility_bills'"]
+    params: list[Any] = []
+    if record_id:
+        clauses.append("record_id = %s")
+        params.append(record_id)
+    if from_date:
+        clauses.append("changed_at >= %s::timestamptz")
+        params.append(from_date)
+    if to_date:
+        clauses.append("changed_at <= %s::timestamptz")
+        params.append(to_date)
+
+    where_sql = " AND ".join(clauses)
+    query_params = list(params)
+    query_params.extend([limit, offset])
+
+    rows = await fetch_all(
+        f"""
+        SELECT log_id, table_name, action_type, record_id, changed_by, changed_at, reason, old_data, new_data
+        FROM audit_logs
+        WHERE {where_sql}
+        ORDER BY log_id DESC
+        LIMIT %s OFFSET %s;
+        """,
+        tuple(query_params),
+    )
+
+    return [
+        {
+            "log_id": r["log_id"],
+            "table_name": r["table_name"],
+            "action_type": r["action_type"],
+            "record_id": r["record_id"],
+            "changed_by": r["changed_by"],
+            "changed_at": r["changed_at"].isoformat(),
+            "reason": r["reason"],
+            "old_data": r["old_data"],
+            "new_data": r["new_data"],
+        }
+        for r in rows
+    ]
