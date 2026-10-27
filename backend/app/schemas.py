@@ -30,3 +30,32 @@ class TopupOut(BaseModel):
     student_id: str
     amount_added: float
     new_balance: float
+
+
+class GenerateBillIn(BaseModel):
+    room_id: int = Field(..., ge=1)
+    month_year: str = Field(..., pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
+    prev_electric: int = Field(..., ge=0)
+    curr_electric: int = Field(..., ge=0)
+    prev_water: int = Field(..., ge=0)
+    curr_water: int = Field(..., ge=0)
+
+
+class DebtItem(BaseModel):
+    debt_id: int
+    student_id: str
+    assigned_amount: float
+    paid_amount: float
+    debt_status: str
+
+
+class GenerateBillOut(BaseModel):
+    bill_id: int
+    room_id: int
+    month_year: str
+    total_amount: float
+    split_amount: float
+    student_count: int
+    status_code: int
+    message: str
+    debts: list[DebtItem]

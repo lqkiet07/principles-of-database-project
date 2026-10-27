@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 
 from app.db import close_pool, fetch_all, fetch_one, get_pool
 from app.errors import ApiError, raise_sp1_error
-from app.routers import students
+from app.routers import admin, students
 
 
 @asynccontextmanager
@@ -39,6 +39,7 @@ app.add_middleware(
 )
 
 app.include_router(students.router)
+app.include_router(admin.router)
 
 
 @app.exception_handler(ApiError)
