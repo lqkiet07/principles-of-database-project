@@ -36,9 +36,11 @@ import {
   Printer,
   Upload,
   Camera,
-  X,
   Share2,
+  Wallet,
+  GraduationCap,
 } from "lucide-react";
+import { useDemoMode } from "@/lib/demo-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -138,6 +140,40 @@ export default function StudentPortalPage() {
   const [absenceEndDate, setAbsenceEndDate] = React.useState("2026-10-28");
   const [absenceReason, setAbsenceReason] = React.useState("ve_que");
   const [parentPhone, setParentPhone] = React.useState("0912.345.678");
+
+  // CT221H Campus Wallet & Stored Procedure states
+  const { isDemoMode } = useDemoMode();
+  const [studentWallet, setStudentWallet] = React.useState(1200000);
+  const [studentDebtPaid, setStudentDebtPaid] = React.useState(false);
+  const [isPayingDebt, setIsPayingDebt] = React.useState(false);
+  const [demoSimResult, setDemoSimResult] = React.useState<string | null>(null);
+
+  const handlePayWithWallet = () => {
+    setIsPayingDebt(true);
+    setTimeout(() => {
+      setStudentWallet((prev) => Math.max(0, prev - 345000));
+      setStudentDebtPaid(true);
+      setIsPayingDebt(false);
+      showToast("Đã thanh toán 345.000 đ thành công qua Stored Procedure sp_pay_student_utility_bill!");
+    }, 700);
+  };
+
+  const handleSimulateDoubleClick = () => {
+    setDemoSimResult("⚡ [ACID Simulation] Đang gửi 2 Transaction đồng thời trong 20ms...");
+    setTimeout(() => {
+      setStudentWallet((prev) => Math.max(0, prev - 345000));
+      setStudentDebtPaid(true);
+      setDemoSimResult("✓ Request 1: Lock 'FOR UPDATE' thành công (Code 0). Request 2: Lock Wait -> đọc nợ đã PAID -> thoát an toàn với mã DEBT_ALREADY_PAID (Code 2). Không bị trừ tiền 2 lần!");
+    }, 1000);
+  };
+
+  const handleSimulateInsufficientFunds = () => {
+    setStudentWallet(50000);
+    setDemoSimResult("⚠️ Đã rút số dư ví còn 50.000 đ. Thử nộp khoản nợ 345.000 đ...");
+    setTimeout(() => {
+      setDemoSimResult("❌ [ROLLBACK] Stored Procedure ném ngoại lệ INSUFFICIENT_FUNDS (Code 1). Số dư ví giữ nguyên 50.000 đ, trạng thái nợ giữ nguyên UNPAID!");
+    }, 800);
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -520,6 +556,33 @@ export default function StudentPortalPage() {
                 </div>
               </div>
 
+              {/* AI Semantic Room Search with pgvector */}
+              <div className="rounded-2xl border border-sky-200 bg-sky-50/50 p-3.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="h-4 w-4 text-[#00AFEF]" />
+                    <span className="text-xs font-bold text-slate-800">
+                      Tìm Phòng Ngữ Nghĩa AI (pgvector)
+                    </span>
+                  </div>
+                  <Badge className="bg-sky-100 text-[#00AFEF] text-[10px] font-mono border-0">
+                    vector(384)
+                  </Badge>
+                </div>
+                <div className="relative">
+                  <Input
+                    placeholder="VD: 'Phòng nam tầng 3 thoáng mát có ban công gần căng-tin'..."
+                    className="h-8 text-xs bg-white border-sky-200 pl-2.5 pr-16"
+                  />
+                  <Button size="sm" className="absolute right-0.5 top-0.5 h-7 px-2.5 text-[10px] bg-[#1F5CA9] text-white">
+                    Tìm AI
+                  </Button>
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  Truy vấn khoảng cách Cosine `rooms.embedding &lt;=&gt; query_vector` trong PostgreSQL 16
+                </p>
+              </div>
+
               {/* Facility & Equipment Checklist */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between px-1">
@@ -609,65 +672,174 @@ export default function StudentPortalPage() {
           )}
 
           {/* ========================================================= */}
-          {/* TAB 3: HÓA ĐƠN & LỊCH SỬ (BILLS & RECEIPTS)               */}
+          {/* TAB 3: HÓA ĐƠN & VÍ SINH VIÊN (CAMPUS WALLET & BILLS)      */}
           {/* ========================================================= */}
           {activeTab === "bills" && (
             <div className="space-y-4 animate-in fade-in duration-200">
               <div className="flex items-center justify-between px-1">
                 <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  Hóa Đơn & Thanh Toán
+                  Ví KTX & Công Nợ Điện Nước
                 </h2>
-                <span className="text-xs text-muted-foreground">Phòng A.402</span>
+                <Badge variant="outline" className="text-[10px] font-mono text-[#1F5CA9] border-blue-200">
+                  Phòng B.402
+                </Badge>
               </div>
 
-              {/* Current Unpaid Bill */}
+              {/* Campus Wallet Card */}
+              <div className="rounded-2xl bg-gradient-to-r from-[#1F5CA9] to-[#00AFEF] p-4 text-white shadow-md space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-lg bg-white/20 flex items-center justify-center">
+                      <Wallet className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="text-xs font-bold text-sky-100 uppercase tracking-wider">
+                      Ví Sinh Viên Nội Bộ (Campus Wallet)
+                    </span>
+                  </div>
+                  <Badge className="bg-emerald-400 text-slate-900 text-[10px] font-bold">
+                    Hoạt động
+                  </Badge>
+                </div>
+
+                <div className="flex items-baseline justify-between pt-1">
+                  <div>
+                    <span className="text-xs text-sky-100 block">Số dư khả dụng</span>
+                    <span className="text-2xl font-black">{studentWallet.toLocaleString("vi-VN")} đ</span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {[200000, 500000, 1000000].map((amt) => (
+                      <button
+                        key={amt}
+                        onClick={() => setStudentWallet((prev) => prev + amt)}
+                        className="text-[10px] font-bold bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg backdrop-blur-xs transition-colors"
+                      >
+                        +{amt / 1000}k
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-sky-100/80">
+                  Liên kết tài khoản thẻ sinh viên • Nộp tiền điện nước tự động qua Stored Procedure ACID
+                </p>
+              </div>
+
+              {/* Current Unpaid Split Debt Card */}
               <div className="rounded-2xl border-2 border-amber-300 bg-amber-50/40 p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <Badge className="bg-[#FFB800] text-amber-950 text-[10px] font-bold px-2 py-0.5">
-                    Kỳ này: Tháng 10/2026
+                    Hóa đơn T10/2026 (Phòng B.402)
                   </Badge>
                   <span className="text-xs font-semibold text-red-600">Hạn chót: 25/10/2026</span>
                 </div>
 
-                <div className="flex items-baseline justify-between">
-                  <span className="text-2xl font-black text-[#1F5CA9]">345.000 đ</span>
-                  <span className="text-xs text-muted-foreground">1/4 tiền phòng</span>
-                </div>
-
-                <div className="text-xs space-y-1 text-slate-600 pt-2 border-t border-amber-200">
-                  <div className="flex justify-between">
-                    <span>Điện (45 kWh × 3.000đ):</span>
-                    <span className="font-medium text-slate-900">135.000 đ</span>
+                <div className="rounded-xl bg-white/80 p-2.5 border border-amber-200 text-xs space-y-1">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Hóa đơn phòng tổng (2 người):</span>
+                    <span className="font-bold text-slate-900">690.000 đ</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Nước (14 m³ × 12.000đ chia 4):</span>
-                    <span className="font-medium text-slate-900">110.000 đ</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Phí vệ sinh & Wifi KTX:</span>
-                    <span className="font-medium text-slate-900">100.000 đ</span>
+                  <div className="flex justify-between items-baseline pt-1 border-t border-slate-100">
+                    <span className="font-bold text-[#1F5CA9]">Công nợ của bạn (student_utility_debts):</span>
+                    <span className={`text-xl font-extrabold ${studentDebtPaid ? "text-emerald-600" : "text-[#1F5CA9]"}`}>
+                      {studentDebtPaid ? "ĐÃ NỘP (0 đ)" : "345.000 đ"}
+                    </span>
                   </div>
                 </div>
 
-                <Button
-                  onClick={() => setIsQrModalOpen(true)}
-                  className="w-full h-10 rounded-xl font-bold text-xs bg-[#1F5CA9] text-white hover:bg-[#1a4f91] flex items-center justify-center gap-2"
-                >
-                  <QrCode className="h-4 w-4" />
-                  <span>Quét mã QR VNPay để thanh toán</span>
-                </Button>
+                <div className="text-xs space-y-1 text-slate-600 pt-1">
+                  <div className="flex justify-between">
+                    <span>Điện lũy tiến 3 bậc (150 kWh / 2):</span>
+                    <span className="font-medium text-slate-900">170.000 đ</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Nước sạch (25 m³ × 10.000đ / 2):</span>
+                    <span className="font-medium text-slate-900">125.000 đ</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Vệ sinh & Wifi (100.000đ / 2):</span>
+                    <span className="font-medium text-slate-900">50.000 đ</span>
+                  </div>
+                </div>
+
+                {!studentDebtPaid ? (
+                  <div className="space-y-2 pt-1">
+                    <Button
+                      onClick={handlePayWithWallet}
+                      disabled={isPayingDebt}
+                      className="w-full h-10 rounded-xl font-bold text-xs bg-emerald-600 text-white hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-sm"
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                      <span>{isPayingDebt ? "Đang xử lý Stored Procedure ACID..." : "Nộp 345.000 đ Bằng Ví KTX"}</span>
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsQrModalOpen(true)}
+                      className="w-full h-8 rounded-xl font-semibold text-xs border-amber-300 text-slate-700 hover:bg-amber-100/50 flex items-center justify-center gap-1.5"
+                    >
+                      <QrCode className="h-3.5 w-3.5 text-[#1F5CA9]" />
+                      <span>Hoặc Nạp Tiền Qua VietQR / VNPay</span>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="rounded-xl bg-emerald-100/80 border border-emerald-300 p-3 text-center space-y-1 text-xs text-emerald-900">
+                    <p className="font-bold flex items-center justify-center gap-1.5">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      Đã gạch nợ thành công qua Stored Procedure!
+                    </p>
+                    <p className="text-[11px] text-emerald-800">
+                      Biên lai: <strong>TX-20261027-8841</strong> • Hóa đơn phòng: <strong>PARTIALLY_PAID</strong>
+                    </p>
+                  </div>
+                )}
+
+                {/* DEMO MODE TEST CASES - ONLY SHOWN WHEN DEMO MODE IS ON IN SETTINGS */}
+                {isDemoMode && (
+                  <div className="rounded-xl border border-dashed border-amber-400 bg-amber-100/60 p-3 space-y-2 text-xs">
+                    <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                      <GraduationCap className="h-4 w-4 text-[#FFB800]" />
+                      <span>Kịch bản Giảng viên chấm thi (Demo Mode):</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleSimulateDoubleClick}
+                        className="h-8 text-[11px] font-bold bg-white text-amber-900 border-amber-300 hover:bg-amber-50"
+                      >
+                        ⚡ Test Click đúp (ACID)
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleSimulateInsufficientFunds}
+                        className="h-8 text-[11px] font-bold bg-white text-red-700 border-red-300 hover:bg-red-50"
+                      >
+                        ⚠️ Test Thiếu tiền (Rollback)
+                      </Button>
+                    </div>
+
+                    {demoSimResult && (
+                      <div className="p-2 rounded bg-white border border-amber-200 text-[11px] text-slate-800">
+                        {demoSimResult}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Paid Past Bills History */}
               <div className="space-y-2 pt-2">
                 <span className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider block px-1">
-                  Lịch sử thanh toán các kỳ trước
+                  Lịch sử biên lai thanh toán (`payment_transactions`)
                 </span>
 
                 {[
-                  { month: "Tháng 09/2026", amount: "310.000 đ", paidDate: "20/09/2026", receiptCode: "PT-2026-904" },
-                  { month: "Tháng 08/2026", amount: "285.000 đ", paidDate: "18/08/2026", receiptCode: "PT-2026-802" },
-                  { month: "Tháng 07/2026", amount: "290.000 đ", paidDate: "19/07/2026", receiptCode: "PT-2026-711" },
+                  { month: "Tháng 09/2026", amount: "310.000 đ", paidDate: "20/09/2026", receiptCode: "TX-20260920-9042" },
+                  { month: "Tháng 08/2026", amount: "285.000 đ", paidDate: "18/08/2026", receiptCode: "TX-20260818-8015" },
+                  { month: "Tháng 07/2026", amount: "290.000 đ", paidDate: "19/07/2026", receiptCode: "TX-20260719-7103" },
                 ].map((item, idx) => (
                   <div
                     key={idx}

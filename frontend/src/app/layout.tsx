@@ -22,6 +22,8 @@ export const metadata: Metadata = {
     "Hệ thống quản lý ký túc xá thông minh & thanh toán điện nước. Smart Dormitory Management & Campus Utility Billing System.",
 };
 
+import { DemoProvider } from "@/lib/demo-context";
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -37,7 +39,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           disableTransitionOnChange
         >
           <TooltipProvider delay={0}>
-            {children}
+            <DemoProvider>
+              {children}
+            </DemoProvider>
           </TooltipProvider>
         </ThemeProvider>
       </body>

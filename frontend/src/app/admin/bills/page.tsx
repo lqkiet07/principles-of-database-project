@@ -24,6 +24,11 @@ import {
   Copy,
   Receipt,
   Check,
+  History,
+  ShieldAlert,
+  Flame,
+  Terminal,
+  Database,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -37,6 +42,19 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useDemoMode } from "@/lib/demo-context";
+
+interface AuditLogRecord {
+  id: string;
+  tableName: string;
+  operation: "UPDATE" | "INSERT" | "TRIGGER_ERROR";
+  changedBy: string;
+  timestamp: string;
+  status: "SUCCESS" | "BLOCKED_BY_TRIGGER";
+  oldData: Record<string, unknown>;
+  newData: Record<string, unknown>;
+  message?: string;
+}
 
 interface BillRecord {
   id: string;
@@ -151,6 +169,42 @@ const initialBills: BillRecord[] = [
   },
 ];
 
+const initialAuditLogs: AuditLogRecord[] = [
+  {
+    id: "LOG-9041",
+    tableName: "utility_bills",
+    operation: "UPDATE",
+    changedBy: "admin_user",
+    timestamp: "27/10/2026 14:15:02",
+    status: "SUCCESS",
+    oldData: { bill_id: "B-A201", prev_elec: 1240, curr_elec: 1395 },
+    newData: { bill_id: "B-A201", prev_elec: 1240, curr_elec: 1395, status: "paid" },
+    message: "Cập nhật chỉ số công tơ định kỳ tháng 10/2026",
+  },
+  {
+    id: "LOG-9038",
+    tableName: "utility_bills",
+    operation: "TRIGGER_ERROR",
+    changedBy: "trigger:trg_prevent_meter_decrement",
+    timestamp: "26/10/2026 09:30:11",
+    status: "BLOCKED_BY_TRIGGER",
+    oldData: { bill_id: "B-A202", prev_elec: 1420 },
+    newData: { attempted_curr_elec: 1380 },
+    message: "Chỉ số mới (1380) không được nhỏ hơn chỉ số cũ (1420). Giao dịch bị ROLLBACK tự động bởi Trigger.",
+  },
+  {
+    id: "LOG-9022",
+    tableName: "student_utility_debts",
+    operation: "INSERT",
+    changedBy: "sp_generate_and_split_utility_bill",
+    timestamp: "25/10/2026 08:00:00",
+    status: "SUCCESS",
+    oldData: {},
+    newData: { parent_bill_id: "B-A201", split_count: 4, per_student_debt: 172500 },
+    message: "Dual SP tự động chia nợ thành 4 khoản con cho sinh viên trong phòng",
+  },
+];
+
 const ELEC_RATE = 3000; // 3.000 đ/kWh
 const WATER_RATE = 12000; // 12.000 đ/m3
 
@@ -174,7 +228,10 @@ function formatCurrency(amount: number) {
 }
 
 export default function BillingPage() {
+  const { isDemoMode } = useDemoMode();
   const [bills, setBills] = React.useState<BillRecord[]>(initialBills);
+  const [auditLogs, setAuditLogs] = React.useState<AuditLogRecord[]>(initialAuditLogs);
+  const [activeView, setActiveView] = React.useState<"bills" | "audit">("bills");
   const [statusFilter, setStatusFilter] = React.useState<"all" | "paid" | "unpaid">("all");
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedMonth, setSelectedMonth] = React.useState("10/2026");
@@ -184,6 +241,7 @@ export default function BillingPage() {
   const [editingBill, setEditingBill] = React.useState<BillRecord | null>(null);
   const [tempCurrElec, setTempCurrElec] = React.useState(0);
   const [tempCurrWater, setTempCurrWater] = React.useState(0);
+  const [triggerError, setTriggerError] = React.useState<string | null>(null);
 
   // Invoice modal state
   const [invoiceModalBill, setInvoiceModalBill] = React.useState<BillRecord | null>(null);
@@ -220,11 +278,41 @@ export default function BillingPage() {
     setEditingBill(bill);
     setTempCurrElec(bill.currElec);
     setTempCurrWater(bill.currWater);
+    setTriggerError(null);
     setIsDrawerOpen(true);
   };
 
   const saveMeterReading = () => {
     if (!editingBill) return;
+
+    // Check Trigger constraint: new reading CANNOT be lower than previous reading
+    if (tempCurrElec < editingBill.prevElec) {
+      const err = `ERROR P0001: Chỉ số điện mới (${tempCurrElec}) không được nhỏ hơn chỉ số cũ (${editingBill.prevElec})! Trigger trg_prevent_meter_decrement đã RAISE EXCEPTION và ROLLBACK giao dịch.`;
+      setTriggerError(err);
+      const newLog: AuditLogRecord = {
+        id: `LOG-${Math.floor(1000 + Math.random() * 9000)}`,
+        tableName: "utility_bills",
+        operation: "TRIGGER_ERROR",
+        changedBy: "trigger:trg_prevent_meter_decrement",
+        timestamp: new Date().toLocaleTimeString("vi-VN") + " " + new Date().toLocaleDateString("vi-VN"),
+        status: "BLOCKED_BY_TRIGGER",
+        oldData: { bill_id: editingBill.id, room: editingBill.roomNumber, prev_elec: editingBill.prevElec },
+        newData: { attempted_curr_elec: tempCurrElec },
+        message: `Trigger chặn gian lận chỉ số điện lùi (${tempCurrElec} < ${editingBill.prevElec}). Rollback hoàn toàn.`,
+      };
+      setAuditLogs((prev) => [newLog, ...prev]);
+      showToast("Trigger CSDL đã chặn và ROLLBACK: Chỉ số mới không thể nhỏ hơn chỉ số cũ!");
+      return;
+    }
+
+    if (tempCurrWater < editingBill.prevWater) {
+      const err = `ERROR P0001: Chỉ số nước mới (${tempCurrWater}) không được nhỏ hơn chỉ số cũ (${editingBill.prevWater})! Transaction rolled back.`;
+      setTriggerError(err);
+      showToast("Chỉ số nước mới không thể nhỏ hơn chỉ số cũ!");
+      return;
+    }
+
+    // Valid update: proceed
     setBills((prev) =>
       prev.map((b) =>
         b.id === editingBill.id
@@ -236,6 +324,21 @@ export default function BillingPage() {
           : b
       )
     );
+
+    const successLog: AuditLogRecord = {
+      id: `LOG-${Math.floor(1000 + Math.random() * 9000)}`,
+      tableName: "utility_bills",
+      operation: "UPDATE",
+      changedBy: "admin_user",
+      timestamp: new Date().toLocaleTimeString("vi-VN") + " " + new Date().toLocaleDateString("vi-VN"),
+      status: "SUCCESS",
+      oldData: { bill_id: editingBill.id, prev_elec: editingBill.currElec, prev_water: editingBill.currWater },
+      newData: { bill_id: editingBill.id, curr_elec: tempCurrElec, curr_water: tempCurrWater },
+      message: `Đã ghi nhận chỉ số công tơ mới cho ${editingBill.roomNumber}`,
+    };
+    setAuditLogs((prev) => [successLog, ...prev]);
+
+    setTriggerError(null);
     setIsDrawerOpen(false);
     showToast(`Đã cập nhật chỉ số điện nước thành công cho ${editingBill.roomNumber}!`);
   };
@@ -368,63 +471,103 @@ export default function BillingPage() {
         </Card>
       </div>
 
-      {/* 2. Filter & Bulk Action Row */}
-      <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm p-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Month Picker */}
-            <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-sm">
-              <Calendar className="h-3.5 w-3.5 text-[#1F5CA9]" />
-              <span>Kỳ thu: Tháng {selectedMonth}</span>
-            </div>
-
-            {/* Paid / Unpaid Status Pills */}
-            <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
-              <button
-                onClick={() => setStatusFilter("all")}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                  statusFilter === "all"
-                    ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
-                }`}
-              >
-                Tất cả ({bills.length})
-              </button>
-              <button
-                onClick={() => setStatusFilter("paid")}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                  statusFilter === "paid"
-                    ? "bg-[#1F5CA9] text-white shadow-sm"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
-                }`}
-              >
-                Đã nộp ({bills.filter((b) => b.status === "paid").length})
-              </button>
-              <button
-                onClick={() => setStatusFilter("unpaid")}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                  statusFilter === "unpaid"
-                    ? "bg-[#FFB800] text-amber-950 shadow-sm"
-                    : "text-amber-700 dark:text-amber-400 hover:text-amber-900"
-                }`}
-              >
-                Chưa nộp ({bills.filter((b) => b.status === "unpaid").length})
-              </button>
-            </div>
-          </div>
-
-          {/* Search Box */}
-          <div className="relative w-full md:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Tìm theo số phòng (vd: A.201)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-9 pl-9 text-xs rounded-xl border-slate-200 dark:border-slate-700"
-            />
-          </div>
+      {/* View Switcher: Commercial Bills vs Audit Logs */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+        <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+          <button
+            onClick={() => setActiveView("bills")}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+              activeView === "bills"
+                ? "bg-white text-[#1F5CA9] shadow-sm dark:bg-slate-700 dark:text-white"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+            }`}
+          >
+            <Receipt className="h-4 w-4" />
+            <span>Hóa Đơn & Chỉ Số Công Tơ</span>
+          </button>
+          <button
+            onClick={() => setActiveView("audit")}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+              activeView === "audit"
+                ? "bg-[#1F5CA9] text-white shadow-sm"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+            }`}
+          >
+            <History className="h-4 w-4" />
+            <span>Nhật Ký Kiểm Toán (Audit Logs)</span>
+            <Badge className={`text-[10px] px-1.5 py-0 ${activeView === "audit" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"}`}>
+              {auditLogs.length}
+            </Badge>
+          </button>
         </div>
-      </Card>
+
+        {isDemoMode && activeView === "audit" && (
+          <Badge className="bg-amber-100 text-amber-900 border border-amber-300 font-mono text-[11px] flex items-center gap-1.5 py-1 px-3">
+            <Flame className="h-3.5 w-3.5 text-amber-600" />
+            <span>PostgreSQL Trigger `trg_prevent_meter_decrement` & `audit_logs` (JSONB)</span>
+          </Badge>
+        )}
+      </div>
+
+      {activeView === "bills" ? (
+        <>
+          {/* 2. Filter & Bulk Action Row */}
+          <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm p-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Month Picker */}
+                <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-sm">
+                  <Calendar className="h-3.5 w-3.5 text-[#1F5CA9]" />
+                  <span>Kỳ thu: Tháng {selectedMonth}</span>
+                </div>
+
+                {/* Paid / Unpaid Status Pills */}
+                <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+                  <button
+                    onClick={() => setStatusFilter("all")}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                      statusFilter === "all"
+                        ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
+                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                    }`}
+                  >
+                    Tất cả ({bills.length})
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter("paid")}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                      statusFilter === "paid"
+                        ? "bg-[#1F5CA9] text-white shadow-sm"
+                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                    }`}
+                  >
+                    Đã nộp ({bills.filter((b) => b.status === "paid").length})
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter("unpaid")}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                      statusFilter === "unpaid"
+                        ? "bg-[#FFB800] text-amber-950 shadow-sm"
+                        : "text-amber-700 dark:text-amber-400 hover:text-amber-900"
+                    }`}
+                  >
+                    Chưa nộp ({bills.filter((b) => b.status === "unpaid").length})
+                  </button>
+                </div>
+              </div>
+
+              {/* Search Box */}
+              <div className="relative w-full md:w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Tìm theo số phòng (vd: A.201)..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-9 pl-9 text-xs rounded-xl border-slate-200 dark:border-slate-700"
+                />
+              </div>
+            </div>
+          </Card>
 
       {/* 3. Billing Data Table */}
       <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
@@ -565,6 +708,103 @@ export default function BillingPage() {
           </table>
         </div>
       </Card>
+    </>
+  ) : (
+    /* Audit Logs View (PostgreSQL audit_logs & Trigger Inspector) */
+    <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="p-4 bg-slate-50/80 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4 text-[#1F5CA9]" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+              PostgreSQL `audit_logs` — Nhật Ký Thay Đổi & Kích Hoạt Trigger
+            </h3>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Bảng nhật ký tự động ghi nhận mọi sự kiện DML và các giao dịch bị ROLLBACK bởi Trigger công tơ điện nước.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs font-mono bg-white">
+            Total: {auditLogs.length} events
+          </Badge>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-xs font-mono">
+          <thead className="bg-slate-100/70 dark:bg-slate-800/80 uppercase tracking-wider text-muted-foreground border-b border-slate-200">
+            <tr>
+              <th className="py-3 px-4">Log ID</th>
+              <th className="py-3 px-3">Bảng (Table)</th>
+              <th className="py-3 px-3">Hành Động</th>
+              <th className="py-3 px-3">Thực Hiện Bởi</th>
+              <th className="py-3 px-4">Thời Gian</th>
+              <th className="py-3 px-3">Trạng Thái</th>
+              <th className="py-3 px-4">Chi Tiết Thay Đổi (JSONB Snapshot)</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-sans">
+            {auditLogs.map((log) => (
+              <tr key={log.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                <td className="py-3 px-4 font-mono font-bold text-slate-800 dark:text-slate-200">
+                  {log.id}
+                </td>
+                <td className="py-3 px-3 font-mono text-slate-600 dark:text-slate-300">
+                  <span className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[11px]">
+                    {log.tableName}
+                  </span>
+                </td>
+                <td className="py-3 px-3">
+                  {log.operation === "TRIGGER_ERROR" ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800 border border-red-200">
+                      <Flame className="h-3 w-3" /> TRIGGER_ERROR
+                    </span>
+                  ) : log.operation === "UPDATE" ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-[#1F5CA9]">
+                      UPDATE
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                      INSERT
+                    </span>
+                  )}
+                </td>
+                <td className="py-3 px-3 font-mono text-[11px] text-slate-700 dark:text-slate-300">
+                  {log.changedBy}
+                </td>
+                <td className="py-3 px-4 text-muted-foreground text-[11px]">
+                  {log.timestamp}
+                </td>
+                <td className="py-3 px-3">
+                  {log.status === "BLOCKED_BY_TRIGGER" ? (
+                    <span className="font-bold text-red-600 text-[11px]">
+                      ROLLBACK
+                    </span>
+                  ) : (
+                    <span className="font-bold text-emerald-600 text-[11px]">
+                      COMMITTED
+                    </span>
+                  )}
+                </td>
+                <td className="py-3 px-4 max-w-xs font-mono text-[11px]">
+                  <div className="bg-slate-900 text-slate-100 p-2 rounded-lg text-[10px] overflow-x-auto leading-relaxed">
+                    <div><span className="text-amber-400">old_data:</span> {JSON.stringify(log.oldData)}</div>
+                    <div><span className="text-sky-400">new_data:</span> {JSON.stringify(log.newData)}</div>
+                    {log.message && (
+                      <div className="text-red-300 mt-1 italic font-sans text-[10px]">
+                        • {log.message}
+                      </div>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  )}
 
       {/* 4. Slide-over Drawer for entering meter numbers */}
       {isDrawerOpen && editingBill && (
@@ -625,7 +865,7 @@ export default function BillingPage() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setTempCurrElec((prev) => Math.max(editingBill.prevElec, prev - 10))}
+                    onClick={() => setTempCurrElec((prev) => Math.max(0, prev - 10))}
                     className="h-10 w-12 rounded-xl text-base font-bold"
                   >
                     -10
@@ -634,7 +874,7 @@ export default function BillingPage() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setTempCurrElec((prev) => Math.max(editingBill.prevElec, prev - 1))}
+                    onClick={() => setTempCurrElec((prev) => Math.max(0, prev - 1))}
                     className="h-10 w-10 rounded-xl text-base font-bold"
                   >
                     -
@@ -672,6 +912,56 @@ export default function BillingPage() {
                   </span>
                 </div>
               </div>
+
+              {/* Evaluator Trigger Testing Box (Only in Demo Mode) */}
+              {isDemoMode && (
+                <div className="rounded-2xl border border-amber-300 bg-amber-50/70 p-3.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-bold text-amber-950 text-xs">
+                      <Flame className="h-4 w-4 text-amber-600" />
+                      <span>Test Trigger Gian Lận (CT221H)</span>
+                    </div>
+                    <Badge className="bg-amber-200 text-amber-950 border-0 text-[10px] font-mono">
+                      trg_prevent_meter_decrement
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    Giả lập gian lận: Nhập số điện mới thấp hơn chỉ số cũ (<code>{editingBill.prevElec - 15} &lt; {editingBill.prevElec}</code>). Khi bấm <strong>Lưu & Cập nhật</strong>, Trigger sẽ lập tức phát sinh Exception ROLLBACK và lưu vào <code>audit_logs</code>.
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setTempCurrElec(editingBill.prevElec - 15);
+                      setTriggerError(null);
+                    }}
+                    className="h-8 text-xs bg-white text-amber-900 border-amber-300 hover:bg-amber-100 font-semibold w-full"
+                  >
+                    🧪 Gán số điện lùi ({editingBill.prevElec - 15} kWh)
+                  </Button>
+                </div>
+              )}
+
+              {/* Trigger Error SQL Terminal Display */}
+              {triggerError && (
+                <div className="rounded-2xl border border-red-400 bg-slate-950 text-red-300 p-4 font-mono text-xs space-y-2 shadow-lg">
+                  <div className="flex items-center justify-between text-red-400 border-b border-red-900 pb-2">
+                    <div className="flex items-center gap-1.5 font-bold">
+                      <Terminal className="h-4 w-4" />
+                      <span>PostgreSQL RAISE EXCEPTION</span>
+                    </div>
+                    <Badge variant="destructive" className="text-[10px] font-mono">CODE: P0001</Badge>
+                  </div>
+                  <div className="text-[11px] leading-relaxed text-red-200">
+                    {triggerError}
+                  </div>
+                  <div className="pt-2 border-t border-slate-800 text-[10px] text-slate-400 flex justify-between">
+                    <span>STATE: 23514 (Trigger Abort)</span>
+                    <span className="text-emerald-400 font-bold">✓ Đã ghi vào audit_logs</span>
+                  </div>
+                </div>
+              )}
 
               {/* Water Stepper */}
               <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 p-4">

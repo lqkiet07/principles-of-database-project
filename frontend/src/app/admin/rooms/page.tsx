@@ -15,6 +15,9 @@ import {
   Bed,
   Building2,
   Layers,
+  Sparkles,
+  Bot,
+  Database,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useDemoMode } from "@/lib/demo-context";
 
 interface BedInfo {
   bedNumber: string;
@@ -145,19 +149,40 @@ const mockRooms: RoomInfo[] = [
   },
 ];
 
+const roomVectorScores: Record<string, { similarity: number; distance: number; reason: string }> = {
+  a202: { similarity: 96, distance: 0.042, reason: "Phòng 4 giường, 3 sinh viên CNTT khóa 22, còn 1 giường trống" },
+  a203: { similarity: 88, distance: 0.125, reason: "Phòng 6 giường, còn 2 giường trống, không khí hòa đồng" },
+  a206: { similarity: 82, distance: 0.184, reason: "Phòng 4 giường, còn 3 giường trống yên tĩnh" },
+  a201: { similarity: 71, distance: 0.291, reason: "Phòng 4 giường đã kín chỗ (4/4)" },
+  a205: { similarity: 65, distance: 0.352, reason: "Phòng 4 giường đã kín chỗ (4/4)" },
+  a204: { similarity: 50, distance: 0.501, reason: "Phòng đang có 2 giường bảo trì" },
+};
+
 export default function RoomsManagementPage() {
+  const { isDemoMode } = useDemoMode();
   const [selectedBuilding, setSelectedBuilding] = React.useState("A");
   const [selectedFloor, setSelectedFloor] = React.useState("2");
   const [searchQuery, setSearchQuery] = React.useState("");
   const [filterStatus, setFilterStatus] = React.useState("all");
+  const [aiSearchText, setAiSearchText] = React.useState("");
+  const [aiActiveQuery, setAiActiveQuery] = React.useState<string | null>(null);
 
-  const filteredRooms = mockRooms.filter((room) => {
-    if (filterStatus === "available" && room.status !== "Available") return false;
-    if (filterStatus === "full" && room.status !== "Full") return false;
-    if (filterStatus === "maintenance" && room.status !== "Maintenance") return false;
-    if (searchQuery && !room.roomNumber.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    return true;
-  });
+  const filteredRooms = [...mockRooms]
+    .filter((room) => {
+      if (filterStatus === "available" && room.status !== "Available") return false;
+      if (filterStatus === "full" && room.status !== "Full") return false;
+      if (filterStatus === "maintenance" && room.status !== "Maintenance") return false;
+      if (searchQuery && !room.roomNumber.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (aiActiveQuery) {
+        const scoreA = roomVectorScores[a.id]?.similarity || 0;
+        const scoreB = roomVectorScores[b.id]?.similarity || 0;
+        return scoreB - scoreA;
+      }
+      return 0;
+    });
 
   return (
     <div className="space-y-6">
@@ -288,6 +313,90 @@ export default function RoomsManagementPage() {
         </div>
       </Card>
 
+      {/* AI Semantic Search Bar (Vector Search) */}
+      <Card className="rounded-2xl border-blue-200/80 bg-gradient-to-r from-blue-50/50 via-white to-sky-50/40 p-4 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-xl bg-[#1F5CA9] text-white flex items-center justify-center shrink-0">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-900">Tìm Kiếm Phòng Bằng AI (Semantic Search)</span>
+                {isDemoMode && (
+                  <Badge className="bg-sky-100 text-[#00AFEF] border-0 text-[10px] font-mono">
+                    pgvector Cosine Distance (&lt;=&gt;)
+                  </Badge>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Nhập tiêu chí ngôn ngữ tự nhiên để tìm phòng có bạn cùng phòng và vị trí tối ưu nhất
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative flex-1 md:w-80">
+              <Bot className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#1F5CA9]" />
+              <Input
+                placeholder="VD: phòng yên tĩnh cho sinh viên CNTT khóa 22..."
+                value={aiSearchText}
+                onChange={(e) => setAiSearchText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && aiSearchText.trim()) {
+                    setAiActiveQuery(aiSearchText.trim());
+                  }
+                }}
+                className="h-8 pl-8 text-xs rounded-xl bg-white border-blue-200"
+              />
+            </div>
+            <Button
+              size="sm"
+              onClick={() => {
+                if (aiSearchText.trim()) setAiActiveQuery(aiSearchText.trim());
+              }}
+              className="h-8 bg-[#1F5CA9] text-white hover:bg-[#184988] text-xs font-semibold rounded-xl"
+            >
+              Tìm AI
+            </Button>
+            {aiActiveQuery && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setAiActiveQuery(null);
+                  setAiSearchText("");
+                }}
+                className="h-8 text-xs text-slate-500 rounded-xl"
+              >
+                Đặt lại
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Quick prompt suggestions */}
+        <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pt-2 border-t border-blue-100/80 text-[11px]">
+          <span className="text-muted-foreground">Gợi ý tìm kiếm:</span>
+          {[
+            "Phòng cho sinh viên CNTT khóa 22",
+            "Phòng tầng 2 còn giường trống",
+            "Phòng 4 người giá 650k",
+          ].map((prompt) => (
+            <button
+              key={prompt}
+              onClick={() => {
+                setAiSearchText(prompt);
+                setAiActiveQuery(prompt);
+              }}
+              className="px-2 py-0.5 rounded-lg bg-white border border-blue-200 text-slate-700 hover:bg-blue-50 hover:text-[#1F5CA9] transition-colors"
+            >
+              &ldquo;{prompt}&rdquo;
+            </button>
+          ))}
+        </div>
+      </Card>
+
       {/* Visual Room Grid matching Figma */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredRooms.map((room) => {
@@ -331,6 +440,23 @@ export default function RoomsManagementPage() {
                       </Badge>
                     )}
                   </div>
+
+                  {/* AI Vector Match Tag */}
+                  {aiActiveQuery && roomVectorScores[room.id] && (
+                    <div className="mt-2.5 pt-2 border-t border-dashed border-blue-200/60 flex items-center justify-between text-[11px]">
+                      <div className="flex items-center gap-1.5 text-[#1F5CA9] font-semibold">
+                        <Sparkles className="h-3.5 w-3.5 text-[#00AFEF]" />
+                        <span>
+                          {isDemoMode
+                            ? `pgvector Cosine: ${roomVectorScores[room.id].distance} (Khớp ${roomVectorScores[room.id].similarity}%)`
+                            : `✨ Độ tương thích AI: ${roomVectorScores[room.id].similarity}%`}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 italic max-w-[180px] truncate" title={roomVectorScores[room.id].reason}>
+                        {roomVectorScores[room.id].reason}
+                      </span>
+                    </div>
+                  )}
                 </CardHeader>
 
                 {/* Bed Slots Grid */}

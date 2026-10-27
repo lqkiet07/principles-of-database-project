@@ -15,8 +15,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { useDemoMode } from "@/lib/demo-context";
+import { GraduationCap } from "lucide-react";
+
 export function Header() {
   const { theme, setTheme } = useTheme();
+  const { isDemoMode } = useDemoMode();
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-white/80 dark:bg-slate-900/80 px-6 backdrop-blur-md">
@@ -32,6 +36,19 @@ export function Header() {
 
       {/* Right Actions */}
       <div className="flex items-center gap-2.5">
+        {/* Evaluator Demo Mode Pill - Only visible when turned ON in Settings */}
+        {isDemoMode && (
+          <Link href="/admin/demo-checkpoints">
+            <Button
+              size="sm"
+              className="h-8 gap-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-xs animate-pulse"
+            >
+              <GraduationCap className="h-4 w-4" />
+              <span>Demo Checkpoints (6)</span>
+            </Button>
+          </Link>
+        )}
+
         <Link href="/student">
           <Button
             variant="outline"

@@ -1,8 +1,10 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useDemoMode } from "@/lib/demo-context";
 import {
   LayoutDashboard,
   DoorOpen,
@@ -16,26 +18,21 @@ import {
   HelpCircle,
   Building,
   Smartphone,
+  GraduationCap,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 
 interface NavItem {
   label: string;
   href: string;
   icon: React.ElementType;
+  badge?: string;
+  highlight?: boolean;
 }
-
-const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { label: "Rooms & Beds", href: "/admin/rooms", icon: DoorOpen },
-  { label: "Utility & Bills", href: "/admin/bills", icon: Zap },
-  { label: "Students", href: "/admin/students", icon: Users },
-  { label: "Contracts", href: "/admin/contracts", icon: FileText },
-  { label: "Maintenance", href: "/admin/maintenance", icon: Wrench },
-  { label: "Cổng Sinh Viên", href: "/student", icon: Smartphone },
-];
 
 interface SidebarNavProps {
   collapsed: boolean;
@@ -44,6 +41,39 @@ interface SidebarNavProps {
 
 export function SidebarNav({ collapsed, onToggle }: SidebarNavProps) {
   const pathname = usePathname();
+  const { isDemoMode } = useDemoMode();
+
+  const navItems: NavItem[] = React.useMemo(() => {
+    const baseItems: NavItem[] = [
+      { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+      { label: "Rooms & Beds", href: "/admin/rooms", icon: DoorOpen },
+      { label: "Utility & Bills", href: "/admin/bills", icon: Zap },
+      { label: "Students", href: "/admin/students", icon: Users },
+      { label: "Contracts", href: "/admin/contracts", icon: FileText },
+      { label: "Maintenance", href: "/admin/maintenance", icon: Wrench },
+      { label: "Cổng Sinh Viên", href: "/student", icon: Smartphone },
+    ];
+
+    if (isDemoMode) {
+      return [
+        {
+          label: "Demo Checkpoints",
+          href: "/admin/demo-checkpoints",
+          icon: GraduationCap,
+          badge: "CT221H",
+          highlight: true,
+        },
+        {
+          label: "1M Logs & Index",
+          href: "/admin/access-logs",
+          icon: ShieldCheck,
+        },
+        ...baseItems,
+      ];
+    }
+
+    return baseItems;
+  }, [isDemoMode]);
 
   return (
     <aside
@@ -108,7 +138,24 @@ export function SidebarNav({ collapsed, onToggle }: SidebarNavProps) {
                     isActive ? "text-white" : "text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white"
                   )}
                 />
-                {!collapsed && <span>{item.label}</span>}
+                {!collapsed && (
+                  <div className="flex flex-1 items-center justify-between">
+                    <span>{item.label}</span>
+                    {item.badge && (
+                      <Badge
+                        variant="secondary"
+                        className={cn(
+                          "ml-auto text-[10px] font-bold px-1.5 py-0",
+                          isActive
+                            ? "bg-white/20 text-white"
+                            : "bg-amber-100 text-amber-800"
+                        )}
+                      >
+                        {item.badge}
+                      </Badge>
+                    )}
+                  </div>
+                )}
               </Link>
             );
 

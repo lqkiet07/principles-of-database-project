@@ -26,7 +26,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+import { useDemoMode } from "@/lib/demo-context";
+import { GraduationCap, ArrowUpRight } from "lucide-react";
+
 export default function SettingsPage() {
+  const { isDemoMode, setDemoMode, toggleDemoMode } = useDemoMode();
+
   // Utility rates state
   const [electricityRate, setElectricityRate] = React.useState(3000);
   const [waterRate, setWaterRate] = React.useState(12000);
@@ -68,6 +73,12 @@ export default function SettingsPage() {
             <Badge className="bg-[#1F5CA9]/10 text-[#1F5CA9] font-semibold border-0">
               Quản trị viên
             </Badge>
+            {isDemoMode && (
+              <Badge className="bg-amber-100 text-amber-900 border border-amber-300 font-bold flex items-center gap-1">
+                <GraduationCap className="h-3.5 w-3.5 text-[#FFB800]" />
+                Demo Mode Đang Bật
+              </Badge>
+            )}
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Thiết lập đơn giá điện nước, cấu hình tự động thanh toán VietQR và giờ giới nghiêm
@@ -89,6 +100,59 @@ export default function SettingsPage() {
           <span>Toàn bộ cài đặt hệ thống KTX đã được lưu thành công và áp dụng cho toàn bộ dữ liệu!</span>
         </div>
       )}
+
+      {/* Special Evaluator Demo Mode Card */}
+      <div className="rounded-2xl border-2 border-dashed border-[#1F5CA9]/30 bg-gradient-to-r from-blue-50/80 via-white to-sky-50/80 p-5 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1F5CA9] text-white shadow-xs">
+                <GraduationCap className="h-4 w-4" />
+              </div>
+              <h2 className="text-base font-bold text-slate-900">
+                Chế Độ Giảng Viên Chấm Thi (CT221H Evaluator Demo Mode)
+              </h2>
+              <Badge variant="outline" className="text-[11px] font-mono border-blue-200 text-[#1F5CA9] bg-white">
+                Barem CT221H
+              </Badge>
+            </div>
+            <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
+              Ứng dụng mặc định hoạt động như một hệ sinh thái thương mại thực tế dành cho người dùng cuối. 
+              <strong> Khi bật công tắc này</strong>, hệ thống sẽ mở khóa mục <strong>Demo Checkpoints</strong> trên thanh điều hướng và kích hoạt các nút bấm giả lập kịch bản CSDL (Khóa dòng ACID chống Click đúp, Rollback thiếu tiền, Bẫy số điện lùi, Benchmark 1 triệu log).
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-2xs">
+              <span className="text-xs font-bold text-slate-700">
+                {isDemoMode ? "ĐANG BẬT" : "ĐANG TẮT"}
+              </span>
+              <button
+                type="button"
+                onClick={toggleDemoMode}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  isDemoMode ? "bg-[#1F5CA9]" : "bg-slate-300"
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                    isDemoMode ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {isDemoMode && (
+              <Link href="/admin/demo-checkpoints">
+                <Button size="sm" className="bg-[#1F5CA9] text-white hover:bg-[#184988] text-xs h-9 shadow-xs">
+                  Mở Demo Checkpoints
+                  <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Tabs navigation */}
       <Tabs defaultValue="utilities" className="space-y-6">
