@@ -473,13 +473,13 @@ export default function RoomsManagementPage() {
 
                   {/* AI Vector Match Tag */}
                   {aiActiveQuery && vectorScores[room.id] && (
-                    <div className="mt-2.5 pt-2 border-t border-dashed border-blue-200/60 flex items-center justify-between text-[11px]">
+                    <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
                       <div className="flex items-center gap-1.5 text-[#1F5CA9] font-semibold">
                         <Sparkles className="h-3.5 w-3.5 text-[#00AFEF]" />
                         <span>
                           {isDemoMode
                             ? `pgvector Cosine: ${vectorScores[room.id].distance} (Khớp ${vectorScores[room.id].similarity}%)`
-                            : `✨ Độ tương thích AI: ${vectorScores[room.id].similarity}%`}
+                            : `Độ tương thích AI: ${vectorScores[room.id].similarity}%`}
                         </span>
                       </div>
                       <span className="text-[10px] text-slate-500 italic max-w-[180px] truncate" title={vectorScores[room.id].reason}>

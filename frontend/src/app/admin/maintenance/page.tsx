@@ -719,7 +719,7 @@ export default function MaintenancePage() {
               </div>
 
               <div className="rounded-lg bg-blue-50 p-3 border border-blue-100 text-xs text-[#1F5CA9]">
-                ✓ Hệ thống sẽ tự động gửi thông báo SMS và App tới sinh viên <strong>{assignTargetTicket.studentName}</strong> để sinh viên sắp xếp mở cửa phòng.
+                Hệ thống sẽ tự động gửi thông báo SMS và App tới sinh viên <strong>{assignTargetTicket.studentName}</strong> để sinh viên sắp xếp mở cửa phòng.
               </div>
             </div>
           )}

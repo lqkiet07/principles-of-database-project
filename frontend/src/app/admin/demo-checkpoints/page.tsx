@@ -275,18 +275,19 @@ export default function DemoCheckpointsPage() {
   return (
     <div className="space-y-6 max-w-6xl pb-12">
       {/* Top Banner Header */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#1F5CA9] via-[#1b5093] to-[#00AFEF] p-6 text-white shadow-md relative overflow-hidden">
+      <div className="rounded-2xl bg-[#1F5CA9] p-6 text-white shadow-xs relative overflow-hidden border border-blue-900/40">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <Badge className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-0 font-bold px-2.5 py-0.5 text-xs">
-                🎓 CT221H Barem Chấm Điểm
+              <Badge className="bg-white/15 text-white hover:bg-white/25 border-0 font-semibold px-2.5 py-0.5 text-xs flex items-center gap-1.5">
+                <GraduationCap className="h-3.5 w-3.5" />
+                <span>CT221H Barem Chấm Điểm</span>
               </Badge>
-              <Badge className="bg-amber-400 text-slate-900 font-extrabold text-xs">
+              <Badge className="bg-amber-400 text-slate-900 font-bold text-xs">
                 6 Trọng Tâm Kỹ Thuật (Live API Connected)
               </Badge>
             </div>
-            <h1 className="text-2xl font-extrabold tracking-tight">
+            <h1 className="text-2xl font-bold tracking-tight">
               Trung Tâm Kiểm Thử & Chấm Thi Đồ Án (Demo Checkpoints)
             </h1>
             <p className="text-xs text-blue-100 max-w-2xl leading-relaxed">
@@ -302,9 +303,6 @@ export default function DemoCheckpointsPage() {
             </Link>
           </div>
         </div>
-
-        {/* Decorative background circle */}
-        <div className="absolute -right-10 -bottom-10 h-48 w-48 rounded-full bg-white/10 blur-2xl pointer-events-none" />
       </div>
 
       {/* Grid of 6 Checkpoints */}
@@ -326,7 +324,7 @@ export default function DemoCheckpointsPage() {
               </Badge>
             </div>
             <CardDescription className="text-xs text-slate-500 mt-1">
-              Tính giá điện lũy tiến 3 bậc + nước sạch ➔ Chia đều nợ cho sinh viên đang ở (`is_active = TRUE`), dồn phần dư lẻ cent cho người cuối.
+              Tính giá điện lũy tiến 3 bậc + nước sạch, tự động chia đều nợ cho sinh viên đang ở (`is_active = TRUE`), dồn phần dư lẻ cent cho người cuối.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 space-y-3">
@@ -336,8 +334,8 @@ export default function DemoCheckpointsPage() {
                 <span>Số SV đang ở: <strong>2 sinh viên (B2100001, B2100002)</strong></span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-500">
-                <div>Điện: 350 - 100 = 250 kWh ➔ 600.000 đ</div>
-                <div>Nước: 35 - 20 = 15 m³ ➔ 150.000 đ</div>
+                <div>Điện: 350 - 100 = 250 kWh: 600.000 đ</div>
+                <div>Nước: 35 - 20 = 15 m³: 150.000 đ</div>
                 <div className="font-bold text-[#1F5CA9] col-span-2">Tổng hóa đơn phòng: 750.000 đ (375.000 đ/SV)</div>
               </div>
             </div>
@@ -385,7 +383,7 @@ export default function DemoCheckpointsPage() {
               </Badge>
             </div>
             <CardDescription className="text-xs text-slate-500 mt-1">
-              Trừ tiền `student_wallets` ➔ Gạch nợ `student_utility_debts` ➔ Dồn tiền cập nhật `utility_bills` ➔ Xuất biên lai tài chính.
+              Trừ tiền `student_wallets`, gạch nợ `student_utility_debts`, dồn tiền cập nhật `utility_bills` và xuất biên lai tài chính.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 space-y-3">
@@ -427,19 +425,19 @@ export default function DemoCheckpointsPage() {
         </Card>
 
         {/* CHECKPOINT 3: Khóa dòng FOR UPDATE - Chống Click đúp */}
-        <Card className="border-amber-200 shadow-sm bg-gradient-to-br from-white to-amber-50/20 hover:shadow-md transition-shadow">
-          <CardHeader className="pb-3 border-b border-amber-200/60">
+        <Card className="border-amber-200/90 shadow-sm bg-white hover:shadow-md transition-shadow">
+          <CardHeader className="pb-3 border-b border-amber-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-800 font-bold text-xs">
                   03
                 </span>
                 <CardTitle className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                  <Flame className="h-4 w-4 text-[#FFB800]" />
+                  <ShieldCheck className="h-4 w-4 text-amber-600" />
                   Chống Click Đúp (Pessimistic Row Lock)
                 </CardTitle>
               </div>
-              <Badge className="bg-[#FEF3C7] text-[#B45309] border-amber-300 text-[10px] font-mono">
+              <Badge className="bg-amber-100 text-amber-900 border-amber-200 text-[10px] font-mono">
                 SELECT ... FOR UPDATE
               </Badge>
             </div>
@@ -467,8 +465,9 @@ export default function DemoCheckpointsPage() {
             </div>
 
             {cp3Status === "done" && (
-              <div className="rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-900 font-medium">
-                ✓ <strong>Bảo toàn tuyệt đối:</strong> Ví chỉ bị trừ đúng 1 lần, triệt tiêu 100% nguy cơ Double-spending và Lost Update!
+              <div className="rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-900 font-medium flex items-center gap-1.5">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span><strong>Bảo toàn tuyệt đối:</strong> Ví chỉ bị trừ đúng 1 lần, triệt tiêu 100% nguy cơ Double-spending và Lost Update!</span>
               </div>
             )}
 
@@ -501,7 +500,7 @@ export default function DemoCheckpointsPage() {
               </Badge>
             </div>
             <CardDescription className="text-xs text-slate-500 mt-1">
-              Kiểm thử tính nguyên tử (Atomicity): Số dư ví nhỏ hơn khoản nợ ➔ Stored Procedure ném mã lỗi 4 và ROLLBACK hoàn toàn.
+              Kiểm thử tính nguyên tử (Atomicity): Số dư ví nhỏ hơn khoản nợ, Stored Procedure ném mã lỗi 4 và ROLLBACK hoàn toàn.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 space-y-3">

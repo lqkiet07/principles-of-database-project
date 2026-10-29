@@ -188,8 +188,9 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <Link href="/admin/demo-checkpoints">
-            <Button size="sm" className="bg-[#1F5CA9] text-white hover:bg-[#184988] text-xs font-bold h-8 shrink-0">
-              Mở Bảng Demo Checkpoints ➔
+            <Button size="sm" className="bg-[#1F5CA9] text-white hover:bg-[#184988] text-xs font-bold h-8 shrink-0 flex items-center gap-1">
+              <span>Mở Bảng Demo Checkpoints</span>
+              <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </Link>
         </div>

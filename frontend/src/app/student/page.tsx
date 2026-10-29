@@ -272,28 +272,28 @@ export default function StudentPortalPage() {
   };
 
   const handleSimulateDoubleClick = async () => {
-    setDemoSimResult("⚡ [ACID Simulation] Đang gửi 2 Transaction đồng thời trong 20ms...");
+    setDemoSimResult("[ACID Simulation] Đang gửi 2 Transaction đồng thời trong 20ms...");
     try {
       const [res1, res2] = await Promise.all([
         api.payDebt(studentId, currentDebt.id, currentDebt.amount),
         api.payDebt(studentId, currentDebt.id, currentDebt.amount),
       ]);
       setStudentDebtPaid(true);
-      setDemoSimResult(`✓ Request 1: ${res1.message} (Code = ${res1.status_code || 0}). Request 2: ${res2.message} (Code = ${res2.status_code || 2}). Khóa bi quan FOR UPDATE triệt tiêu rủi ro trừ tiền 2 lần!`);
+      setDemoSimResult(`[Thành công] Request 1: ${res1.message} (Code = ${res1.status_code || 0}). Request 2: ${res2.message} (Code = ${res2.status_code || 2}). Khóa bi quan FOR UPDATE triệt tiêu rủi ro trừ tiền 2 lần!`);
     } catch {
       setStudentWallet((prev) => Math.max(0, prev - currentDebt.amount));
       setStudentDebtPaid(true);
-      setDemoSimResult("✓ Request 1: Lock 'FOR UPDATE' thành công (Code 0). Request 2: Lock Wait -> đọc nợ đã PAID -> thoát an toàn với mã DEBT_ALREADY_PAID (Code 2). Không bị trừ tiền 2 lần!");
+      setDemoSimResult("[Thành công] Request 1: Lock 'FOR UPDATE' thành công (Code 0). Request 2: Lock Wait -> đọc nợ đã PAID -> thoát an toàn với mã DEBT_ALREADY_PAID (Code 2). Không bị trừ tiền 2 lần!");
     }
   };
 
   const handleSimulateInsufficientFunds = async () => {
-    setDemoSimResult("⚠️ Đang gửi yêu cầu thanh toán khoản nợ lớn hơn số dư ví...");
+    setDemoSimResult("[Test Rollback] Đang gửi yêu cầu thanh toán khoản nợ lớn hơn số dư ví...");
     try {
       const res = await api.payDebt(studentId, currentDebt.id, 999999999);
-      setDemoSimResult(`❌ [ROLLBACK] CSDL bắt ngoại lệ: ${res.message}. Số dư ví không đổi!`);
+      setDemoSimResult(`[ROLLBACK] CSDL bắt ngoại lệ: ${res.message}. Số dư ví không đổi!`);
     } catch {
-      setDemoSimResult("❌ [ROLLBACK] Stored Procedure ném ngoại lệ INSUFFICIENT_FUNDS (Code 4). Số dư ví giữ nguyên, trạng thái nợ giữ nguyên UNPAID!");
+      setDemoSimResult("[ROLLBACK] Stored Procedure ném ngoại lệ INSUFFICIENT_FUNDS (Code 4). Số dư ví giữ nguyên, trạng thái nợ giữ nguyên UNPAID!");
     }
   };
 
@@ -429,7 +429,7 @@ export default function StudentPortalPage() {
                   </div>
                   <div className="flex flex-col">
                     <span className="text-base font-bold text-slate-900 dark:text-slate-50">
-                      Chào bạn, {studentName} 👋
+                      Chào bạn, {studentName}
                     </span>
                     <div className="flex items-center gap-2 text-xs">
                       <span className="font-semibold text-[#1F5CA9] bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full">
@@ -440,16 +440,13 @@ export default function StudentPortalPage() {
                   </div>
                 </div>
 
-                {/* Notification Bell with Yellow Accent Dot (#FFB800) */}
+                {/* Notification Bell */}
                 <button
                   onClick={() => setIsQrModalOpen(true)}
                   className="relative flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors"
                 >
                   <Bell className="h-5 w-5" />
-                  <span className="absolute top-2 right-2 flex h-2.5 w-2.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FFB800] opacity-75" />
-                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#FFB800] border border-white" />
-                  </span>
+                  <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-amber-500 border border-white dark:border-slate-900" />
                 </button>
               </div>
 
@@ -521,9 +518,8 @@ export default function StudentPortalPage() {
               </div>
 
               {/* 3. Monthly Bill Highlight Card */}
-              <div className="rounded-3xl p-[2px] bg-gradient-to-br from-[#1F5CA9] via-[#00AFEF] to-[#FFB800] shadow-lg shadow-sky-500/10">
-                <div className="bg-white dark:bg-slate-900 rounded-[22px] p-4 space-y-3.5">
-                  <div className="flex items-center justify-between">
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3.5 shadow-xs">
+                <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-[#1F5CA9]">
                         <Zap className="h-4 w-4" />
@@ -580,17 +576,16 @@ export default function StudentPortalPage() {
                   {/* Prominent Friendly CTA Button */}
                   <Button
                     onClick={() => setActiveTab("bills")}
-                    className={`w-full h-11 rounded-2xl font-bold text-sm text-white shadow-md flex items-center justify-center gap-2 group transition-all cursor-pointer ${
+                    className={`w-full h-10 rounded-xl font-semibold text-xs text-white shadow-xs flex items-center justify-center gap-2 group transition-all cursor-pointer ${
                       studentDebtPaid
-                        ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-800/25"
-                        : "bg-[#1F5CA9] hover:bg-[#184988] shadow-blue-800/25"
+                        ? "bg-emerald-600 hover:bg-emerald-700"
+                        : "bg-[#1F5CA9] hover:bg-[#184988]"
                     }`}
                   >
-                    <QrCode className="h-4.5 w-4.5 group-hover:scale-110 transition-transform" />
+                    <QrCode className="h-4 w-4" />
                     <span>{studentDebtPaid ? "Xem biên lai thanh toán (SP2)" : "Thanh toán ngay qua Ví KTX"}</span>
                   </Button>
                 </div>
-              </div>
 
               {/* 4. Roommate list (Bạn cùng phòng) */}
               <div className="space-y-2.5 pt-1">
@@ -814,7 +809,10 @@ export default function StudentPortalPage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900">
-                    <span className="font-bold text-amber-900 dark:text-amber-100">Thứ 4: Minh Quân (Hôm nay 🧹)</span>
+                    <span className="font-bold text-amber-900 dark:text-amber-100 flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                      Thứ 4: Minh Quân (Hôm nay)
+                    </span>
                     <span className="text-[#B45309] font-bold text-[11px]">Đang phiên</span>
                   </div>
                   <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800">
@@ -954,9 +952,9 @@ export default function StudentPortalPage() {
 
                 {/* DEMO MODE TEST CASES - ONLY SHOWN WHEN DEMO MODE IS ON IN SETTINGS */}
                 {isDemoMode && (
-                  <div className="rounded-xl border border-dashed border-amber-400 bg-amber-100/60 p-3 space-y-2 text-xs">
+                  <div className="rounded-xl border border-amber-300 bg-amber-50/60 p-3 space-y-2 text-xs">
                     <div className="flex items-center gap-1.5 font-bold text-amber-900">
-                      <GraduationCap className="h-4 w-4 text-[#FFB800]" />
+                      <GraduationCap className="h-4 w-4 text-amber-700" />
                       <span>Kịch bản Giảng viên chấm thi (Demo Mode):</span>
                     </div>
 
@@ -965,23 +963,25 @@ export default function StudentPortalPage() {
                         size="sm"
                         variant="outline"
                         onClick={handleSimulateDoubleClick}
-                        className="h-8 text-[11px] font-bold bg-white text-amber-900 border-amber-300 hover:bg-amber-50"
+                        className="h-8 text-[11px] font-semibold bg-white text-amber-900 border-amber-300 hover:bg-amber-50"
                       >
-                        ⚡ Test Click đúp (ACID)
+                        <Zap className="h-3.5 w-3.5 mr-1 text-amber-600" />
+                        Test Click đúp (ACID)
                       </Button>
 
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={handleSimulateInsufficientFunds}
-                        className="h-8 text-[11px] font-bold bg-white text-red-700 border-red-300 hover:bg-red-50"
+                        className="h-8 text-[11px] font-semibold bg-white text-red-700 border-red-300 hover:bg-red-50"
                       >
-                        ⚠️ Test Thiếu tiền (Rollback)
+                        <AlertTriangle className="h-3.5 w-3.5 mr-1 text-red-600" />
+                        Test Thiếu tiền (Rollback)
                       </Button>
                     </div>
 
                     {demoSimResult && (
-                      <div className="p-2 rounded bg-white border border-amber-200 text-[11px] text-slate-800">
+                      <div className="p-2 rounded-lg bg-white border border-amber-200 text-[11px] text-slate-800">
                         {demoSimResult}
                       </div>
                     )}
@@ -1036,7 +1036,7 @@ export default function StudentPortalPage() {
           {activeTab === "profile" && (
             <div className="space-y-4 animate-in fade-in duration-200">
               {/* Apple Wallet Style Digital Pass */}
-              <div className="relative rounded-3xl bg-gradient-to-br from-[#1F5CA9] via-[#0077b6] to-[#00AFEF] text-white p-5 shadow-xl overflow-hidden">
+              <div className="relative rounded-3xl bg-gradient-to-br from-[#1F5CA9] via-[#0077b6] to-[#00AFEF] text-white p-5 shadow-sm border border-blue-900/30 overflow-hidden">
                 {/* Background Watermark Pattern */}
                 <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-15 pointer-events-none">
                   <div className="w-48 h-48 rounded-full border-[16px] border-white" />
@@ -1049,7 +1049,7 @@ export default function StudentPortalPage() {
                     </div>
                     <div>
                       <span className="text-xs font-bold tracking-tight block">THẺ CƯ TRÚ KÝ TÚC XÁ</span>
-                      <span className="text-[10px] text-white/80">ĐẠI HỌC QUỐC GIA</span>
+                      <span className="text-[10px] text-white/80">ĐẠI HỌC CẦN THƠ (CTU)</span>
                     </div>
                   </div>
                   <Badge className="bg-emerald-400 text-slate-950 font-bold text-[10px]">
@@ -1060,13 +1060,13 @@ export default function StudentPortalPage() {
                 <div className="pt-4 flex items-center gap-3.5">
                   <Avatar className="h-14 w-14 border-2 border-white shadow-md">
                     <AvatarFallback className="bg-white text-[#1F5CA9] font-black text-lg">
-                      TA
+                      AN
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="text-base font-bold leading-tight">NGUYỄN TUẤN ANH</h3>
-                    <div className="text-xs text-white/90 font-medium">MSSV: 22020199</div>
-                    <div className="text-xs text-white/90">Phòng: A.402 • Tòa B (K67 CNTT)</div>
+                    <h3 className="text-base font-bold leading-tight">{studentName}</h3>
+                    <div className="text-xs text-white/90 font-medium">MSSV: {studentId}</div>
+                    <div className="text-xs text-white/90">Phòng: {studentRoom}</div>
                   </div>
                 </div>
 
@@ -1083,7 +1083,7 @@ export default function StudentPortalPage() {
                     ))}
                   </div>
                   <span className="text-[10px] font-mono tracking-widest text-white/80 mt-1">
-                    22020199-A402-2026-GATE
+                    {studentId}-B1101-2026-GATE
                   </span>
                 </div>
               </div>

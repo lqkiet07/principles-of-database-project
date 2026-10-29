@@ -102,36 +102,36 @@ export default function SettingsPage() {
       )}
 
       {/* Special Evaluator Demo Mode Card */}
-      <div className="rounded-2xl border-2 border-dashed border-[#1F5CA9]/30 bg-gradient-to-r from-blue-50/80 via-white to-sky-50/80 p-5 shadow-xs">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1F5CA9] text-white shadow-xs">
                 <GraduationCap className="h-4 w-4" />
               </div>
-              <h2 className="text-base font-bold text-slate-900">
+              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
                 Chế Độ Giảng Viên Chấm Thi (CT221H Evaluator Demo Mode)
               </h2>
-              <Badge variant="outline" className="text-[11px] font-mono border-blue-200 text-[#1F5CA9] bg-white">
+              <Badge variant="outline" className="text-[11px] font-mono border-slate-200 text-[#1F5CA9] bg-slate-50 dark:bg-slate-800">
                 Barem CT221H
               </Badge>
             </div>
-            <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
               Ứng dụng mặc định hoạt động như một hệ sinh thái thương mại thực tế dành cho người dùng cuối. 
               <strong> Khi bật công tắc này</strong>, hệ thống sẽ mở khóa mục <strong>Demo Checkpoints</strong> trên thanh điều hướng và kích hoạt các nút bấm giả lập kịch bản CSDL (Khóa dòng ACID chống Click đúp, Rollback thiếu tiền, Bẫy số điện lùi, Benchmark 1 triệu log).
             </p>
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-2xs">
-              <span className="text-xs font-bold text-slate-700">
+            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs">
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                 {isDemoMode ? "ĐANG BẬT" : "ĐANG TẮT"}
               </span>
               <button
                 type="button"
                 onClick={toggleDemoMode}
                 className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  isDemoMode ? "bg-[#1F5CA9]" : "bg-slate-300"
+                  isDemoMode ? "bg-[#1F5CA9]" : "bg-slate-300 dark:bg-slate-600"
                 }`}
               >
                 <span

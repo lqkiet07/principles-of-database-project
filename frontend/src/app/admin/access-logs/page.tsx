@@ -216,8 +216,8 @@ export default function AccessLogsPage() {
       </div>
 
       {/* BENCHMARK LAB CARD */}
-      <Card className="border-2 border-dashed border-[#00AFEF]/40 bg-gradient-to-r from-sky-50/60 via-white to-blue-50/60 shadow-sm">
-        <CardHeader className="pb-3 border-b border-sky-100">
+      <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+        <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2">

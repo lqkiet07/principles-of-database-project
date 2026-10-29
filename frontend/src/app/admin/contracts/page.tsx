@@ -573,7 +573,7 @@ export default function ContractsPage() {
                   <TableCell>
                     <div className="flex flex-col text-xs">
                       <span className="font-medium text-slate-800">
-                        {c.startDate} ➔ {c.endDate}
+                        {c.startDate} - {c.endDate}
                       </span>
                       {c.daysRemaining > 0 ? (
                         <span className={c.daysRemaining <= 30 ? "text-[11px] font-bold text-[#B45309]" : "text-[11px] text-slate-400"}>
@@ -708,7 +708,7 @@ export default function ContractsPage() {
               </div>
 
               <div className="rounded-lg bg-emerald-50 p-3 border border-emerald-200 text-xs text-emerald-800">
-                ✓ Tiền cọc phòng 1.000.000 đ được tự động bảo lưu sang kỳ tiếp theo.
+                Tiền cọc phòng 1.000.000 đ được tự động bảo lưu sang kỳ tiếp theo.
               </div>
             </div>
           )}

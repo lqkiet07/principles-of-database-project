@@ -41,9 +41,9 @@ export function Header() {
           <Link href="/admin/demo-checkpoints">
             <Button
               size="sm"
-              className="h-8 gap-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-xs animate-pulse"
+              className="h-8 gap-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 shadow-xs"
             >
-              <GraduationCap className="h-4 w-4" />
+              <GraduationCap className="h-4 w-4 text-amber-700" />
               <span>Demo Checkpoints (6)</span>
             </Button>
           </Link>
@@ -72,17 +72,14 @@ export function Header() {
           <span className="sr-only">Toggle theme</span>
         </Button>
 
-        {/* Notifications with Yellow Badge matching Figma */}
+        {/* Notifications with Static Status Dot */}
         <Button
           variant="ghost"
           size="icon"
           className="relative h-9 w-9 rounded-full text-slate-600 hover:text-slate-900 dark:text-slate-300"
         >
           <Bell className="h-4 w-4" />
-          <span className="absolute right-2 top-2 flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FFB800] opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#FFB800]" />
-          </span>
+          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-500 border border-white dark:border-slate-900" />
           <span className="sr-only">Notifications</span>
         </Button>
 

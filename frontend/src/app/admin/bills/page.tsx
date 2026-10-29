@@ -29,6 +29,7 @@ import {
   Flame,
   Terminal,
   Database,
+  FlaskConical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -958,16 +959,17 @@ export default function BillingPage() {
                       setTempCurrElec(editingBill.prevElec - 15);
                       setTriggerError(null);
                     }}
-                    className="h-8 text-xs bg-white text-amber-900 border-amber-300 hover:bg-amber-100 font-semibold w-full"
+                    className="h-8 text-xs bg-white text-amber-900 border-amber-300 hover:bg-amber-100 font-semibold w-full flex items-center justify-center gap-1.5"
                   >
-                    🧪 Gán số điện lùi ({editingBill.prevElec - 15} kWh)
+                    <FlaskConical className="h-3.5 w-3.5 text-amber-700" />
+                    <span>Gán số điện lùi ({editingBill.prevElec - 15} kWh)</span>
                   </Button>
                 </div>
               )}
 
               {/* Trigger Error SQL Terminal Display */}
               {triggerError && (
-                <div className="rounded-2xl border border-red-400 bg-slate-950 text-red-300 p-4 font-mono text-xs space-y-2 shadow-lg">
+                <div className="rounded-2xl border border-red-400 bg-slate-950 text-red-300 p-4 font-mono text-xs space-y-2 shadow-sm">
                   <div className="flex items-center justify-between text-red-400 border-b border-red-900 pb-2">
                     <div className="flex items-center gap-1.5 font-bold">
                       <Terminal className="h-4 w-4" />
@@ -978,9 +980,12 @@ export default function BillingPage() {
                   <div className="text-[11px] leading-relaxed text-red-200">
                     {triggerError}
                   </div>
-                  <div className="pt-2 border-t border-slate-800 text-[10px] text-slate-400 flex justify-between">
+                  <div className="pt-2 border-t border-slate-800 text-[10px] text-slate-400 flex justify-between items-center">
                     <span>STATE: 23514 (Trigger Abort)</span>
-                    <span className="text-emerald-400 font-bold">✓ Đã ghi vào audit_logs</span>
+                    <span className="text-emerald-400 font-bold flex items-center gap-1">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Đã ghi vào audit_logs
+                    </span>
                   </div>
                 </div>
               )}
