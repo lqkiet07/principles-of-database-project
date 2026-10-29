@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Changelog - Nâng cấp Giao diện CT221H & Demo Mode</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 960px; margin: 40px auto; padding: 0 20px; background: #f8fafc; }
+    h1, h2, h3 { color: #0f172a; }
+    .header { background: #ffffff; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 700; background: #e0f2fe; color: #0369a1; }
+    .badge-success { background: #dcfce7; color: #15803d; }
+    .badge-warning { background: #fef3c7; color: #b45309; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; font-size: 14px; }
+    th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+    th { background: #f8fafc; font-weight: 600; color: #475569; }
+    tr:last-child td { border-bottom: none; }
+    code { background: #f1f5f9; padding: 2px 6px; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; color: #0f172a; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="badge badge-success">Production Build Passed</span>
+    <span class="badge badge-warning">Branch: UI</span>
+    <h1 style="margin: 12px 0 6px 0;">CT221H Dormitory Management — UI Rubric Alignment</h1>
+    <p style="margin: 0; color: #64748b; font-size: 14px;"><strong>Thời gian:</strong> 27/10/2026 | <strong>Tác giả:</strong> Antigravity AI Pair Programmer</p>
+  </div>
+
+  <h2>1. Tóm tắt Nâng cấp</h2>
+  <p>Hệ thống giao diện được tinh chỉnh hoàn hảo theo nguyên tắc chỉ đạo: <em>"Giao diện mặc định 100% là ứng dụng thương mại hoàn chỉnh (Clean SaaS). Chỉ khi người dùng bật công tắc <strong>Chế Độ Giảng Viên Chấm Thi (Demo Mode)</strong> trong phần Cài đặt (Settings), các nút bấm giả lập và chỉ dẫn kỹ thuật CSDL mới hiển thị để phục vụ chấm thi."</em></p>
+
+  <h2>2. Bảng đối chiếu 5 Trụ Cột Kỹ Thuật (Barem CT221H)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Tiêu chí Barem</th>
+        <th>Giao diện SaaS (Demo Mode = OFF)</th>
+        <th>Chế độ Chấm thi (Demo Mode = ON)</th>
+        <th>Files chạm</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Dual Stored Procedures</strong><br>(Chia nợ & Gạch nợ)</td>
+        <td>Hiển thị công nợ cá nhân của sinh viên, nút nộp tiền qua ví KTX</td>
+        <td>Kịch bản kiểm thử hiển thị chi tiết mã SP <code>sp_generate_and_split_utility_bill</code> & <code>sp_pay_student_utility_bill</code></td>
+        <td><code>student/page.tsx</code><br><code>demo-checkpoints/page.tsx</code></td>
+      </tr>
+      <tr>
+        <td><strong>ACID Race Condition</strong><br>(Khóa dòng FOR UPDATE)</td>
+        <td>Thao tác nộp tiền mượt mà, không giật lag</td>
+        <td>Nút <em>"⚡ Test Click đúp (ACID)"</em> giả lập 2 request song song, chứng minh Request 2 bị chặn và thông báo an toàn</td>
+        <td><code>student/page.tsx</code><br><code>demo-checkpoints/page.tsx</code></td>
+      </tr>
+      <tr>
+        <td><strong>PostgreSQL Trigger</strong><br>(Chặn gian lận số điện lùi)</td>
+        <td>Drawer nhập chỉ số công tơ, bảng hóa đơn thanh toán thông thường</td>
+        <td>Nút <em>"🧪 Gán số điện lùi"</em> kích hoạt trigger <code>trg_prevent_meter_decrement</code> phát sinh lỗi SQL P0001, ROLLBACK và ghi log JSONB vào <code>audit_logs</code></td>
+        <td><code>admin/bills/page.tsx</code></td>
+      </tr>
+      <tr>
+        <td><strong>1M Logs Index Benchmark</strong><br>(B-Tree Composite Index)</td>
+        <td>Ẩn khỏi sidebar menu chính để giữ ứng dụng gọn gàng</td>
+        <td>Hiển thị menu <em>"1M Logs & Index"</em>, so sánh trực quan Seq Scan (1.84s) vs Index Scan (6.4ms)</td>
+        <td><code>admin/access-logs/page.tsx</code><br><code>sidebar-nav.tsx</code></td>
+      </tr>
+      <tr>
+        <td><strong>3 Phân Hệ AI</strong><br>(pgvector, Forecast, K-Means)</td>
+        <td>Tìm kiếm phòng thông minh, biểu đồ dự báo sản lượng điện tháng tới, phân loại rủi ro sinh viên</td>
+        <td>Hiển thị nhãn kỹ thuật: <code>pgvector Cosine Distance (&lt;=&gt;)</code>, <code>Scikit-learn Regression</code>, <code>K-Means (K=3)</code></td>
+        <td><code>admin/rooms/page.tsx</code><br><code>admin/page.tsx</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>3. Kết quả Kiểm thử & Trạng thái Git</h2>
+  <ul>
+    <li><strong>Build Status:</strong> <code>npm run build</code> hoàn tất thành công trong 1.33s (0 lỗi TypeScript, 0 lỗi JSX). 14/14 static routes được tối ưu hóa.</li>
+    <li><strong>Git Branch:</strong> <code>UI</code> trên remote <code>https://github.com/lqkiet07/principles-of-database-project.git</code> (Commit <code>1ef47ad</code>).</li>
+    <li><strong>Khả năng hòa nhập:</strong> Hoàn toàn độc lập trong thư mục <code>frontend/</code>, không xung đột với các scripts backend/database trên nhánh <code>main</code>.</li>
+  </ul>
+</body>
+</html>
