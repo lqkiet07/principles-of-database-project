@@ -56,3 +56,15 @@ dist-ssr/
 # OS
 .DS_Store
 Thumbs.db
+
+# Internal Project Documentation & Personal Markdown Files
+CHOT_QUYET_DINH_KY_THUAT.md
+Dac_Ta_Yeu_Cau_De_Tai_KTX.md
+docs/specs/
+docs/plans/
+docs/verification/
+docs/Bao_Cao*.md
+docs/Bao_Cao*.docx
+docs/Bao_Cao*.pdf
+frontend/AGENTS.md
+.handoffs/

@@ -57,40 +57,40 @@ const roomAvailabilityData = [
   { name: "Maintenance", value: 10, color: "#FFB800" },
 ];
 
-// Recent Activity table data matching Figma
+// Danh sách hoạt động gần đây
 const recentActivities = [
   {
     student: "Nguyễn Văn An",
-    studentId: "2102001",
-    activity: "Thanh toán tiền điện nước",
-    room: "P.302 - Tòa A",
+    studentId: "B2100001",
+    activity: "Thanh toán tiền điện nước (SP2)",
+    room: "P.101 - Tòa B1",
     time: "Hôm nay, 10:42",
-    amount: "350.000 đ",
+    amount: "375.000 đ",
     status: "paid",
   },
   {
-    student: "Trần Thị Bích",
-    studentId: "2202045",
+    student: "Trần Hoàng Bình",
+    studentId: "B2100002",
     activity: "Gia hạn hợp đồng KTX",
-    room: "P.112 - Tòa B",
+    room: "P.101 - Tòa B1",
     time: "Hôm nay, 09:15",
     amount: "—",
     status: "completed",
   },
   {
-    student: "Lê Tuấn Anh",
-    studentId: "2302089",
+    student: "Lê Văn Cường",
+    studentId: "B2100003",
     activity: "Báo hỏng vòi nước phòng tắm",
-    room: "P.405 - Tòa A",
+    room: "P.201 - Tòa B2",
     time: "Hôm nay, 08:30",
     amount: "—",
     status: "pending",
   },
   {
     student: "Phạm Quốc Bảo",
-    studentId: "2002012",
+    studentId: "B2100005",
     activity: "Nhận phòng đầu kỳ học",
-    room: "P.201 - Tòa A",
+    room: "P.301 - Tòa B3",
     time: "Hôm qua, 16:20",
     amount: "1.200.000 đ",
     status: "completed",
@@ -142,17 +142,17 @@ export default function AdminDashboardPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-              Dashboard overview
+              Tổng quan điều hành KTX
             </h1>
             {isDemoMode && (
               <Badge className="bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs flex items-center gap-1">
-                <GraduationCap className="h-3.5 w-3.5 text-[#FFB800]" />
+                <GraduationCap className="h-3.5 w-3.5 text-amber-600" />
                 Demo Mode Đang Bật
               </Badge>
             )}
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Welcome back! Here&apos;s what&apos;s happening in your dormitory today.
+            Theo dõi tỷ lệ lấp đầy phòng, công nợ điện nước và hoạt động ra vào cổng theo thời gian thực.
           </p>
         </div>
         <div className="flex items-center gap-2.5">
@@ -165,7 +165,7 @@ export default function AdminDashboardPage() {
             className="h-9 gap-2 rounded-xl text-xs font-medium bg-[#1F5CA9] text-white hover:bg-[#1a4f91] shadow-sm"
           >
             <Download className="h-3.5 w-3.5" />
-            <span>Export report</span>
+            <span>Xuất báo cáo</span>
           </Button>
         </div>
       </div>
@@ -208,7 +208,7 @@ export default function AdminDashboardPage() {
               </div>
             </div>
             <div className="mt-2.5">
-              <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+              <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 tabular-nums font-mono">
                 {dashboard ? dashboard.total_students : 12}
               </span>
               <div className="flex items-center gap-1.5 mt-1 text-xs">
@@ -232,10 +232,10 @@ export default function AdminDashboardPage() {
             </div>
             <div className="mt-2.5">
               <div className="flex items-baseline justify-between">
-                <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+                <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 tabular-nums font-mono">
                   {dashboard ? `${dashboard.occupancy_rate}%` : "50%"}
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground tabular-nums font-mono">
                   {dashboard ? `${dashboard.total_occupancy} / ${dashboard.total_capacity} chỗ` : "12 / 24 giường"}
                 </span>
               </div>
@@ -259,7 +259,7 @@ export default function AdminDashboardPage() {
               </div>
             </div>
             <div className="mt-2.5">
-              <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+              <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 tabular-nums font-mono">
                 {dashboard ? `${(dashboard.total_unpaid_debt / 1000000).toFixed(1)} tr đ` : "28.5 tr đ"}
               </span>
               <div className="flex items-center gap-1.5 mt-1 text-xs">
@@ -281,7 +281,7 @@ export default function AdminDashboardPage() {
               </div>
             </div>
             <div className="mt-2.5">
-              <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+              <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 tabular-nums font-mono">
                 {dashboard ? `${dashboard.total_power_kwh.toLocaleString("vi-VN")} kWh` : "34,504 kWh"}
               </span>
               <div className="flex items-center gap-1.5 mt-1 text-xs">
@@ -346,10 +346,10 @@ export default function AdminDashboardPage() {
         <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-50">
-              Quick Room Availability
+              Hiện trạng sức chứa phòng
             </CardTitle>
             <CardDescription className="text-xs">
-              Live capacity breakdown
+              Thống kê tỷ lệ phân bổ giường ở
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-2 flex-1 flex flex-col items-center justify-center">
@@ -372,10 +372,10 @@ export default function AdminDashboardPage() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute flex flex-col items-center justify-center text-center">
-                <span className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-50">
-                  500
+                <span className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-50 tabular-nums font-mono">
+                  {dashboard ? dashboard.total_capacity : 24}
                 </span>
-                <span className="text-[11px] text-muted-foreground font-medium">Total Beds</span>
+                <span className="text-[11px] text-muted-foreground font-medium">Tổng số chỗ</span>
               </div>
             </div>
 
@@ -384,23 +384,27 @@ export default function AdminDashboardPage() {
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full bg-[#1F5CA9]" />
-                  <span className="text-slate-600 dark:text-slate-300">Occupied</span>
+                  <span className="text-slate-600 dark:text-slate-300">Đang ở</span>
                 </div>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">460 beds</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums font-mono">
+                  {dashboard ? `${dashboard.total_occupancy} giường` : "12 giường"}
+                </span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full bg-[#00AFEF]" />
-                  <span className="text-slate-600 dark:text-slate-300">Available</span>
+                  <span className="text-slate-600 dark:text-slate-300">Còn trống</span>
                 </div>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">30 beds</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums font-mono">
+                  {dashboard ? `${dashboard.total_capacity - dashboard.total_occupancy} chỗ` : "12 chỗ"}
+                </span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full bg-[#FFB800]" />
-                  <span className="text-slate-600 dark:text-slate-300">Maintenance</span>
+                  <span className="text-slate-600 dark:text-slate-300">Bảo trì</span>
                 </div>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">10 beds</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums font-mono">0 chỗ</span>
               </div>
             </div>
           </CardContent>
@@ -410,7 +414,7 @@ export default function AdminDashboardPage() {
                 variant="outline"
                 className="w-full rounded-xl text-xs font-semibold text-[#1F5CA9] border-blue-200 hover:bg-blue-50 dark:border-blue-900 dark:hover:bg-blue-950"
               >
-                <span>View details & assign bed</span>
+                <span>Xem chi tiết & xếp chỗ ở</span>
                 <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
               </Button>
             </Link>
@@ -529,17 +533,17 @@ export default function AdminDashboardPage() {
         <CardHeader className="flex flex-row items-center justify-between pb-3">
           <div>
             <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-50">
-              Recent activity
+              Nhật ký giao dịch & hoạt động gần đây
             </CardTitle>
             <CardDescription className="text-xs">
-              Latest transactions, check-ins, and dormitory maintenance logs
+              Ghi nhận các giao dịch thanh toán qua SP2, đăng ký lưu trú và bảo dưỡng phòng
             </CardDescription>
           </div>
           <Link
-            href="/admin/activity"
+            href="/admin/bills"
             className="text-xs font-semibold text-[#1F5CA9] hover:underline flex items-center gap-1"
           >
-            <span>View all activity</span>
+            <span>Xem lịch sử hóa đơn</span>
             <ArrowRight className="h-3 w-3" />
           </Link>
         </CardHeader>
@@ -561,7 +565,7 @@ export default function AdminDashboardPage() {
                   <tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
                     <td className="py-3.5 px-6 font-medium text-slate-900 dark:text-slate-100">
                       <div>{row.student}</div>
-                      <div className="text-[11px] text-muted-foreground">{row.studentId}</div>
+                      <div className="text-[11px] text-muted-foreground font-mono">{row.studentId}</div>
                     </td>
                     <td className="py-3.5 px-6 text-slate-600 dark:text-slate-300">
                       {row.activity}
@@ -569,10 +573,10 @@ export default function AdminDashboardPage() {
                     <td className="py-3.5 px-6 font-medium text-slate-800 dark:text-slate-200">
                       {row.room}
                     </td>
-                    <td className="py-3.5 px-6 text-muted-foreground text-xs">
+                    <td className="py-3.5 px-6 text-muted-foreground text-xs font-mono">
                       {row.time}
                     </td>
-                    <td className="py-3.5 px-6 font-semibold text-slate-900 dark:text-slate-100">
+                    <td className="py-3.5 px-6 font-semibold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
                       {row.amount}
                     </td>
                     <td className="py-3.5 px-6 text-right">
