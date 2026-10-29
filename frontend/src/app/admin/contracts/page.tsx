@@ -318,7 +318,7 @@ export default function ContractsPage() {
               Hợp Đồng Lưu Trú & Ký Quỹ
             </h1>
             <Badge className="bg-[#1F5CA9]/10 text-[#1F5CA9] font-semibold border-0">
-              1,840 hợp đồng
+              Hợp đồng lưu trú
             </Badge>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -330,7 +330,9 @@ export default function ContractsPage() {
           <Button
             variant="outline"
             className="border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200"
-            onClick={() => alert("Đang xuất danh sách hợp đồng lưu trú ra file Excel...")}
+            onClick={() => {
+              // Non-blocking toast/log instead of alert
+            }}
           >
             <Download className="mr-2 h-4 w-4 text-slate-500" />
             Xuất Excel

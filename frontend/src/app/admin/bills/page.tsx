@@ -1238,7 +1238,7 @@ export default function BillingPage() {
           <div className="space-y-3 py-3 text-xs">
             <div className="rounded-xl bg-blue-50/70 border border-blue-100 p-3 text-slate-700 space-y-1.5">
               <div className="font-semibold text-[#1F5CA9]">Thông số phát hành kỳ {selectedMonth}:</div>
-              <div>• Số phòng áp dụng: <strong>48 phòng</strong> (Tòa A & Tòa B)</div>
+              <div>• Số phòng áp dụng: <strong>6 phòng</strong> (Tòa B1, B2 & B3)</div>
               <div>• Đơn giá điện: <strong>3.000 đ/kWh</strong></div>
               <div>• Đơn giá nước: <strong>12.000 đ/m³</strong></div>
               <div>• Hạn nộp dự kiến: <strong>25/10/2026</strong></div>

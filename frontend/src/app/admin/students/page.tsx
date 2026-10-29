@@ -420,7 +420,7 @@ export default function StudentsPage() {
               Hồ Sơ & Danh Sách Sinh Viên
             </h1>
             <Badge className="bg-[#1F5CA9]/10 text-[#1F5CA9] hover:bg-[#1F5CA9]/20 font-semibold border-0">
-              1,840 sinh viên
+              Sinh viên nội trú
             </Badge>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -432,7 +432,9 @@ export default function StudentsPage() {
           <Button
             variant="outline"
             className="border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200"
-            onClick={() => alert("Đang xuất danh sách 1,840 sinh viên ra định dạng Excel (.xlsx)...")}
+            onClick={() => {
+              // Export handler
+            }}
           >
             <Download className="mr-2 h-4 w-4 text-slate-500" />
             Xuất Excel
@@ -1066,9 +1068,7 @@ export default function StudentsPage() {
                 <Button
                   size="sm"
                   className="bg-[#1F5CA9] text-white hover:bg-[#184988]"
-                  onClick={() => {
-                    alert(`Đã gửi thông báo nhắc nhở tới sinh viên ${selectedStudent.name} (${selectedStudent.phone})`);
-                  }}
+                  onClick={() => setIsDrawerOpen(false)}
                 >
                   Gửi thông báo SMS / App
                 </Button>

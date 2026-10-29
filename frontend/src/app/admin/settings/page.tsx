@@ -189,7 +189,7 @@ export default function SettingsPage() {
                 Biểu Phí Điện, Nước & Dịch Vụ Nội Trú
               </CardTitle>
               <CardDescription className="text-xs text-slate-500">
-                Đơn giá được áp dụng tự động vào bảng tính hóa đơn hàng tháng cho toàn bộ 480 phòng KTX.
+                Đơn giá được áp dụng tự động vào bảng tính hóa đơn hàng tháng cho toàn bộ các phòng KTX.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
@@ -310,7 +310,7 @@ export default function SettingsPage() {
                 Khung Giờ Giới Nghiêm & Quy Chế An Ninh Thẻ KTX
               </CardTitle>
               <CardDescription className="text-xs text-slate-500">
-                Hệ thống kiểm soát cổng tự động nhận diện thời gian quẹt thẻ của 1,840 sinh viên.
+                Hệ thống kiểm soát cổng tự động nhận diện thời gian quẹt thẻ của sinh viên nội trú.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6 space-y-6">

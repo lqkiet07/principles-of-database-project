@@ -71,41 +71,41 @@ interface Roommate {
 const roommates: Roommate[] = [
   {
     id: "1",
-    name: "Nguyễn Tuấn Anh",
+    name: "Nguyễn Văn An",
     role: "Trưởng phòng (Bạn)",
-    major: "Khoa học Máy tính K67",
-    phone: "0981.234.567",
-    avatarText: "TA",
+    major: "Kỹ thuật Phần mềm K47",
+    phone: "0912.345.601",
+    avatarText: "AN",
     isOnline: true,
     statusText: "Đang ở phòng",
   },
   {
     id: "2",
-    name: "Trần Minh Quân",
+    name: "Trần Hoàng Bình",
     role: "Thành viên",
-    major: "Kỹ thuật Phần mềm K67",
-    phone: "0972.889.123",
-    avatarText: "MQ",
+    major: "Kỹ thuật Phần mềm K47",
+    phone: "0912.345.602",
+    avatarText: "HB",
     isOnline: true,
     statusText: "Đang ở phòng",
   },
   {
     id: "3",
-    name: "Lê Văn Hùng",
+    name: "Lê Quốc Cường",
     role: "Thành viên",
-    major: "Kinh tế Đối ngoại K68",
-    phone: "0915.678.901",
-    avatarText: "VH",
+    major: "Khoa học Máy tính K47",
+    phone: "0912.345.603",
+    avatarText: "QC",
     isOnline: false,
     statusText: "Đang trên lớp",
   },
   {
     id: "4",
-    name: "Đặng Tiến Dũng",
+    name: "Phạm Minh Dũng",
     role: "Thành viên",
-    major: "Tự động hóa K67",
-    phone: "0963.456.789",
-    avatarText: "TD",
+    major: "Hệ thống Thông tin K47",
+    phone: "0912.345.604",
+    avatarText: "MD",
     isOnline: true,
     statusText: "Đang ở phòng",
   },
@@ -395,8 +395,8 @@ export default function StudentPortalPage() {
 
             {/* Dynamic Island pill */}
             <div className="h-[28px] w-[116px] bg-black rounded-full flex items-center justify-between px-2.5 text-[10px] text-white/90 shadow-xs cursor-pointer hover:scale-105 transition-transform">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] font-semibold text-slate-200 tracking-tight">P.402 Tòa B</span>
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              <span className="text-[10px] font-semibold text-slate-200 tracking-tight">B1-101 Tòa B1</span>
               <div className="h-2.5 w-2.5 rounded-full bg-blue-500/80" />
             </div>
 
@@ -672,9 +672,9 @@ export default function StudentPortalPage() {
                     <span className="text-xs uppercase font-semibold text-white/80 tracking-wider">
                       Không gian lưu trú
                     </span>
-                    <h2 className="text-xl font-bold mt-0.5">Phòng A.402 • Tòa B</h2>
+                    <h2 className="text-xl font-bold mt-0.5">Phòng B1-101 • Tòa B1 - Nam</h2>
                     <p className="text-xs text-white/90 mt-1">
-                      Tầng 4 • Phòng Nam • 4 Giường tầng • Diện tích: 28m²
+                      Tầng 1 • Phòng Nam • 4 Giường tầng • Ban công thoáng mát, gần căng-tin
                     </p>
                   </div>
                   <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 text-[11px]">
@@ -757,7 +757,7 @@ export default function StudentPortalPage() {
                       <AirVent className="h-4 w-4 text-[#00AFEF]" />
                       <span>Điều hòa Casper</span>
                     </div>
-                    <div className="text-[11px] text-muted-foreground">Mã: TS-A402-DH</div>
+                    <div className="text-[11px] text-muted-foreground font-mono">Mã: TS-B1101-DH</div>
                     <div className="text-[10px] text-emerald-600 font-medium">Bảo dưỡng: 15/09/2026</div>
                   </div>
 
@@ -766,7 +766,7 @@ export default function StudentPortalPage() {
                       <Bed className="h-4 w-4 text-[#1F5CA9]" />
                       <span>Giường tầng gỗ (4)</span>
                     </div>
-                    <div className="text-[11px] text-muted-foreground">Mã: TS-A402-G1..4</div>
+                    <div className="text-[11px] text-muted-foreground font-mono">Mã: TS-B1101-G1..4</div>
                     <div className="text-[10px] text-emerald-600 font-medium">Tình trạng: Tốt</div>
                   </div>
 
@@ -803,7 +803,7 @@ export default function StudentPortalPage() {
 
                 <div className="space-y-2 text-xs">
                   <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800">
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">Thứ 2: Tuấn Anh</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">Thứ 2: Văn An</span>
                     <span className="text-emerald-600 font-bold flex items-center gap-1 text-[11px]">
                       <Check className="h-3 w-3" /> Đã xong
                     </span>
@@ -811,16 +811,16 @@ export default function StudentPortalPage() {
                   <div className="flex items-center justify-between p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900">
                     <span className="font-bold text-amber-900 dark:text-amber-100 flex items-center gap-1.5">
                       <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-                      Thứ 4: Minh Quân (Hôm nay)
+                      Thứ 4: Hoàng Bình (Hôm nay)
                     </span>
                     <span className="text-[#B45309] font-bold text-[11px]">Đang phiên</span>
                   </div>
                   <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800">
-                    <span className="text-slate-600 dark:text-slate-400">Thứ 6: Văn Hùng</span>
+                    <span className="text-slate-600 dark:text-slate-400">Thứ 6: Quốc Cường</span>
                     <span className="text-slate-400 text-[11px]">Sắp tới</span>
                   </div>
                   <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800">
-                    <span className="text-slate-600 dark:text-slate-400">Chủ Nhật: Tiến Dũng</span>
+                    <span className="text-slate-600 dark:text-slate-400">Chủ Nhật: Minh Dũng</span>
                     <span className="text-slate-400 text-[11px]">Tổng vệ sinh</span>
                   </div>
                 </div>
@@ -838,7 +838,7 @@ export default function StudentPortalPage() {
                   Ví KTX & Công Nợ Điện Nước
                 </h2>
                 <Badge variant="outline" className="text-[10px] font-mono text-[#1F5CA9] border-blue-200">
-                  Phòng B.402
+                  Phòng B1-101
                 </Badge>
               </div>
 
@@ -885,7 +885,7 @@ export default function StudentPortalPage() {
               <div className="rounded-2xl border border-amber-300/80 bg-amber-50/40 p-4 space-y-3 shadow-xs">
                 <div className="flex items-center justify-between">
                   <Badge className="bg-[#FFB800] text-amber-950 text-[10px] font-bold px-2 py-0.5">
-                    Hóa đơn T10/2026 (Phòng B.402)
+                    Hóa đơn T10/2026 (Phòng B1-101)
                   </Badge>
                   <span className="text-xs font-semibold text-red-600">Hạn chót: 25/10/2026</span>
                 </div>
@@ -1220,7 +1220,7 @@ export default function StudentPortalPage() {
               </DialogTitle>
             </div>
             <DialogDescription className="text-xs text-muted-foreground">
-              Phòng A.402 • Tòa B. Kỹ thuật viên KTX sẽ tiếp nhận và xử lý trong 2-4 giờ làm việc.
+              Phòng B1-101 • Tòa B1 - Nam. Kỹ thuật viên KTX sẽ tiếp nhận và xử lý trong 2-4 giờ làm việc.
             </DialogDescription>
           </DialogHeader>
 
@@ -1551,10 +1551,10 @@ export default function StudentPortalPage() {
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Nội dung:</span>
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-[#1F5CA9]">KTX B402 TUANANH T10</span>
+                <span className="font-bold text-[#1F5CA9] font-mono">KTX B1101 B2100001 T10</span>
                 <button
                   type="button"
-                  onClick={() => copyToClipboard("KTX B402 TUANANH T10", "nd")}
+                  onClick={() => copyToClipboard("KTX B1101 B2100001 T10", "nd")}
                   className="text-[#1F5CA9] hover:underline"
                 >
                   {copiedField === "nd" ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
@@ -1597,7 +1597,7 @@ export default function StudentPortalPage() {
           <div className="my-2 p-3 bg-slate-50 rounded-2xl border border-slate-200 text-left text-xs space-y-2">
             <div className="flex justify-between border-b pb-1">
               <span className="text-muted-foreground">Người nộp:</span>
-              <span className="font-bold text-slate-900">Nguyễn Tuấn Anh (P.402)</span>
+              <span className="font-bold text-slate-900">{studentName} ({studentRoom.split(" ")[0]})</span>
             </div>
             <div className="flex justify-between border-b pb-1">
               <span className="text-muted-foreground">Số tiền:</span>
