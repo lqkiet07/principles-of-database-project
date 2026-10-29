@@ -18,7 +18,7 @@ An end-to-end academic capstone project for **Principles of Database Management 
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│                   Frontend Web Client (React 18 + Vite)                │
+│              Frontend Web Client (Next.js 16 + React 19)               │
 │             Role Switcher • Student Portal • Admin Dashboard           │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │ HTTP REST / JSON Envelope
@@ -96,14 +96,24 @@ uvicorn app.main:app --reload --port 8000
 - **ReDoc Specification:** `http://127.0.0.1:8000/redoc`
 - **Health Check:** `http://127.0.0.1:8000/health`
 
-### 4. Run Isolated Verification Test Suite (56 Tests)
+### 4. Run Frontend Client
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+Open `http://localhost:3000` to interact with the Student Mobile Portal and Admin Dashboard.
+
+### 5. Run Isolated Verification Test Suite (56 Tests)
 ```powershell
 # Executes full hermetic test harness on an isolated test database
+cd backend
 .\scripts\run_tests.ps1 -v
 ```
 
-### 5. Run Live Smoke Check
+### 6. Run Live Smoke Check
 ```powershell
+cd backend
 python -m scripts.smoke_check
 ```
 
@@ -129,7 +139,7 @@ principles-of-database/
 │   ├── api/openapi.json            # Frozen OpenAPI 3.1.0 contract (22 paths)
 │   ├── evidence/backend/           # 11 empirical benchmark JSON artifacts
 │   └── specs/                      # System technical specifications
-└── frontend/                       # SaaS Web Client (React + Tailwind)
+└── frontend/                       # SaaS Web Client (Next.js 16 + React 19)
 ```
 
 ---
@@ -140,4 +150,4 @@ Developed as a Course Capstone Project for **Principles of Database Management S
 
 - **Database Architect & Indexing:** Schema 3NF, Dual Stored Procedures, Triggers, 1M Access Log Benchmark.
 - **Backend & AI Lead:** FastAPI Async Connection Pool, 22 Endpoints, 3 ML/Vector Models, 56 Hermetic Tests.
-- **Frontend SaaS & Reporting:** React 18 SaaS UI, Demo Checkpoints, Technical Report & Presentation.
+- **Frontend SaaS & Reporting:** Next.js 16 App Router UI, Demo Checkpoints, Technical Report & Presentation.
