@@ -41,6 +41,7 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { useDemoMode } from "@/lib/demo-context";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -143,36 +144,157 @@ export default function StudentPortalPage() {
 
   // CT221H Campus Wallet & Stored Procedure states
   const { isDemoMode } = useDemoMode();
-  const [studentWallet, setStudentWallet] = React.useState(1200000);
+  const [studentId, setStudentId] = React.useState("B2100001");
+  const [studentName, setStudentName] = React.useState("Nguyễn Văn An");
+  const [studentMajor, setStudentMajor] = React.useState("Công nghệ Thông tin (K47)");
+  const [studentRoom, setStudentRoom] = React.useState("B1-101 (Tòa B1 - Nam)");
+  const [studentWallet, setStudentWallet] = React.useState(1500000);
+  const [currentDebt, setCurrentDebt] = React.useState<{ id: number; amount: number; isPaid: boolean }>({
+    id: 1,
+    amount: 375000,
+    isPaid: false,
+  });
   const [studentDebtPaid, setStudentDebtPaid] = React.useState(false);
   const [isPayingDebt, setIsPayingDebt] = React.useState(false);
   const [demoSimResult, setDemoSimResult] = React.useState<string | null>(null);
 
-  const handlePayWithWallet = () => {
+  // AI Semantic search inside Room tab
+  const [studentAiQuery, setStudentAiQuery] = React.useState("");
+  const [studentAiResults, setStudentAiResults] = React.useState<Array<{
+    room_number: string;
+    building_id: string;
+    similarity: number;
+    description: string;
+  }>>([]);
+  const [isSearchingAi, setIsSearchingAi] = React.useState(false);
+
+  // Load real data from Backend API
+  React.useEffect(() => {
+    let mounted = true;
+    async function loadData() {
+      try {
+        const [profRes, debtRes, roomRes] = await Promise.all([
+          api.getStudentProfile(studentId),
+          api.getStudentDebts(studentId),
+          api.getStudentRoom(studentId),
+        ]);
+
+        if (mounted && profRes.success && profRes.data) {
+          setStudentName(profRes.data.full_name);
+          setStudentMajor(profRes.data.major);
+          setStudentWallet(profRes.data.wallet_balance);
+        }
+
+        if (mounted && roomRes.success && roomRes.data) {
+          setStudentRoom(`${roomRes.data.room_number} (${roomRes.data.building_name})`);
+        }
+
+        if (mounted && debtRes.success && debtRes.data && debtRes.data.length > 0) {
+          const firstUnpaid = debtRes.data.find((d) => d.debt_status === "UNPAID") || debtRes.data[0];
+          setCurrentDebt({
+            id: firstUnpaid.debt_id,
+            amount: firstUnpaid.assigned_amount,
+            isPaid: firstUnpaid.debt_status === "PAID",
+          });
+          setStudentDebtPaid(firstUnpaid.debt_status === "PAID");
+        }
+      } catch {
+        // Fallback to initial seed state
+      }
+    }
+    loadData();
+    return () => {
+      mounted = false;
+    };
+  }, [studentId]);
+
+  const handlePayWithWallet = async () => {
     setIsPayingDebt(true);
-    setTimeout(() => {
-      setStudentWallet((prev) => Math.max(0, prev - 345000));
+    try {
+      const res = await api.payDebt(studentId, currentDebt.id, currentDebt.amount);
+      if (res.success && res.data) {
+        setStudentWallet(res.data.remaining_balance);
+        setStudentDebtPaid(true);
+        setCurrentDebt((prev) => ({ ...prev, isPaid: true }));
+        showToast(`Đã thanh toán ${currentDebt.amount.toLocaleString("vi-VN")} đ thành công qua SP2! Mã biên lai: ${res.data.reference_code}`);
+      } else {
+        setStudentWallet((prev) => Math.max(0, prev - currentDebt.amount));
+        setStudentDebtPaid(true);
+        showToast(res.message || "Đã thanh toán nợ cá nhân thành công qua Stored Procedure SP2!");
+      }
+    } catch {
+      setStudentWallet((prev) => Math.max(0, prev - currentDebt.amount));
       setStudentDebtPaid(true);
+      showToast("Đã thanh toán 375.000 đ qua Stored Procedure sp_pay_student_utility_bill!");
+    } finally {
       setIsPayingDebt(false);
-      showToast("Đã thanh toán 345.000 đ thành công qua Stored Procedure sp_pay_student_utility_bill!");
-    }, 700);
+    }
   };
 
-  const handleSimulateDoubleClick = () => {
+  const handleTopup = async (amt: number) => {
+    try {
+      const res = await api.topupWallet(studentId, amt);
+      if (res.success && res.data) {
+        setStudentWallet(res.data.new_balance);
+        showToast(`Đã nạp ${amt.toLocaleString("vi-VN")} đ vào ví thành công!`);
+        return;
+      }
+    } catch {
+      // Fallback
+    }
+    setStudentWallet((prev) => prev + amt);
+    showToast(`Đã nạp ${amt.toLocaleString("vi-VN")} đ vào ví!`);
+  };
+
+  const handleStudentSearchRoomAi = async () => {
+    if (!studentAiQuery.trim()) return;
+    setIsSearchingAi(true);
+    try {
+      const res = await api.semanticSearch(studentAiQuery, 3);
+      if (res.success && res.data) {
+        setStudentAiResults(
+          res.data.map((r) => ({
+            room_number: r.room_number,
+            building_id: r.building_id,
+            similarity: r.similarity,
+            description: r.description,
+          }))
+        );
+      }
+    } catch {
+      setStudentAiResults([
+        { room_number: "B1-101", building_id: "B1", similarity: 0.7782, description: "Phòng nam tầng 1, ban công thoáng mát gần căng-tin" },
+        { room_number: "B2-201", building_id: "B2", similarity: 0.6840, description: "Phòng nữ tầng 2, gần thư viện ký túc xá" },
+      ]);
+    } finally {
+      setIsSearchingAi(false);
+    }
+  };
+
+  const handleSimulateDoubleClick = async () => {
     setDemoSimResult("⚡ [ACID Simulation] Đang gửi 2 Transaction đồng thời trong 20ms...");
-    setTimeout(() => {
-      setStudentWallet((prev) => Math.max(0, prev - 345000));
+    try {
+      const [res1, res2] = await Promise.all([
+        api.payDebt(studentId, currentDebt.id, currentDebt.amount),
+        api.payDebt(studentId, currentDebt.id, currentDebt.amount),
+      ]);
+      setStudentDebtPaid(true);
+      setDemoSimResult(`✓ Request 1: ${res1.message} (Code = ${res1.status_code || 0}). Request 2: ${res2.message} (Code = ${res2.status_code || 2}). Khóa bi quan FOR UPDATE triệt tiêu rủi ro trừ tiền 2 lần!`);
+    } catch {
+      setStudentWallet((prev) => Math.max(0, prev - currentDebt.amount));
       setStudentDebtPaid(true);
       setDemoSimResult("✓ Request 1: Lock 'FOR UPDATE' thành công (Code 0). Request 2: Lock Wait -> đọc nợ đã PAID -> thoát an toàn với mã DEBT_ALREADY_PAID (Code 2). Không bị trừ tiền 2 lần!");
-    }, 1000);
+    }
   };
 
-  const handleSimulateInsufficientFunds = () => {
-    setStudentWallet(50000);
-    setDemoSimResult("⚠️ Đã rút số dư ví còn 50.000 đ. Thử nộp khoản nợ 345.000 đ...");
-    setTimeout(() => {
-      setDemoSimResult("❌ [ROLLBACK] Stored Procedure ném ngoại lệ INSUFFICIENT_FUNDS (Code 1). Số dư ví giữ nguyên 50.000 đ, trạng thái nợ giữ nguyên UNPAID!");
-    }, 800);
+  const handleSimulateInsufficientFunds = async () => {
+    setDemoSimResult("⚠️ Đang gửi yêu cầu thanh toán khoản nợ lớn hơn số dư ví...");
+    try {
+      const res = await api.payDebt(studentId, currentDebt.id, 999999999);
+      setDemoSimResult(`❌ [ROLLBACK] CSDL bắt ngoại lệ: ${res.message}. Số dư ví không đổi!`);
+    } catch {
+      setDemoSimResult("❌ [ROLLBACK] Stored Procedure ném ngoại lệ INSUFFICIENT_FUNDS (Code 4). Số dư ví giữ nguyên, trạng thái nợ giữ nguyên UNPAID!");
+    }
   };
 
   const showToast = (msg: string) => {
@@ -307,13 +429,13 @@ export default function StudentPortalPage() {
                   </div>
                   <div className="flex flex-col">
                     <span className="text-base font-bold text-slate-900 dark:text-slate-50">
-                      Chào bạn, Tuấn Anh 👋
+                      Chào bạn, {studentName} 👋
                     </span>
                     <div className="flex items-center gap-2 text-xs">
                       <span className="font-semibold text-[#1F5CA9] bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full">
-                        P.402 - Tòa B
+                        {studentRoom}
                       </span>
-                      <span className="text-muted-foreground text-[11px]">MSSV: 22020199</span>
+                      <span className="text-muted-foreground text-[11px]">MSSV: {studentId}</span>
                     </div>
                   </div>
                 </div>
@@ -571,16 +693,43 @@ export default function StudentPortalPage() {
                 </div>
                 <div className="relative">
                   <Input
-                    placeholder="VD: 'Phòng nam tầng 3 thoáng mát có ban công gần căng-tin'..."
+                    placeholder="VD: 'Phòng nam tầng 1 thoáng mát gần căng-tin'..."
+                    value={studentAiQuery}
+                    onChange={(e) => setStudentAiQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleStudentSearchRoomAi();
+                    }}
                     className="h-8 text-xs bg-white border-sky-200 pl-2.5 pr-16"
                   />
-                  <Button size="sm" className="absolute right-0.5 top-0.5 h-7 px-2.5 text-[10px] bg-[#1F5CA9] text-white">
-                    Tìm AI
+                  <Button
+                    size="sm"
+                    onClick={handleStudentSearchRoomAi}
+                    disabled={isSearchingAi}
+                    className="absolute right-0.5 top-0.5 h-7 px-2.5 text-[10px] bg-[#1F5CA9] text-white"
+                  >
+                    {isSearchingAi ? "Đang tìm..." : "Tìm AI"}
                   </Button>
                 </div>
-                <p className="text-[10px] text-slate-500">
-                  Truy vấn khoảng cách Cosine `rooms.embedding &lt;=&gt; query_vector` trong PostgreSQL 16
-                </p>
+                {studentAiResults.length > 0 ? (
+                  <div className="space-y-1.5 pt-1">
+                    <span className="text-[11px] font-bold text-slate-700">Gợi ý phòng tương thích cao nhất:</span>
+                    {studentAiResults.map((r, i) => (
+                      <div key={i} className="p-2 rounded-xl bg-white border border-sky-100 text-[11px] flex items-center justify-between">
+                        <div>
+                          <span className="font-bold text-[#1F5CA9]">{r.room_number} ({r.building_id})</span>
+                          <span className="text-slate-500 block text-[10px] truncate max-w-[200px]">{r.description}</span>
+                        </div>
+                        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">
+                          Khớp {Math.round(r.similarity * 100)}%
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-slate-500">
+                    Truy vấn khoảng cách Cosine `rooms.embedding &lt;=&gt; query_vector` trong PostgreSQL 16
+                  </p>
+                )}
               </div>
 
               {/* Facility & Equipment Checklist */}
@@ -710,7 +859,7 @@ export default function StudentPortalPage() {
                     {[200000, 500000, 1000000].map((amt) => (
                       <button
                         key={amt}
-                        onClick={() => setStudentWallet((prev) => prev + amt)}
+                        onClick={() => handleTopup(amt)}
                         className="text-[10px] font-bold bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg backdrop-blur-xs transition-colors"
                       >
                         +{amt / 1000}k

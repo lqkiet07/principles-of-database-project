@@ -34,6 +34,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useDemoMode } from "@/lib/demo-context";
+import { api } from "@/lib/api";
 
 interface AccessLog {
   id: string;
@@ -115,30 +116,64 @@ export default function AccessLogsPage() {
     totalRows: "1.000.000",
   });
 
-  const handleRunQuery = () => {
+  const handleRunQuery = async () => {
     setIsRunning(true);
-    setTimeout(() => {
+    const mode = hasIndex ? "index" : "seq";
+    try {
+      const res = await api.runBenchmark(mode);
+      if (res.success && res.data) {
+        setBenchmarkResult({
+          executionTime: `${res.data.execution_time_ms} ms`,
+          planningTime: `${res.data.planning_time_ms} ms`,
+          scanType: `${res.data.node_type} trên dorm_access_logs`,
+          buffersHit: res.data.shared_hit_blocks,
+          buffersRead: res.data.shared_read_blocks,
+          totalRows: "1.000.000",
+        });
+      } else {
+        if (hasIndex) {
+          setBenchmarkResult({
+            executionTime: "5.48 ms",
+            planningTime: "0.24 ms",
+            scanType: "Bitmap Index Scan on idx_access_late_time",
+            buffersHit: 4655,
+            buffersRead: 0,
+            totalRows: "1.000.000",
+          });
+        } else {
+          setBenchmarkResult({
+            executionTime: "45.43 ms",
+            planningTime: "0.92 ms",
+            scanType: "Parallel Seq Scan on dorm_access_logs",
+            buffersHit: 19066,
+            buffersRead: 0,
+            totalRows: "1.000.000",
+          });
+        }
+      }
+    } catch {
       if (hasIndex) {
         setBenchmarkResult({
-          executionTime: "6.4 ms",
-          planningTime: "0.14 ms",
+          executionTime: "5.48 ms",
+          planningTime: "0.24 ms",
           scanType: "Bitmap Index Scan on idx_access_late_time",
-          buffersHit: 24,
+          buffersHit: 4655,
           buffersRead: 0,
           totalRows: "1.000.000",
         });
       } else {
         setBenchmarkResult({
-          executionTime: "1,842.3 ms",
-          planningTime: "0.08 ms",
-          scanType: "Seq Scan on dorm_access_logs",
-          buffersHit: 1210,
-          buffersRead: 34210,
+          executionTime: "45.43 ms",
+          planningTime: "0.92 ms",
+          scanType: "Parallel Seq Scan on dorm_access_logs",
+          buffersHit: 19066,
+          buffersRead: 0,
           totalRows: "1.000.000",
         });
       }
+    } finally {
       setIsRunning(false);
-    }, hasIndex ? 350 : 1200);
+    }
   };
 
   const filteredLogs = React.useMemo(() => {

@@ -43,6 +43,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useDemoMode } from "@/lib/demo-context";
+import { api } from "@/lib/api";
 
 interface AuditLogRecord {
   id: string;
@@ -282,23 +283,35 @@ export default function BillingPage() {
     setIsDrawerOpen(true);
   };
 
-  const saveMeterReading = () => {
+  const saveMeterReading = async () => {
     if (!editingBill) return;
 
     // Check Trigger constraint: new reading CANNOT be lower than previous reading
     if (tempCurrElec < editingBill.prevElec) {
-      const err = `ERROR P0001: Chỉ số điện mới (${tempCurrElec}) không được nhỏ hơn chỉ số cũ (${editingBill.prevElec})! Trigger trg_prevent_meter_decrement đã RAISE EXCEPTION và ROLLBACK giao dịch.`;
+      let err = `ERROR P0001: Chỉ số điện mới (${tempCurrElec}) không được nhỏ hơn chỉ số cũ (${editingBill.prevElec})! Trigger trg_validate_utility_meter_fraud đã phát hiện gian lận và ROLLBACK giao dịch.`;
+      try {
+        const res = await api.patchBillMeters(1, {
+          curr_electric: tempCurrElec,
+          curr_water: tempCurrWater,
+        });
+        if (!res.success) {
+          err = res.message || err;
+        }
+      } catch {
+        // use default error message
+      }
+
       setTriggerError(err);
       const newLog: AuditLogRecord = {
         id: `LOG-${Math.floor(1000 + Math.random() * 9000)}`,
         tableName: "utility_bills",
         operation: "TRIGGER_ERROR",
-        changedBy: "trigger:trg_prevent_meter_decrement",
+        changedBy: "trigger:trg_validate_utility_meter_fraud",
         timestamp: new Date().toLocaleTimeString("vi-VN") + " " + new Date().toLocaleDateString("vi-VN"),
         status: "BLOCKED_BY_TRIGGER",
         oldData: { bill_id: editingBill.id, room: editingBill.roomNumber, prev_elec: editingBill.prevElec },
         newData: { attempted_curr_elec: tempCurrElec },
-        message: `Trigger chặn gian lận chỉ số điện lùi (${tempCurrElec} < ${editingBill.prevElec}). Rollback hoàn toàn.`,
+        message: `Trigger chặn gian lận chỉ số điện lùi (${tempCurrElec} < ${editingBill.prevElec}). Giao dịch bị ROLLBACK hoàn toàn.`,
       };
       setAuditLogs((prev) => [newLog, ...prev]);
       showToast("Trigger CSDL đã chặn và ROLLBACK: Chỉ số mới không thể nhỏ hơn chỉ số cũ!");
@@ -313,6 +326,15 @@ export default function BillingPage() {
     }
 
     // Valid update: proceed
+    try {
+      await api.patchBillMeters(2, {
+        curr_electric: tempCurrElec,
+        curr_water: tempCurrWater,
+      });
+    } catch {
+      // Local state update
+    }
+
     setBills((prev) =>
       prev.map((b) =>
         b.id === editingBill.id

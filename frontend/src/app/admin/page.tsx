@@ -34,6 +34,7 @@ import {
 } from "recharts";
 import { useDemoMode } from "@/lib/demo-context";
 import { GraduationCap, Sparkles, TrendingUp } from "lucide-react";
+import { api, DashboardSummary, ForecastData, ClusterSummary } from "@/lib/api";
 
 // Consumption data for Monthly Utility Chart
 const consumptionData = [
@@ -108,6 +109,31 @@ const forecastData = [
 
 export default function AdminDashboardPage() {
   const { isDemoMode } = useDemoMode();
+  const [dashboard, setDashboard] = React.useState<DashboardSummary | null>(null);
+  const [forecast, setForecast] = React.useState<ForecastData | null>(null);
+  const [clusters, setClusters] = React.useState<ClusterSummary | null>(null);
+
+  React.useEffect(() => {
+    let mounted = true;
+    async function load() {
+      try {
+        const [dRes, fRes, cRes] = await Promise.all([
+          api.getDashboard(),
+          api.getForecast("B1"),
+          api.getClusters(),
+        ]);
+        if (mounted && dRes.success && dRes.data) setDashboard(dRes.data);
+        if (mounted && fRes.success && fRes.data) setForecast(fRes.data);
+        if (mounted && cRes.success && cRes.data) setClusters(cRes.data);
+      } catch {
+        // Keep fallback data
+      }
+    }
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -175,20 +201,20 @@ export default function AdminDashboardPage() {
         <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Total Students</span>
+              <span className="text-xs font-medium text-muted-foreground">Tổng Sinh Viên Nội Trú</span>
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-[#1F5CA9] dark:bg-blue-950/60 dark:text-blue-400">
                 <Users className="h-4.5 w-4.5" />
               </div>
             </div>
             <div className="mt-2.5">
               <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-                1,840
+                {dashboard ? dashboard.total_students : 12}
               </span>
               <div className="flex items-center gap-1.5 mt-1 text-xs">
                 <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center">
-                  <ArrowUpRight className="h-3 w-3" /> +12%
+                  <ArrowUpRight className="h-3 w-3" /> {dashboard ? `${dashboard.total_buildings} tòa nhà` : "3 tòa nhà"}
                 </span>
-                <span className="text-muted-foreground">so với kỳ trước</span>
+                <span className="text-muted-foreground">• {dashboard ? `${dashboard.total_rooms} phòng ở` : "6 phòng"}</span>
               </div>
             </div>
           </CardContent>
@@ -198,7 +224,7 @@ export default function AdminDashboardPage() {
         <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Room Occupancy Rate</span>
+              <span className="text-xs font-medium text-muted-foreground">Tỷ Lệ Lấp Đầy Giường</span>
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-[#00AFEF] dark:bg-sky-950/60 dark:text-sky-400">
                 <DoorOpen className="h-4.5 w-4.5" />
               </div>
@@ -206,14 +232,16 @@ export default function AdminDashboardPage() {
             <div className="mt-2.5">
               <div className="flex items-baseline justify-between">
                 <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-                  92%
+                  {dashboard ? `${dashboard.occupancy_rate}%` : "50%"}
                 </span>
-                <span className="text-xs text-muted-foreground">460 / 500 beds</span>
+                <span className="text-xs text-muted-foreground">
+                  {dashboard ? `${dashboard.total_occupancy} / ${dashboard.total_capacity} chỗ` : "12 / 24 giường"}
+                </span>
               </div>
               <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-2.5 overflow-hidden">
                 <div
                   className="bg-[#00AFEF] h-full rounded-full transition-all duration-500"
-                  style={{ width: "92%" }}
+                  style={{ width: `${dashboard ? dashboard.occupancy_rate : 50}%` }}
                 />
               </div>
             </div>
@@ -224,40 +252,39 @@ export default function AdminDashboardPage() {
         <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Pending Utility Bills</span>
+              <span className="text-xs font-medium text-muted-foreground">Tổng Công Nợ Chưa Thu</span>
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-[#FFB800] dark:bg-amber-950/60 dark:text-amber-400">
                 <Zap className="h-4.5 w-4.5" />
               </div>
             </div>
             <div className="mt-2.5">
-              <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-                24
+              <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+                {dashboard ? `${(dashboard.total_unpaid_debt / 1000000).toFixed(1)} tr đ` : "28.5 tr đ"}
               </span>
               <div className="flex items-center gap-1.5 mt-1 text-xs">
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200">
-                  Hạn chót 3 ngày
+                  student_utility_debts
                 </span>
-                <span className="text-muted-foreground">cần thu</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Card 4: Room Maintenance Requests */}
+        {/* Card 4: Total Power Consumed */}
         <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Maintenance Requests</span>
+              <span className="text-xs font-medium text-muted-foreground">Tổng Điện Năng Đã Dùng</span>
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-[#1F5CA9] dark:bg-slate-800 dark:text-blue-400">
                 <Wrench className="h-4.5 w-4.5" />
               </div>
             </div>
             <div className="mt-2.5">
-              <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-                3
+              <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+                {dashboard ? `${dashboard.total_power_kwh.toLocaleString("vi-VN")} kWh` : "34,504 kWh"}
               </span>
               <div className="flex items-center gap-1.5 mt-1 text-xs">
-                <span className="text-muted-foreground">yêu cầu chờ xử lý kỹ thuật</span>
+                <span className="text-muted-foreground">24 tháng chuỗi thời gian</span>
               </div>
             </div>
           </CardContent>

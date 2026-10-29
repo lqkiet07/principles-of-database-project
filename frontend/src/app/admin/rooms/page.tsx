@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDemoMode } from "@/lib/demo-context";
+import { api } from "@/lib/api";
 
 interface BedInfo {
   bedNumber: string;
@@ -166,6 +167,34 @@ export default function RoomsManagementPage() {
   const [filterStatus, setFilterStatus] = React.useState("all");
   const [aiSearchText, setAiSearchText] = React.useState("");
   const [aiActiveQuery, setAiActiveQuery] = React.useState<string | null>(null);
+  const [vectorScores, setVectorScores] = React.useState(roomVectorScores);
+  const [isSearchingAi, setIsSearchingAi] = React.useState(false);
+
+  const handleRunAiSearch = async (queryText: string) => {
+    if (!queryText.trim()) return;
+    setAiActiveQuery(queryText.trim());
+    setIsSearchingAi(true);
+    try {
+      const res = await api.semanticSearch(queryText.trim(), 6);
+      if (res.success && res.data) {
+        const newScores: Record<string, { similarity: number; distance: number; reason: string }> = { ...roomVectorScores };
+        res.data.forEach((item, idx) => {
+          // Map to mock room keys a201..a206
+          const mockKey = `a20${(idx % 6) + 1}`;
+          newScores[mockKey] = {
+            similarity: Math.round(item.similarity * 100),
+            distance: item.cosine_distance,
+            reason: `Phòng ${item.room_number} (${item.building_name}): ${item.description}`,
+          };
+        });
+        setVectorScores(newScores);
+      }
+    } catch {
+      // Keep static scores
+    } finally {
+      setIsSearchingAi(false);
+    }
+  };
 
   const filteredRooms = [...mockRooms]
     .filter((room) => {
@@ -177,8 +206,8 @@ export default function RoomsManagementPage() {
     })
     .sort((a, b) => {
       if (aiActiveQuery) {
-        const scoreA = roomVectorScores[a.id]?.similarity || 0;
-        const scoreB = roomVectorScores[b.id]?.similarity || 0;
+        const scoreA = vectorScores[a.id]?.similarity || 0;
+        const scoreB = vectorScores[b.id]?.similarity || 0;
         return scoreB - scoreA;
       }
       return 0;
@@ -344,7 +373,7 @@ export default function RoomsManagementPage() {
                 onChange={(e) => setAiSearchText(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && aiSearchText.trim()) {
-                    setAiActiveQuery(aiSearchText.trim());
+                    handleRunAiSearch(aiSearchText);
                   }
                 }}
                 className="h-8 pl-8 text-xs rounded-xl bg-white border-blue-200"
@@ -352,12 +381,13 @@ export default function RoomsManagementPage() {
             </div>
             <Button
               size="sm"
+              disabled={isSearchingAi}
               onClick={() => {
-                if (aiSearchText.trim()) setAiActiveQuery(aiSearchText.trim());
+                if (aiSearchText.trim()) handleRunAiSearch(aiSearchText);
               }}
               className="h-8 bg-[#1F5CA9] text-white hover:bg-[#184988] text-xs font-semibold rounded-xl"
             >
-              Tìm AI
+              {isSearchingAi ? "Đang tìm..." : "Tìm AI"}
             </Button>
             {aiActiveQuery && (
               <Button
@@ -379,15 +409,15 @@ export default function RoomsManagementPage() {
         <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pt-2 border-t border-blue-100/80 text-[11px]">
           <span className="text-muted-foreground">Gợi ý tìm kiếm:</span>
           {[
-            "Phòng cho sinh viên CNTT khóa 22",
-            "Phòng tầng 2 còn giường trống",
-            "Phòng 4 người giá 650k",
+            "Phòng nam tầng 1 ban công thoáng mát",
+            "Phòng nữ tầng 2 yên tĩnh gần thư viện",
+            "Phòng nam gần căng-tin và nhà xe",
           ].map((prompt) => (
             <button
               key={prompt}
               onClick={() => {
                 setAiSearchText(prompt);
-                setAiActiveQuery(prompt);
+                handleRunAiSearch(prompt);
               }}
               className="px-2 py-0.5 rounded-lg bg-white border border-blue-200 text-slate-700 hover:bg-blue-50 hover:text-[#1F5CA9] transition-colors"
             >
@@ -442,18 +472,18 @@ export default function RoomsManagementPage() {
                   </div>
 
                   {/* AI Vector Match Tag */}
-                  {aiActiveQuery && roomVectorScores[room.id] && (
+                  {aiActiveQuery && vectorScores[room.id] && (
                     <div className="mt-2.5 pt-2 border-t border-dashed border-blue-200/60 flex items-center justify-between text-[11px]">
                       <div className="flex items-center gap-1.5 text-[#1F5CA9] font-semibold">
                         <Sparkles className="h-3.5 w-3.5 text-[#00AFEF]" />
                         <span>
                           {isDemoMode
-                            ? `pgvector Cosine: ${roomVectorScores[room.id].distance} (Khớp ${roomVectorScores[room.id].similarity}%)`
-                            : `✨ Độ tương thích AI: ${roomVectorScores[room.id].similarity}%`}
+                            ? `pgvector Cosine: ${vectorScores[room.id].distance} (Khớp ${vectorScores[room.id].similarity}%)`
+                            : `✨ Độ tương thích AI: ${vectorScores[room.id].similarity}%`}
                         </span>
                       </div>
-                      <span className="text-[10px] text-slate-500 italic max-w-[180px] truncate" title={roomVectorScores[room.id].reason}>
-                        {roomVectorScores[room.id].reason}
+                      <span className="text-[10px] text-slate-500 italic max-w-[180px] truncate" title={vectorScores[room.id].reason}>
+                        {vectorScores[room.id].reason}
                       </span>
                     </div>
                   )}
