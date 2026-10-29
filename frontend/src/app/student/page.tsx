@@ -861,7 +861,7 @@ export default function StudentPortalPage() {
                 <div className="flex items-baseline justify-between pt-1">
                   <div>
                     <span className="text-xs text-sky-100 block">Số dư khả dụng</span>
-                    <span className="text-2xl font-black">{studentWallet.toLocaleString("vi-VN")} đ</span>
+                    <span className="text-2xl font-bold tabular-nums font-mono">{studentWallet.toLocaleString("vi-VN")} đ</span>
                   </div>
                   <div className="flex gap-1.5">
                     {[200000, 500000, 1000000].map((amt) => (
@@ -882,7 +882,7 @@ export default function StudentPortalPage() {
               </div>
 
               {/* Current Unpaid Split Debt Card */}
-              <div className="rounded-2xl border-2 border-amber-300 bg-amber-50/40 p-4 space-y-3">
+              <div className="rounded-2xl border border-amber-300/80 bg-amber-50/40 p-4 space-y-3 shadow-xs">
                 <div className="flex items-center justify-between">
                   <Badge className="bg-[#FFB800] text-amber-950 text-[10px] font-bold px-2 py-0.5">
                     Hóa đơn T10/2026 (Phòng B.402)
@@ -893,12 +893,12 @@ export default function StudentPortalPage() {
                 <div className="rounded-xl bg-white/80 p-2.5 border border-amber-200 text-xs space-y-1">
                   <div className="flex justify-between text-slate-600">
                     <span>Hóa đơn phòng tổng (2 người):</span>
-                    <span className="font-bold text-slate-900">690.000 đ</span>
+                    <span className="font-bold text-slate-900 tabular-nums font-mono">690.000 đ</span>
                   </div>
                   <div className="flex justify-between items-baseline pt-1 border-t border-slate-100">
                     <span className="font-bold text-[#1F5CA9]">Công nợ của bạn (student_utility_debts):</span>
-                    <span className={`text-xl font-extrabold ${studentDebtPaid ? "text-emerald-600" : "text-[#1F5CA9]"}`}>
-                      {studentDebtPaid ? "ĐÃ NỘP (0 đ)" : "345.000 đ"}
+                    <span className={`text-xl font-extrabold tabular-nums font-mono ${studentDebtPaid ? "text-emerald-600" : "text-[#1F5CA9]"}`}>
+                      {studentDebtPaid ? "ĐÃ NỘP (0 đ)" : `${currentDebt.amount.toLocaleString("vi-VN")} đ`}
                     </span>
                   </div>
                 </div>

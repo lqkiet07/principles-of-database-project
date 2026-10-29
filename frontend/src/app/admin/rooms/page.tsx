@@ -215,31 +215,31 @@ export default function RoomsManagementPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header section matching Figma */}
+      {/* Header section */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-            Room & Bed Management
+            Quản trị Phòng & Giường ở
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            4-6 bed student rooms. Manage spaces, beds, and resident history.
+            Theo dõi danh mục phòng 4-6 chỗ, sức chứa thực tế và lịch sử cư trú của sinh viên.
           </p>
         </div>
         <div className="flex items-center gap-2.5">
           <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl text-xs font-medium">
             <Download className="h-3.5 w-3.5" />
-            <span>Quick Export</span>
+            <span>Xuất danh sách</span>
           </Button>
           <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl text-xs font-medium">
             <ArrowRightLeft className="h-3.5 w-3.5 text-[#00AFEF]" />
-            <span>Transfer Student</span>
+            <span>Chuyển phòng SV</span>
           </Button>
           <Button
             size="sm"
             className="h-9 gap-1.5 rounded-xl text-xs font-medium bg-[#1F5CA9] text-white hover:bg-[#1a4f91] shadow-sm"
           >
             <Plus className="h-4 w-4" />
-            <span>Add Room</span>
+            <span>Thêm phòng mới</span>
           </Button>
         </div>
       </div>
@@ -427,7 +427,7 @@ export default function RoomsManagementPage() {
         </div>
       </Card>
 
-      {/* Visual Room Grid matching Figma */}
+      {/* Visual Room Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredRooms.map((room) => {
           const occupancyRate = (room.occupiedBeds / room.totalBeds) * 100;

@@ -175,27 +175,27 @@ export function SidebarNav({ collapsed, onToggle }: SidebarNavProps) {
         </nav>
       </ScrollArea>
 
-      {/* Footer Support Card (Matches Figma) */}
+      {/* Footer Support Card */}
       {!collapsed ? (
         <div className="p-3 border-t border-sidebar-border">
-          <div className="rounded-xl bg-gradient-to-br from-[#F0F9FF] to-[#E0F2FE] dark:from-slate-800 dark:to-slate-900 p-3.5 border border-sky-100 dark:border-slate-700">
+          <div className="rounded-xl bg-slate-50 dark:bg-slate-800/80 p-3.5 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-2 mb-1.5">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#00AFEF] text-white">
                 <HelpCircle className="h-4 w-4" />
               </div>
               <span className="text-xs font-semibold text-slate-800 dark:text-slate-100">
-                A little help?
+                Hỗ trợ kỹ thuật
               </span>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mb-2.5">
-              Got tightly stuck? Don&apos;t worry, reaching out to support.
+              Cần giải đáp nghiệp vụ KTX? Liên hệ quản trị viên.
             </p>
             <Button
               size="sm"
               variant="outline"
-              className="w-full text-xs font-medium h-7 bg-white dark:bg-slate-800 border-sky-200 text-[#1F5CA9] hover:bg-sky-50 shadow-none"
+              className="w-full text-xs font-medium h-7 bg-white dark:bg-slate-800 border-slate-200 text-[#1F5CA9] hover:bg-slate-50 shadow-none"
             >
-              Contact support
+              Liên hệ quản lý
             </Button>
           </div>
 

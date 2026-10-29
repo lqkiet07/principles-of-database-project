@@ -412,13 +412,13 @@ export default function BillingPage() {
         <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Total Collected This Month</span>
+              <span className="text-xs font-medium text-muted-foreground">Tổng tiền đã thu trong tháng</span>
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-[#1F5CA9] dark:bg-blue-950/60 dark:text-blue-400">
                 <CreditCard className="h-4.5 w-4.5" />
               </div>
             </div>
             <div className="mt-3">
-              <span className="text-2xl lg:text-3xl font-extrabold tracking-tight text-[#1F5CA9]">
+              <span className="text-2xl lg:text-3xl font-extrabold tracking-tight text-[#1F5CA9] tabular-nums font-mono">
                 {formatCurrency(totalCollected)}
               </span>
               <div className="flex items-center justify-between text-xs mt-2 text-muted-foreground">
@@ -432,12 +432,12 @@ export default function BillingPage() {
           </CardContent>
         </Card>
 
-        {/* Widget 2: Overdue Bills (Yellow alert #FFB800) */}
-        <Card className="rounded-2xl border-amber-200/80 bg-gradient-to-br from-white to-amber-50/30 dark:from-slate-900 dark:to-slate-800 shadow-sm hover:shadow-md transition-shadow">
+        {/* Widget 2: Overdue Bills */}
+        <Card className="rounded-2xl border-amber-200/80 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-amber-900 dark:text-amber-200">
-                Overdue Bills (Chưa nộp)
+                Hóa đơn chưa thanh toán
               </span>
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-[#B45309] dark:bg-amber-950/80 dark:text-amber-400">
                 <AlertCircle className="h-4.5 w-4.5" />
@@ -445,10 +445,10 @@ export default function BillingPage() {
             </div>
             <div className="mt-3">
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-extrabold tracking-tight text-[#B45309]">
+                <span className="text-3xl font-extrabold tracking-tight text-[#B45309] tabular-nums font-mono">
                   {overdueCount} phòng
                 </span>
-                <span className="text-xs font-semibold text-slate-500">
+                <span className="text-xs font-semibold text-slate-500 tabular-nums font-mono">
                   ({formatCurrency(totalUnpaid)})
                 </span>
               </div>
@@ -466,7 +466,7 @@ export default function BillingPage() {
         <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Water/Power Usage Rate</span>
+              <span className="text-xs font-medium text-muted-foreground">Sản lượng điện nước tiêu thụ</span>
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-[#00AFEF] dark:bg-sky-950/60 dark:text-sky-400">
                 <TrendingUp className="h-4.5 w-4.5" />
               </div>
@@ -475,16 +475,16 @@ export default function BillingPage() {
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
                   <Zap className="h-3.5 w-3.5 text-[#1F5CA9]" />
-                  <span>Điện: 19.800 kWh</span>
+                  <span>Điện: <strong className="tabular-nums font-mono">19.800 kWh</strong></span>
                 </div>
-                <span className="text-emerald-600 font-semibold">+6.4% kỳ trước</span>
+                <span className="text-emerald-600 font-semibold tabular-nums font-mono">+6.4%</span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
                   <Droplets className="h-3.5 w-3.5 text-[#00AFEF]" />
-                  <span>Nước: 5.600 m³</span>
+                  <span>Nước: <strong className="tabular-nums font-mono">5.600 m³</strong></span>
                 </div>
-                <span className="text-emerald-600 font-semibold">+2.1% kỳ trước</span>
+                <span className="text-emerald-600 font-semibold tabular-nums font-mono">+2.1%</span>
               </div>
               <p className="text-[11px] text-muted-foreground pt-1 border-t border-slate-100 dark:border-slate-800">
                 Đơn giá chuẩn: 3.000 đ/kWh • 12.000 đ/m³

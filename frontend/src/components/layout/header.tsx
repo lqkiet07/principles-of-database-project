@@ -24,12 +24,12 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-white/80 dark:bg-slate-900/80 px-6 backdrop-blur-md">
-      {/* Search Bar matching Figma rounded-full */}
+      {/* Global Search Bar */}
       <div className="relative w-full max-w-md">
         <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="search"
-          placeholder="Search students, rooms, or bills..."
+          placeholder="Tìm kiếm sinh viên, số phòng, hoặc hóa đơn..."
           className="h-10 w-full rounded-full bg-slate-50 dark:bg-slate-800/80 pl-10 pr-4 text-sm border-slate-200 dark:border-slate-700 focus-visible:ring-[#1F5CA9]"
         />
       </div>
