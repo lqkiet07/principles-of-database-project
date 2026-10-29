@@ -537,47 +537,57 @@ export default function StudentPortalPage() {
                         </span>
                       </div>
                     </div>
-                    <Badge className="bg-[#FEF3C7] text-[#B45309] border border-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      Hạn chót: 25/10 (1 ngày)
-                    </Badge>
+                    {studentDebtPaid ? (
+                      <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        Đã thanh toán (0 đ)
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-[#FEF3C7] text-[#B45309] border border-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        Chưa thanh toán
+                      </Badge>
+                    )}
                   </div>
 
                   {/* Amount Display */}
                   <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3 border border-slate-100 dark:border-slate-800">
-                    <div className="text-xs text-muted-foreground mb-0.5">Số tiền bạn cần nộp (1/4 phòng):</div>
+                    <div className="text-xs text-muted-foreground mb-0.5">Số tiền bạn cần nộp (student_utility_debts):</div>
                     <div className="flex items-baseline justify-between">
-                      <span className="text-2xl font-extrabold text-[#1F5CA9] dark:text-sky-400">
-                        345.000 đ
+                      <span className={`text-2xl font-extrabold ${studentDebtPaid ? "text-emerald-600 dark:text-emerald-400" : "text-[#1F5CA9] dark:text-sky-400"}`}>
+                        {studentDebtPaid ? "0 đ (Đã tất toán)" : `${currentDebt.amount.toLocaleString("vi-VN")} đ`}
                       </span>
                       <span className="text-[11px] text-slate-500 font-medium">
-                        Tổng phòng: 1.380.000 đ
+                        Phòng: B1-101 (2 SV)
                       </span>
                     </div>
 
                     {/* Sub-item details */}
                     <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700 text-[10px]">
                       <div>
-                        <span className="text-muted-foreground block">Điện (45 kWh)</span>
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">135.000 đ</span>
+                        <span className="text-muted-foreground block">Điện lũy tiến</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">200.000 đ</span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground block">Nước (14 m³)</span>
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">110.000 đ</span>
+                        <span className="text-muted-foreground block">Nước sạch</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">125.000 đ</span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground block">Rác & Wifi</span>
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">100.000 đ</span>
+                        <span className="text-muted-foreground block">Dịch vụ & Wifi</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">50.000 đ</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Prominent Friendly CTA Button */}
                   <Button
-                    onClick={() => setIsQrModalOpen(true)}
-                    className="w-full h-11 rounded-2xl font-bold text-sm bg-[#1F5CA9] hover:bg-[#184988] text-white shadow-md shadow-blue-800/25 flex items-center justify-center gap-2 group transition-all cursor-pointer"
+                    onClick={() => setActiveTab("bills")}
+                    className={`w-full h-11 rounded-2xl font-bold text-sm text-white shadow-md flex items-center justify-center gap-2 group transition-all cursor-pointer ${
+                      studentDebtPaid
+                        ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-800/25"
+                        : "bg-[#1F5CA9] hover:bg-[#184988] shadow-blue-800/25"
+                    }`}
                   >
                     <QrCode className="h-4.5 w-4.5 group-hover:scale-110 transition-transform" />
-                    <span>Thanh toán qua QR VNPay</span>
+                    <span>{studentDebtPaid ? "Xem biên lai thanh toán (SP2)" : "Thanh toán ngay qua Ví KTX"}</span>
                   </Button>
                 </div>
               </div>
