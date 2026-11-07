@@ -47,9 +47,11 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { api } from "@/lib/api";
 
 interface Contract {
   id: string;
+  assignmentId?: number;
   contractNumber: string;
   studentName: string;
   studentCode: string;
@@ -194,12 +196,53 @@ export default function ContractsPage() {
   const [newContractForm, setNewContractForm] = React.useState({
     studentName: "",
     studentCode: "",
-    room: "A.302",
-    building: "Tòa A",
+    room: "B1-101",
+    building: "Tòa B1",
     durationMonths: "10",
-    monthlyRent: 450000,
+    monthlyRent: 300000,
     depositAmount: 1000000,
   });
+
+  const loadRealContracts = React.useCallback(async () => {
+    try {
+      const res = await api.getAssignments();
+      if (res.success && res.data && res.data.length > 0) {
+        const mapped: Contract[] = res.data.map((a) => {
+          const initials = a.full_name
+            .split(" ")
+            .slice(-2)
+            .map((w) => w[0])
+            .join("")
+            .toUpperCase();
+          return {
+            id: `HD-${a.assignment_id}`,
+            assignmentId: a.assignment_id,
+            contractNumber: `HĐ-CTU-${String(a.assignment_id).padStart(4, "0")}`,
+            studentName: a.full_name,
+            studentCode: a.student_id,
+            avatarText: initials || "SV",
+            room: `${a.room_number} (Giường ${a.bed_number})`,
+            building: `Tòa ${a.building_id}`,
+            startDate: a.start_date,
+            endDate: a.end_date || "30/06/2027",
+            daysRemaining: a.is_active ? 240 : 0,
+            monthlyRent: Math.round(a.base_price / Math.max(1, a.capacity)),
+            depositAmount: 1000000,
+            depositStatus: "paid",
+            status: a.is_active ? "active" : "terminated",
+            roomType: `Tiêu chuẩn ${a.capacity} người (${a.building_name})`,
+          };
+        });
+        setContracts(mapped);
+      }
+    } catch {
+      // Keep fallback contracts
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadRealContracts();
+  }, [loadRealContracts]);
 
   // Filter
   const filteredContracts = React.useMemo(() => {
@@ -250,8 +293,18 @@ export default function ContractsPage() {
     setIsTerminateModalOpen(true);
   };
 
-  const handleConfirmTerminate = () => {
+  const handleConfirmTerminate = async () => {
     if (!terminateTargetContract) return;
+    if (terminateTargetContract.assignmentId) {
+      try {
+        await api.checkoutAssignment(terminateTargetContract.assignmentId);
+        await loadRealContracts();
+        setIsTerminateModalOpen(false);
+        return;
+      } catch {
+        // Fallback to local state update
+      }
+    }
     setContracts((prev) =>
       prev.map((c) =>
         c.id === terminateTargetContract.id
@@ -489,9 +542,9 @@ export default function ContractsPage() {
                   className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-800 shadow-sm"
                 >
                   <option value="all">Tất cả tòa</option>
-                  <option value="Tòa A">Tòa A</option>
-                  <option value="Tòa B">Tòa B</option>
-                  <option value="Tòa C">Tòa C</option>
+                  <option value="Tòa B1">Tòa B1</option>
+                  <option value="Tòa B2">Tòa B2</option>
+                  <option value="Tòa B3">Tòa B3</option>
                 </select>
               </div>
             </div>

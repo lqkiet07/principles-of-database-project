@@ -60,6 +60,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { api } from "@/lib/api";
 
 interface Student {
   id: string;
@@ -272,17 +273,66 @@ export default function StudentsPage() {
     name: "",
     studentCode: "",
     gender: "Nam" as "Nam" | "Nữ",
-    faculty: "Công nghệ thông tin",
-    cohort: "K69",
-    building: "Tòa A",
-    room: "A.302",
-    bed: "A1",
+    faculty: "Kỹ thuật Phần mềm",
+    cohort: "K47",
+    building: "Tòa B1",
+    room: "B1-101",
+    bed: "G1",
     phone: "",
     email: "",
     idCard: "",
     hometown: "",
     priorityCategory: "Bình thường" as "Bình thường" | "Hộ nghèo" | "Con thương binh" | "Dân tộc",
   });
+
+  React.useEffect(() => {
+    let mounted = true;
+    async function loadStudents() {
+      try {
+        const res = await api.getStudents();
+        if (mounted && res.success && res.data && res.data.length > 0) {
+          const mapped: Student[] = res.data.map((s, idx) => {
+            const initials = s.full_name
+              .split(" ")
+              .slice(-2)
+              .map((w) => w[0])
+              .join("")
+              .toUpperCase();
+            return {
+              id: s.student_id,
+              name: s.full_name,
+              studentCode: s.student_id,
+              avatarText: initials || "SV",
+              gender: s.gender === "FEMALE" ? "Nữ" : "Nam",
+              faculty: s.major || "Công nghệ thông tin",
+              cohort: `K${s.cohort || 47}`,
+              building: s.building_id ? `Tòa ${s.building_id}` : "Chưa xếp",
+              room: s.room_number || "Chưa xếp",
+              bed: s.bed_number ? `G0${s.bed_number}` : "—",
+              phone: s.phone || "0901.000.000",
+              email: s.email,
+              idCard: `0922030010${String(idx + 1).padStart(2, "0")}`,
+              hometown: "Cần Thơ",
+              priorityCategory: "Bình thường",
+              feeStatus: s.unpaid_debt > 0 ? "unpaid" : "paid",
+              feeAmount: s.unpaid_debt,
+              disciplineStatus: s.late_count > 20 ? "warned" : "clean",
+              checkInDate: s.start_date || "01/09/2024",
+              cardActive: s.status === "ACTIVE",
+              rfidCard: `RFID-CTU-${s.student_id}`,
+            };
+          });
+          setStudents(mapped);
+        }
+      } catch {
+        // Keep fallback students
+      }
+    }
+    loadStudents();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Filter logic
   const filteredStudents = React.useMemo(() => {
@@ -589,9 +639,9 @@ export default function StudentsPage() {
                   className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#1F5CA9] dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
                 >
                   <option value="all">Tất cả các tòa</option>
-                  <option value="Tòa A">Tòa A (Nam)</option>
-                  <option value="Tòa B">Tòa B (Nữ)</option>
-                  <option value="Tòa C">Tòa C (Chất lượng cao)</option>
+                  <option value="Tòa B1">Tòa B1 (Nam)</option>
+                  <option value="Tòa B2">Tòa B2 (Nam)</option>
+                  <option value="Tòa B3">Tòa B3 (Nữ)</option>
                 </select>
               </div>
 
@@ -605,10 +655,9 @@ export default function StudentsPage() {
                   className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#1F5CA9] dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
                 >
                   <option value="all">Tất cả khóa</option>
-                  <option value="K69">K69 (Năm 1)</option>
-                  <option value="K68">K68 (Năm 2)</option>
-                  <option value="K67">K67 (Năm 3)</option>
-                  <option value="K66">K66 (Năm 4)</option>
+                  <option value="K47">K47</option>
+                  <option value="K48">K48</option>
+                  <option value="K49">K49</option>
                 </select>
               </div>
 

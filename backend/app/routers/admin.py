@@ -23,6 +23,18 @@ router = APIRouter(
 )
 
 
+@router.get("/bills", response_model=ApiResponse[list])
+async def list_bills(
+    month_year: str | None = Query(None),
+    status_filter: str | None = Query(None, alias="status"),
+    limit: int = Query(100, ge=1, le=500),
+):
+    data = await admin_service.get_bills_list(
+        month_year=month_year, status=status_filter, limit=limit
+    )
+    return ApiResponse(data=data)
+
+
 @router.post(
     "/bills",
     response_model=ApiResponse[GenerateBillOut],
@@ -72,6 +84,18 @@ async def list_rooms(
     return ApiResponse(data=data)
 
 
+@router.get("/students", response_model=ApiResponse[list])
+async def list_students():
+    data = await admin_service.get_students_list()
+    return ApiResponse(data=data)
+
+
+@router.get("/assignments", response_model=ApiResponse[list])
+async def list_assignments():
+    data = await admin_service.get_assignments_list()
+    return ApiResponse(data=data)
+
+
 @router.post(
     "/assignments",
     response_model=ApiResponse[AssignmentOut],
@@ -80,6 +104,15 @@ async def list_rooms(
 async def create_assignment(payload: AssignmentIn):
     data = await room_service.assign_student(payload)
     return ApiResponse(message="Xếp chỗ lưu trú thành công", data=data)
+
+
+@router.post("/demo/reset", response_model=ApiResponse[dict])
+async def reset_demo():
+    data = await admin_service.reset_demo_checkpoints()
+    return ApiResponse(
+        message="Đã khởi tạo lại dữ liệu kịch bản Demo (kỳ 2026-11) thành công",
+        data=data,
+    )
 
 
 @router.delete("/assignments/{assignment_id}", response_model=ApiResponse[dict])

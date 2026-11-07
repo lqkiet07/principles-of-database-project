@@ -39,6 +39,9 @@ interface BedInfo {
 
 interface RoomInfo {
   id: string;
+  roomId: number;
+  buildingId: string;
+  floor: string;
   roomNumber: string;
   type: string;
   gender: "Nam" | "Nữ";
@@ -46,104 +49,127 @@ interface RoomInfo {
   occupiedBeds: number;
   status: "Full" | "Available" | "Maintenance";
   price: string;
+  description: string;
   beds: BedInfo[];
 }
 
 const mockRooms: RoomInfo[] = [
   {
-    id: "a201",
-    roomNumber: "Phòng A.201",
-    type: "Phòng 4 giường",
-    gender: "Nam",
-    totalBeds: 4,
-    occupiedBeds: 4,
-    status: "Full",
-    price: "650.000 đ/tháng",
-    beds: [
-      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Nguyễn Văn An", studentId: "21020001", checkInDate: "01/09/2026" },
-      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Trần Minh Quân", studentId: "21020002", checkInDate: "01/09/2026" },
-      { bedNumber: "G03", isOccupied: true, status: "occupied", studentName: "Phạm Quốc Tuấn", studentId: "21020003", checkInDate: "05/09/2026" },
-      { bedNumber: "G04", isOccupied: true, status: "occupied", studentName: "Hoàng Minh Trí", studentId: "21020004", checkInDate: "01/09/2026" },
-    ],
-  },
-  {
-    id: "a202",
-    roomNumber: "Phòng A.202",
-    type: "Phòng 4 giường",
-    gender: "Nam",
-    totalBeds: 4,
-    occupiedBeds: 3,
-    status: "Available",
-    price: "650.000 đ/tháng",
-    beds: [
-      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Lê Văn Hùng", studentId: "22020015", checkInDate: "01/09/2026" },
-      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Đặng Tiến Dũng", studentId: "22020016", checkInDate: "02/09/2026" },
-      { bedNumber: "G03", isOccupied: true, status: "occupied", studentName: "Vũ Hải Đăng", studentId: "22020017", checkInDate: "03/09/2026" },
-      { bedNumber: "G04", isOccupied: false, status: "empty" },
-    ],
-  },
-  {
-    id: "a203",
-    roomNumber: "Phòng A.203",
-    type: "Phòng 6 giường",
-    gender: "Nam",
-    totalBeds: 6,
-    occupiedBeds: 4,
-    status: "Available",
-    price: "500.000 đ/tháng",
-    beds: [
-      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Trịnh Thăng Long", studentId: "23020041", checkInDate: "01/09/2026" },
-      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Đỗ Xuân Bách", studentId: "23020042", checkInDate: "01/09/2026" },
-      { bedNumber: "G03", isOccupied: false, status: "empty" },
-      { bedNumber: "G04", isOccupied: true, status: "occupied", studentName: "Bùi Anh Tuấn", studentId: "23020043", checkInDate: "04/09/2026" },
-      { bedNumber: "G05", isOccupied: true, status: "occupied", studentName: "Ngô Quang Huy", studentId: "23020044", checkInDate: "04/09/2026" },
-      { bedNumber: "G06", isOccupied: false, status: "empty" },
-    ],
-  },
-  {
-    id: "a204",
-    roomNumber: "Phòng A.204",
+    id: "B1-101",
+    roomId: 1,
+    buildingId: "B1",
+    floor: "1",
+    roomNumber: "Phòng B1-101",
     type: "Phòng 4 giường",
     gender: "Nam",
     totalBeds: 4,
     occupiedBeds: 2,
-    status: "Maintenance",
-    price: "650.000 đ/tháng",
-    beds: [
-      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Cao Bá Quát", studentId: "21020088", checkInDate: "01/09/2026" },
-      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Lý Thường Kiệt", studentId: "21020089", checkInDate: "01/09/2026" },
-      { bedNumber: "G03", isOccupied: false, status: "maintenance" },
-      { bedNumber: "G04", isOccupied: false, status: "maintenance" },
-    ],
-  },
-  {
-    id: "a205",
-    roomNumber: "Phòng A.205",
-    type: "Phòng 4 giường",
-    gender: "Nam",
-    totalBeds: 4,
-    occupiedBeds: 4,
-    status: "Full",
-    price: "650.000 đ/tháng",
-    beds: [
-      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Nguyễn Du", studentId: "22020101", checkInDate: "01/09/2026" },
-      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Hồ Xuân Hương", studentId: "22020102", checkInDate: "01/09/2026" },
-      { bedNumber: "G03", isOccupied: true, status: "occupied", studentName: "Nguyễn Trãi", studentId: "22020103", checkInDate: "01/09/2026" },
-      { bedNumber: "G04", isOccupied: true, status: "occupied", studentName: "Chu Văn An", studentId: "22020104", checkInDate: "01/09/2026" },
-    ],
-  },
-  {
-    id: "a206",
-    roomNumber: "Phòng A.206",
-    type: "Phòng 4 giường",
-    gender: "Nam",
-    totalBeds: 4,
-    occupiedBeds: 1,
     status: "Available",
-    price: "650.000 đ/tháng",
+    price: "1.200.000 đ/tháng",
+    description: "Phòng nam tầng 1, ban công thoáng mát gần căng-tin",
     beds: [
-      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Phan Bội Châu", studentId: "24020050", checkInDate: "10/09/2026" },
-      { bedNumber: "G02", isOccupied: false, status: "empty" },
+      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Nguyễn Văn An", studentId: "B2100001", checkInDate: "01/09/2026" },
+      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Trần Minh Bảo", studentId: "B2100002", checkInDate: "01/09/2026" },
+      { bedNumber: "G03", isOccupied: false, status: "empty" },
+      { bedNumber: "G04", isOccupied: false, status: "empty" },
+    ],
+  },
+  {
+    id: "B1-102",
+    roomId: 2,
+    buildingId: "B1",
+    floor: "1",
+    roomNumber: "Phòng B1-102",
+    type: "Phòng 4 giường",
+    gender: "Nam",
+    totalBeds: 4,
+    occupiedBeds: 2,
+    status: "Available",
+    price: "1.200.000 đ/tháng",
+    description: "Phòng nam tầng 1, hướng đông nắng sớm yên tĩnh",
+    beds: [
+      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Lê Quốc Cường", studentId: "B2100003", checkInDate: "01/09/2026" },
+      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Võ Hoàng Dung", studentId: "B2100004", checkInDate: "02/09/2026" },
+      { bedNumber: "G03", isOccupied: false, status: "empty" },
+      { bedNumber: "G04", isOccupied: false, status: "empty" },
+    ],
+  },
+  {
+    id: "B2-201",
+    roomId: 3,
+    buildingId: "B2",
+    floor: "2",
+    roomNumber: "Phòng B2-201",
+    type: "Phòng 4 giường",
+    gender: "Nam",
+    totalBeds: 4,
+    occupiedBeds: 2,
+    status: "Available",
+    price: "1.400.000 đ/tháng",
+    description: "Phòng nam tầng 2 chất lượng cao, có máy lạnh và bàn học riêng",
+    beds: [
+      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Phạm Gia Huy", studentId: "B2100005", checkInDate: "01/09/2026" },
+      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Đặng Minh Khôi", studentId: "B2100006", checkInDate: "01/09/2026" },
+      { bedNumber: "G03", isOccupied: false, status: "empty" },
+      { bedNumber: "G04", isOccupied: false, status: "empty" },
+    ],
+  },
+  {
+    id: "B2-202",
+    roomId: 4,
+    buildingId: "B2",
+    floor: "2",
+    roomNumber: "Phòng B2-202",
+    type: "Phòng 4 giường",
+    gender: "Nam",
+    totalBeds: 4,
+    occupiedBeds: 2,
+    status: "Available",
+    price: "1.400.000 đ/tháng",
+    description: "Phòng nam tầng 2 yên tĩnh cho sinh viên CNTT học nhóm đêm",
+    beds: [
+      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Bùi Tuấn Kiệt", studentId: "B2100007", checkInDate: "01/09/2026" },
+      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Ngô Thành Long", studentId: "B2100008", checkInDate: "01/09/2026" },
+      { bedNumber: "G03", isOccupied: false, status: "empty" },
+      { bedNumber: "G04", isOccupied: false, status: "empty" },
+    ],
+  },
+  {
+    id: "B3-301",
+    roomId: 5,
+    buildingId: "B3",
+    floor: "3",
+    roomNumber: "Phòng B3-301",
+    type: "Phòng 4 giường",
+    gender: "Nữ",
+    totalBeds: 4,
+    occupiedBeds: 2,
+    status: "Available",
+    price: "1.300.000 đ/tháng",
+    description: "Phòng nữ tầng 3 thoáng mát, gần thư viện tự học",
+    beds: [
+      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Huỳnh Ngọc Ánh", studentId: "B2100009", checkInDate: "01/09/2026" },
+      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Đỗ Thúy Hiền", studentId: "B2100010", checkInDate: "01/09/2026" },
+      { bedNumber: "G03", isOccupied: false, status: "empty" },
+      { bedNumber: "G04", isOccupied: false, status: "empty" },
+    ],
+  },
+  {
+    id: "B3-302",
+    roomId: 6,
+    buildingId: "B3",
+    floor: "3",
+    roomNumber: "Phòng B3-302",
+    type: "Phòng 4 giường",
+    gender: "Nữ",
+    totalBeds: 4,
+    occupiedBeds: 2,
+    status: "Available",
+    price: "1.300.000 đ/tháng",
+    description: "Phòng nữ tầng 3 ban công hướng hồ nước mát mẻ",
+    beds: [
+      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Lý Thanh Thảo", studentId: "B2100011", checkInDate: "10/09/2026" },
+      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Trương Mỹ Trâm", studentId: "B2100012", checkInDate: "10/09/2026" },
       { bedNumber: "G03", isOccupied: false, status: "empty" },
       { bedNumber: "G04", isOccupied: false, status: "empty" },
     ],
@@ -151,24 +177,89 @@ const mockRooms: RoomInfo[] = [
 ];
 
 const roomVectorScores: Record<string, { similarity: number; distance: number; reason: string }> = {
-  a202: { similarity: 96, distance: 0.042, reason: "Phòng 4 giường, 3 sinh viên CNTT khóa 22, còn 1 giường trống" },
-  a203: { similarity: 88, distance: 0.125, reason: "Phòng 6 giường, còn 2 giường trống, không khí hòa đồng" },
-  a206: { similarity: 82, distance: 0.184, reason: "Phòng 4 giường, còn 3 giường trống yên tĩnh" },
-  a201: { similarity: 71, distance: 0.291, reason: "Phòng 4 giường đã kín chỗ (4/4)" },
-  a205: { similarity: 65, distance: 0.352, reason: "Phòng 4 giường đã kín chỗ (4/4)" },
-  a204: { similarity: 50, distance: 0.501, reason: "Phòng đang có 2 giường bảo trì" },
+  "B1-101": { similarity: 82, distance: 0.18, reason: "Phòng nam tầng 1, ban công thoáng mát gần căng-tin" },
+  "B1-102": { similarity: 78, distance: 0.22, reason: "Phòng nam tầng 1, hướng đông nắng sớm yên tĩnh" },
+  "B2-201": { similarity: 74, distance: 0.26, reason: "Phòng nam tầng 2 chất lượng cao" },
+  "B2-202": { similarity: 88, distance: 0.12, reason: "Phòng nam tầng 2 yên tĩnh cho sinh viên CNTT" },
+  "B3-301": { similarity: 85, distance: 0.15, reason: "Phòng nữ tầng 3 thoáng mát, gần thư viện" },
+  "B3-302": { similarity: 76, distance: 0.24, reason: "Phòng nữ tầng 3 ban công hướng hồ nước" },
 };
 
 export default function RoomsManagementPage() {
   const { isDemoMode } = useDemoMode();
-  const [selectedBuilding, setSelectedBuilding] = React.useState("A");
-  const [selectedFloor, setSelectedFloor] = React.useState("2");
+  const [rooms, setRooms] = React.useState<RoomInfo[]>(mockRooms);
+  const [selectedBuilding, setSelectedBuilding] = React.useState("ALL");
+  const [selectedFloor, setSelectedFloor] = React.useState("ALL");
   const [searchQuery, setSearchQuery] = React.useState("");
   const [filterStatus, setFilterStatus] = React.useState("all");
   const [aiSearchText, setAiSearchText] = React.useState("");
   const [aiActiveQuery, setAiActiveQuery] = React.useState<string | null>(null);
   const [vectorScores, setVectorScores] = React.useState(roomVectorScores);
   const [isSearchingAi, setIsSearchingAi] = React.useState(false);
+
+  React.useEffect(() => {
+    let mounted = true;
+    async function fetchRealRooms() {
+      try {
+        const res = await api.getRooms();
+        if (mounted && res.success && res.data && res.data.length > 0) {
+          const mapped: RoomInfo[] = res.data.map((r) => {
+            const occMap = new Map(
+              (r.occupants || []).map((o) => [Number(o.bed_number), o])
+            );
+            const beds: BedInfo[] = [];
+            for (let b = 1; b <= r.capacity; b++) {
+              const occ = occMap.get(b);
+              if (occ) {
+                beds.push({
+                  bedNumber: `G0${b}`,
+                  isOccupied: true,
+                  status: "occupied",
+                  studentName: occ.full_name,
+                  studentId: occ.student_id,
+                  checkInDate: occ.start_date,
+                });
+              } else {
+                beds.push({
+                  bedNumber: `G0${b}`,
+                  isOccupied: false,
+                  status: r.status === "MAINTENANCE" ? "maintenance" : "empty",
+                });
+              }
+            }
+            const floorPart = r.room_number.split("-")[1]?.[0] || "1";
+            return {
+              id: r.room_number,
+              roomId: r.room_id,
+              buildingId: r.building_id,
+              floor: floorPart,
+              roomNumber: `Phòng ${r.room_number}`,
+              type: `Phòng ${r.capacity} giường (${r.building_name})`,
+              gender: r.gender_zone === "FEMALE" ? "Nữ" : "Nam",
+              totalBeds: r.capacity,
+              occupiedBeds: r.current_occupancy,
+              status:
+                r.status === "FULL"
+                  ? "Full"
+                  : r.status === "MAINTENANCE"
+                    ? "Maintenance"
+                    : "Available",
+              price: `${Number(r.base_price).toLocaleString("vi-VN")} đ/tháng`,
+              description: r.description || "",
+              beds,
+            };
+          });
+          setRooms(mapped);
+        }
+      } catch {
+        // Keep initial mock rooms
+      }
+    }
+    fetchRealRooms();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleRunAiSearch = async (queryText: string) => {
     if (!queryText.trim()) return;
@@ -177,17 +268,15 @@ export default function RoomsManagementPage() {
     try {
       const res = await api.semanticSearch(queryText.trim(), 6);
       if (res.success && res.data) {
-        const newScores: Record<string, { similarity: number; distance: number; reason: string }> = { ...roomVectorScores };
-        res.data.forEach((item, idx) => {
-          // Map to mock room keys a201..a206
-          const mockKey = `a20${(idx % 6) + 1}`;
-          newScores[mockKey] = {
+        const newScores: Record<string, { similarity: number; distance: number; reason: string }> = {};
+        res.data.forEach((item) => {
+          newScores[item.room_number] = {
             similarity: Math.round(item.similarity * 100),
             distance: item.cosine_distance,
-            reason: `Phòng ${item.room_number} (${item.building_name}): ${item.description}`,
+            reason: item.description,
           };
         });
-        setVectorScores(newScores);
+        setVectorScores((prev) => ({ ...prev, ...newScores }));
       }
     } catch {
       // Keep static scores
@@ -196,12 +285,20 @@ export default function RoomsManagementPage() {
     }
   };
 
-  const filteredRooms = [...mockRooms]
+  const filteredRooms = [...rooms]
     .filter((room) => {
+      if (selectedBuilding !== "ALL" && room.buildingId !== selectedBuilding) return false;
+      if (selectedFloor !== "ALL" && room.floor !== selectedFloor) return false;
       if (filterStatus === "available" && room.status !== "Available") return false;
       if (filterStatus === "full" && room.status !== "Full") return false;
       if (filterStatus === "maintenance" && room.status !== "Maintenance") return false;
-      if (searchQuery && !room.roomNumber.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      if (
+        searchQuery &&
+        !room.roomNumber.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !room.description.toLowerCase().includes(searchQuery.toLowerCase())
+      ) {
+        return false;
+      }
       return true;
     })
     .sort((a, b) => {
@@ -210,7 +307,7 @@ export default function RoomsManagementPage() {
         const scoreB = vectorScores[b.id]?.similarity || 0;
         return scoreB - scoreA;
       }
-      return 0;
+      return a.roomId - b.roomId;
     });
 
   return (
@@ -251,34 +348,44 @@ export default function RoomsManagementPage() {
           <div className="flex flex-wrap items-center gap-3">
             {/* Building tabs */}
             <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
-              {["A", "B", "C"].map((building) => (
+              {[
+                { id: "ALL", label: "Tất cả Tòa" },
+                { id: "B1", label: "Tòa B1" },
+                { id: "B2", label: "Tòa B2" },
+                { id: "B3", label: "Tòa B3" },
+              ].map((b) => (
                 <button
-                  key={building}
-                  onClick={() => setSelectedBuilding(building)}
+                  key={b.id}
+                  onClick={() => setSelectedBuilding(b.id)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    selectedBuilding === building
+                    selectedBuilding === b.id
                       ? "bg-[#1F5CA9] text-white shadow-sm"
                       : "text-slate-600 dark:text-slate-300 hover:text-slate-900"
                   }`}
                 >
-                  Tòa {building}
+                  {b.label}
                 </button>
               ))}
             </div>
 
             {/* Floor tabs */}
             <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
-              {["1", "2", "3", "4", "5"].map((floor) => (
+              {[
+                { id: "ALL", label: "Mọi tầng" },
+                { id: "1", label: "Tầng 1" },
+                { id: "2", label: "Tầng 2" },
+                { id: "3", label: "Tầng 3" },
+              ].map((floor) => (
                 <button
-                  key={floor}
-                  onClick={() => setSelectedFloor(floor)}
+                  key={floor.id}
+                  onClick={() => setSelectedFloor(floor.id)}
                   className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    selectedFloor === floor
+                    selectedFloor === floor.id
                       ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
                       : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
                   }`}
                 >
-                  Tầng {floor}
+                  {floor.label}
                 </button>
               ))}
             </div>

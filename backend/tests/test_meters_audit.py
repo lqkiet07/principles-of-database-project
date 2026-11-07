@@ -33,7 +33,7 @@ async def test_patch_meters_success_and_writes_audit(client):
     headers = {"X-Role": "admin"}
     bill_id = await setup_test_bill(room_id=2)
 
-    # 1. Update meters legitimately
+    # 1. Update meters legitimately (350 -> 360 kWh, 35 -> 38 m3)
     payload = {"curr_electric": 360, "curr_water": 38}
     res = await client.patch(
         f"/api/admin/bills/{bill_id}/meters", json=payload, headers=headers
@@ -42,6 +42,14 @@ async def test_patch_meters_success_and_writes_audit(client):
     data = res.json()["data"]
     assert data["curr_electric"] == 360
     assert data["curr_water"] == 38
+    assert data["total_amount"] == 810000.0
+
+    # Verify child debts were automatically recalculated to 405,000 VND each
+    debt_row = await fetch_one(
+        "SELECT sum(assigned_amount) AS sum_assigned FROM student_utility_debts WHERE bill_id = %s;",
+        (bill_id,),
+    )
+    assert float(debt_row["sum_assigned"]) == 810000.0
 
     # 2. Verify audit log entry created with JSONB old and new state
     res_audit = await client.get(

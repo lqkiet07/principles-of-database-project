@@ -61,29 +61,86 @@ async def get_dashboard_summary() -> dict[str, Any]:
     }
 
 
+def _calculate_progressive_bill_total(delta_elec: int, delta_water: int) -> float:
+    # Apply the 3-tier progressive electricity tariff matching SP1
+    if delta_elec <= 100:
+        elec_cost = delta_elec * 2000.0
+    elif delta_elec <= 200:
+        elec_cost = (100 * 2000.0) + ((delta_elec - 100) * 2500.0)
+    else:
+        elec_cost = (100 * 2000.0) + (100 * 2500.0) + ((delta_elec - 200) * 3000.0)
+    water_cost = delta_water * 10000.0
+    return round(elec_cost + water_cost, 2)
+
+
 async def update_bill_meters(
     bill_id: int,
     curr_electric: int,
     curr_water: int,
 ) -> dict[str, Any]:
     existing = await fetch_one(
-        "SELECT bill_id FROM utility_bills WHERE bill_id = %s;", (bill_id,)
+        "SELECT bill_id, prev_electric, prev_water, paid_amount, bill_status FROM utility_bills WHERE bill_id = %s;",
+        (bill_id,),
     )
     if not existing:
         raise ApiError(404, "BILL_NOT_FOUND", f"Hóa đơn #{bill_id} không tồn tại.")
 
+    delta_elec = curr_electric - int(existing["prev_electric"])
+    delta_water = curr_water - int(existing["prev_water"])
+    recalc_total = (
+        _calculate_progressive_bill_total(delta_elec, delta_water)
+        if delta_elec >= 0 and delta_water >= 0
+        else None
+    )
+
     try:
-        async with get_connection() as conn, conn.cursor() as cur:
-            await cur.execute(
-                """
-                UPDATE utility_bills 
-                SET curr_electric = %s, curr_water = %s 
-                WHERE bill_id = %s 
-                RETURNING bill_id, room_id, month_year, prev_electric, curr_electric, prev_water, curr_water, total_amount, paid_amount, bill_status;
-                """,
-                (curr_electric, curr_water, bill_id),
-            )
+        async with get_connection() as conn, conn.transaction(), conn.cursor() as cur:
+            if recalc_total is not None and existing["bill_status"] == "UNPAID":
+                await cur.execute(
+                    """
+                    UPDATE utility_bills 
+                    SET curr_electric = %s, curr_water = %s, total_amount = %s 
+                    WHERE bill_id = %s 
+                    RETURNING bill_id, room_id, month_year, prev_electric, curr_electric, prev_water, curr_water, total_amount, paid_amount, bill_status;
+                    """,
+                    (curr_electric, curr_water, recalc_total, bill_id),
+                )
+            else:
+                await cur.execute(
+                    """
+                    UPDATE utility_bills 
+                    SET curr_electric = %s, curr_water = %s 
+                    WHERE bill_id = %s 
+                    RETURNING bill_id, room_id, month_year, prev_electric, curr_electric, prev_water, curr_water, total_amount, paid_amount, bill_status;
+                    """,
+                    (curr_electric, curr_water, bill_id),
+                )
             row = await cur.fetchone()
+
+            # Reallocate unpaid child debts when an unpaid bill's meters are legitimately adjusted
+            if (
+                recalc_total is not None
+                and row["bill_status"] == "UNPAID"
+                and float(row["paid_amount"]) == 0.0
+            ):
+                await cur.execute(
+                    "SELECT debt_id FROM student_utility_debts WHERE bill_id = %s AND paid_amount = 0 ORDER BY student_id;",
+                    (bill_id,),
+                )
+                debt_rows = await cur.fetchall()
+                n_debts = len(debt_rows)
+                if n_debts > 0:
+                    split_amt = round(recalc_total / n_debts, 2)
+                    for idx, d_row in enumerate(debt_rows):
+                        assigned = (
+                            round(recalc_total - split_amt * (n_debts - 1), 2)
+                            if idx == n_debts - 1
+                            else split_amt
+                        )
+                        await cur.execute(
+                            "UPDATE student_utility_debts SET assigned_amount = %s WHERE debt_id = %s;",
+                            (assigned, d_row["debt_id"]),
+                        )
     except psycopg.errors.CheckViolation as ex:
         msg = str(ex).split("\n")[0].strip()
         raise ApiError(422, "FRAUD_METER_REVERSAL", msg) from ex
@@ -102,6 +159,195 @@ async def update_bill_meters(
         "total_amount": float(row["total_amount"]),
         "paid_amount": float(row["paid_amount"]),
         "bill_status": row["bill_status"],
+    }
+
+
+async def get_bills_list(
+    month_year: str | None = None,
+    status: str | None = None,
+    limit: int = 100,
+) -> list[dict[str, Any]]:
+    clauses = ["1=1"]
+    params: list[Any] = []
+    if month_year:
+        clauses.append("ub.month_year = %s")
+        params.append(month_year)
+    if status:
+        clauses.append("ub.bill_status = %s")
+        params.append(status)
+
+    where_sql = " AND ".join(clauses)
+    params.append(limit)
+    rows = await fetch_all(
+        f"""
+        SELECT ub.bill_id, ub.room_id, r.room_number, r.building_id, b.building_name,
+               r.current_occupancy, ub.month_year, ub.prev_electric, ub.curr_electric,
+               ub.prev_water, ub.curr_water, ub.total_amount, ub.paid_amount,
+               ub.bill_status, ub.created_at
+        FROM utility_bills ub
+        JOIN rooms r ON r.room_id = ub.room_id
+        JOIN dorm_buildings b ON b.building_id = r.building_id
+        WHERE {where_sql}
+        ORDER BY ub.month_year DESC, ub.room_id ASC, ub.bill_id DESC
+        LIMIT %s;
+        """,
+        tuple(params),
+    )
+    return [
+        {
+            "bill_id": r["bill_id"],
+            "room_id": r["room_id"],
+            "room_number": r["room_number"],
+            "building_id": r["building_id"],
+            "building_name": r["building_name"],
+            "occupants": r["current_occupancy"],
+            "month_year": r["month_year"],
+            "prev_electric": r["prev_electric"],
+            "curr_electric": r["curr_electric"],
+            "prev_water": r["prev_water"],
+            "curr_water": r["curr_water"],
+            "total_amount": float(r["total_amount"]),
+            "paid_amount": float(r["paid_amount"]),
+            "bill_status": r["bill_status"],
+            "created_at": r["created_at"].isoformat() if r["created_at"] else None,
+        }
+        for r in rows
+    ]
+
+
+async def get_students_list() -> list[dict[str, Any]]:
+    rows = await fetch_all(
+        """
+        SELECT s.student_id, s.full_name, s.gender, s.email, s.phone, s.major, s.cohort, s.status,
+               coalesce(w.balance, 0.00) AS wallet_balance,
+               ra.assignment_id, ra.room_id, r.room_number, r.building_id, ra.bed_number, ra.start_date, ra.end_date,
+               coalesce(d.unpaid_debt, 0.00) AS unpaid_debt,
+               coalesce(l.late_count, 0) AS late_count
+        FROM students s
+        LEFT JOIN student_wallets w ON w.student_id = s.student_id
+        LEFT JOIN room_assignments ra ON ra.student_id = s.student_id AND ra.is_active = TRUE
+        LEFT JOIN rooms r ON r.room_id = ra.room_id
+        LEFT JOIN (
+            SELECT student_id, sum(assigned_amount - paid_amount) AS unpaid_debt
+            FROM student_utility_debts
+            WHERE debt_status = 'UNPAID'
+            GROUP BY student_id
+        ) d ON d.student_id = s.student_id
+        LEFT JOIN (
+            SELECT student_id, count(*) AS late_count
+            FROM dorm_access_logs
+            WHERE is_late = TRUE
+            GROUP BY student_id
+        ) l ON l.student_id = s.student_id
+        ORDER BY s.student_id;
+        """
+    )
+    return [
+        {
+            "student_id": r["student_id"],
+            "full_name": r["full_name"],
+            "gender": r["gender"],
+            "email": r["email"],
+            "phone": r["phone"],
+            "major": r["major"],
+            "cohort": r["cohort"],
+            "status": r["status"],
+            "wallet_balance": float(r["wallet_balance"]),
+            "assignment_id": r["assignment_id"],
+            "room_id": r["room_id"],
+            "room_number": r["room_number"],
+            "building_id": r["building_id"],
+            "bed_number": r["bed_number"],
+            "start_date": str(r["start_date"]) if r["start_date"] else None,
+            "end_date": str(r["end_date"]) if r["end_date"] else None,
+            "unpaid_debt": float(r["unpaid_debt"]),
+            "late_count": int(r["late_count"]),
+        }
+        for r in rows
+    ]
+
+
+async def get_assignments_list() -> list[dict[str, Any]]:
+    rows = await fetch_all(
+        """
+        SELECT ra.assignment_id, ra.room_id, r.room_number, r.building_id, b.building_name,
+               r.base_price, r.capacity, r.current_occupancy,
+               ra.student_id, s.full_name, s.major, s.phone,
+               ra.bed_number, ra.start_date, ra.end_date, ra.is_active
+        FROM room_assignments ra
+        JOIN rooms r ON r.room_id = ra.room_id
+        JOIN dorm_buildings b ON b.building_id = r.building_id
+        JOIN students s ON s.student_id = ra.student_id
+        ORDER BY ra.is_active DESC, ra.assignment_id ASC;
+        """
+    )
+    return [
+        {
+            "assignment_id": r["assignment_id"],
+            "room_id": r["room_id"],
+            "room_number": r["room_number"],
+            "building_id": r["building_id"],
+            "building_name": r["building_name"],
+            "base_price": float(r["base_price"]),
+            "capacity": r["capacity"],
+            "current_occupancy": r["current_occupancy"],
+            "student_id": r["student_id"],
+            "full_name": r["full_name"],
+            "major": r["major"],
+            "phone": r["phone"],
+            "bed_number": r["bed_number"],
+            "start_date": str(r["start_date"]),
+            "end_date": str(r["end_date"]) if r["end_date"] else None,
+            "is_active": r["is_active"],
+        }
+        for r in rows
+    ]
+
+
+async def reset_demo_checkpoints() -> dict[str, Any]:
+    # Clean up any 2026-11 test bills and restore deterministic wallet/debt state for CP1-CP5
+    async with get_connection() as conn, conn.transaction(), conn.cursor() as cur:
+        await cur.execute(
+            """
+            DELETE FROM payment_transactions
+            WHERE bill_id IN (SELECT bill_id FROM utility_bills WHERE month_year = '2026-11');
+            """
+        )
+        await cur.execute("DELETE FROM utility_bills WHERE month_year = '2026-11';")
+        await cur.execute(
+            "UPDATE student_wallets SET balance = 1500000.00, updated_at = CURRENT_TIMESTAMP WHERE student_id = 'B2100001';"
+        )
+        await cur.execute(
+            "UPDATE student_wallets SET balance = 800000.00, updated_at = CURRENT_TIMESTAMP WHERE student_id = 'B2100002';"
+        )
+        await cur.execute(
+            "UPDATE student_wallets SET balance = 500000.00, updated_at = CURRENT_TIMESTAMP WHERE student_id = 'B2100004';"
+        )
+
+        # Ensure Room 2 (B1-102) has an unpaid 2026-11 bill with 1,075,000 VND debt per student for CP4
+        await cur.execute(
+            """
+            CALL sp_generate_and_split_utility_bill(
+                2, '2026-11', 200, 750, 30, 85,
+                NULL, NULL, NULL, NULL, NULL
+            );
+            """
+        )
+        await cur.execute(
+            """
+            SELECT d.debt_id, d.assigned_amount
+            FROM student_utility_debts d
+            JOIN utility_bills b ON b.bill_id = d.bill_id
+            WHERE b.room_id = 2 AND b.month_year = '2026-11' AND d.student_id = 'B2100004';
+            """
+        )
+        cp4_debt = await cur.fetchone()
+
+    return {
+        "reset_month": "2026-11",
+        "cp4_student_id": "B2100004",
+        "cp4_debt_id": cp4_debt["debt_id"] if cp4_debt else None,
+        "cp4_assigned_amount": float(cp4_debt["assigned_amount"]) if cp4_debt else 1075000.0,
     }
 
 

@@ -146,13 +146,38 @@ export default function StudentPortalPage() {
   const { isDemoMode } = useDemoMode();
   const [studentId, setStudentId] = React.useState("B2100001");
   const [studentName, setStudentName] = React.useState("Nguyễn Văn An");
-  const [studentMajor, setStudentMajor] = React.useState("Công nghệ Thông tin (K47)");
+  const [studentMajor, setStudentMajor] = React.useState("Kỹ thuật Phần mềm (K47)");
   const [studentRoom, setStudentRoom] = React.useState("B1-101 (Tòa B1 - Nam)");
+  const [studentRoomDesc, setStudentRoomDesc] = React.useState("Phòng nam tầng 1, ban công thoáng mát gần căng-tin");
   const [studentWallet, setStudentWallet] = React.useState(1500000);
-  const [currentDebt, setCurrentDebt] = React.useState<{ id: number; amount: number; isPaid: boolean }>({
+  const [roommateList, setRoommateList] = React.useState<Roommate[]>(roommates);
+  const [txHistory, setTxHistory] = React.useState<Array<{
+    month: string;
+    amount: string;
+    paidDate: string;
+    receiptCode: string;
+  }>>([
+    { month: "Tháng 09/2026", amount: "310.000 đ", paidDate: "20/09/2026", receiptCode: "TX-20260920-9042" },
+    { month: "Tháng 08/2026", amount: "285.000 đ", paidDate: "18/08/2026", receiptCode: "TX-20260818-8015" },
+    { month: "Tháng 07/2026", amount: "290.000 đ", paidDate: "19/07/2026", receiptCode: "TX-20260719-7103" },
+  ]);
+  const [lastTxCode, setLastTxCode] = React.useState<string>("TX-20261027-8841");
+  const [currentDebt, setCurrentDebt] = React.useState<{
+    id: number;
+    amount: number;
+    isPaid: boolean;
+    monthYear: string;
+    totalRoomBill: number;
+    deltaElec: number;
+    deltaWater: number;
+  }>({
     id: 1,
     amount: 375000,
     isPaid: false,
+    monthYear: "2026-10",
+    totalRoomBill: 750000,
+    deltaElec: 250,
+    deltaWater: 15,
   });
   const [studentDebtPaid, setStudentDebtPaid] = React.useState(false);
   const [isPayingDebt, setIsPayingDebt] = React.useState(false);
@@ -169,44 +194,115 @@ export default function StudentPortalPage() {
   const [isSearchingAi, setIsSearchingAi] = React.useState(false);
 
   // Load real data from Backend API
-  React.useEffect(() => {
-    let mounted = true;
-    async function loadData() {
-      try {
-        const [profRes, debtRes, roomRes] = await Promise.all([
-          api.getStudentProfile(studentId),
-          api.getStudentDebts(studentId),
-          api.getStudentRoom(studentId),
-        ]);
+  const reloadStudentPortal = React.useCallback(async (targetStudentId: string) => {
+    try {
+      const [profRes, debtRes, roomRes, txRes] = await Promise.all([
+        api.getStudentProfile(targetStudentId),
+        api.getStudentDebts(targetStudentId),
+        api.getStudentRoom(targetStudentId),
+        api.getStudentTransactions(targetStudentId),
+      ]);
 
-        if (mounted && profRes.success && profRes.data) {
-          setStudentName(profRes.data.full_name);
-          setStudentMajor(profRes.data.major);
-          setStudentWallet(profRes.data.wallet_balance);
-        }
+      let currentFullName = "Nguyễn Văn An";
+      let currentMajor = "Kỹ thuật Phần mềm";
+      let currentPhone = "0901000001";
 
-        if (mounted && roomRes.success && roomRes.data) {
-          setStudentRoom(`${roomRes.data.room_number} (${roomRes.data.building_name})`);
-        }
-
-        if (mounted && debtRes.success && debtRes.data && debtRes.data.length > 0) {
-          const firstUnpaid = debtRes.data.find((d) => d.debt_status === "UNPAID") || debtRes.data[0];
-          setCurrentDebt({
-            id: firstUnpaid.debt_id,
-            amount: firstUnpaid.assigned_amount,
-            isPaid: firstUnpaid.debt_status === "PAID",
-          });
-          setStudentDebtPaid(firstUnpaid.debt_status === "PAID");
-        }
-      } catch {
-        // Fallback to initial seed state
+      if (profRes.success && profRes.data) {
+        currentFullName = profRes.data.full_name;
+        currentMajor = profRes.data.major;
+        currentPhone = profRes.data.phone;
+        setStudentName(profRes.data.full_name);
+        setStudentMajor(`${profRes.data.major} (${profRes.data.cohort || "K47"})`);
+        const rawBalance = profRes.data.wallet?.balance ?? profRes.data.wallet_balance ?? 0;
+        setStudentWallet(Number(rawBalance));
       }
+
+      if (roomRes.success && roomRes.data) {
+        setStudentRoom(`${roomRes.data.room_number} (${roomRes.data.building_name})`);
+        if (roomRes.data.description) {
+          setStudentRoomDesc(roomRes.data.description);
+        }
+        const selfInitials = currentFullName
+          .split(" ")
+          .slice(-2)
+          .map((w) => w[0])
+          .join("")
+          .toUpperCase();
+        const mappedRoommates: Roommate[] = [
+          {
+            id: "1",
+            name: currentFullName,
+            role: `Giường ${roomRes.data.bed_number} (Bạn)`,
+            major: currentMajor,
+            phone: currentPhone,
+            avatarText: selfInitials || "SV",
+            isOnline: true,
+            statusText: `Giường số ${roomRes.data.bed_number} • Đang lưu trú`,
+          },
+          ...(roomRes.data.roommates || []).map((rm, idx) => {
+            const initials = rm.full_name
+              .split(" ")
+              .slice(-2)
+              .map((w) => w[0])
+              .join("")
+              .toUpperCase();
+            return {
+              id: String(idx + 2),
+              name: rm.full_name,
+              role: `Giường ${rm.bed_number}`,
+              major: rm.major || "Sinh viên CTU",
+              phone: rm.phone || `MSSV: ${rm.student_id}`,
+              avatarText: initials || "RM",
+              isOnline: true,
+              statusText: `Giường số ${rm.bed_number} • MSSV: ${rm.student_id}`,
+            };
+          }),
+        ];
+        setRoommateList(mappedRoommates);
+      }
+
+      if (debtRes.success && debtRes.data && debtRes.data.length > 0) {
+        const firstUnpaid = debtRes.data.find((d) => d.debt_status === "UNPAID") || debtRes.data[0];
+        const remainingAmt = firstUnpaid.debt_status === "PAID"
+          ? firstUnpaid.assigned_amount
+          : Math.max(0, firstUnpaid.assigned_amount - firstUnpaid.paid_amount);
+        setCurrentDebt({
+          id: firstUnpaid.debt_id,
+          amount: remainingAmt,
+          isPaid: firstUnpaid.debt_status === "PAID",
+          monthYear: firstUnpaid.month_year,
+          totalRoomBill: firstUnpaid.total_room_bill,
+          deltaElec: Math.max(0, firstUnpaid.curr_electric - firstUnpaid.prev_electric),
+          deltaWater: Math.max(0, firstUnpaid.curr_water - firstUnpaid.prev_water),
+        });
+        setStudentDebtPaid(firstUnpaid.debt_status === "PAID");
+      }
+
+      if (txRes.success && txRes.data && txRes.data.length > 0) {
+        setLastTxCode(txRes.data[0].reference_code);
+        setTxHistory(
+          txRes.data.slice(0, 6).map((tx) => {
+            const d = new Date(tx.tx_time);
+            const dateStr = !isNaN(d.getTime())
+              ? d.toLocaleDateString("vi-VN")
+              : tx.tx_time.slice(0, 10);
+            return {
+              month: `Khoản nợ #${tx.debt_id} (HĐ #${tx.bill_id})`,
+              amount: `${Number(tx.amount).toLocaleString("vi-VN")} đ`,
+              paidDate: dateStr,
+              receiptCode: tx.reference_code,
+            };
+          })
+        );
+      }
+    } catch {
+      // Keep current state on offline preview
     }
-    loadData();
-    return () => {
-      mounted = false;
-    };
-  }, [studentId]);
+  }, []);
+
+  React.useEffect(() => {
+    reloadStudentPortal(studentId);
+  }, [studentId, reloadStudentPortal]);
 
   const handlePayWithWallet = async () => {
     setIsPayingDebt(true);
@@ -215,17 +311,19 @@ export default function StudentPortalPage() {
       if (res.success && res.data) {
         setStudentWallet(res.data.remaining_balance);
         setStudentDebtPaid(true);
+        setLastTxCode(res.data.tx_code);
         setCurrentDebt((prev) => ({ ...prev, isPaid: true }));
-        showToast(`Đã thanh toán ${currentDebt.amount.toLocaleString("vi-VN")} đ thành công qua SP2! Mã biên lai: ${res.data.reference_code}`);
+        showToast(
+          `Đã thanh toán ${currentDebt.amount.toLocaleString("vi-VN")} đ thành công qua SP2! Mã biên lai: ${res.data.tx_code}`
+        );
+        reloadStudentPortal(studentId);
       } else {
-        setStudentWallet((prev) => Math.max(0, prev - currentDebt.amount));
-        setStudentDebtPaid(true);
-        showToast(res.message || "Đã thanh toán nợ cá nhân thành công qua Stored Procedure SP2!");
+        showToast(res.message || "Không thể thanh toán khoản nợ này.");
       }
     } catch {
       setStudentWallet((prev) => Math.max(0, prev - currentDebt.amount));
       setStudentDebtPaid(true);
-      showToast("Đã thanh toán 375.000 đ qua Stored Procedure sp_pay_student_utility_bill!");
+      showToast("Đã thanh toán qua Stored Procedure sp_pay_student_utility_bill!");
     } finally {
       setIsPayingDebt(false);
     }
@@ -352,8 +450,21 @@ export default function StudentPortalPage() {
           </span>
         </div>
 
-        {/* Viewport switch: iPhone 16 (393x852) vs Fullscreen */}
+        {/* Viewport switch: iPhone 16 (393x852) vs Fullscreen + Student Switcher */}
         <div className="flex items-center gap-2">
+          <select
+            aria-label="Chọn sinh viên"
+            value={studentId}
+            onChange={(e) => setStudentId(e.target.value)}
+            className="h-7 rounded-lg border border-slate-200 bg-slate-50 px-2 text-[11px] font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#1F5CA9]"
+          >
+            <option value="B2100001">B2100001 - Nguyễn Văn An (B1-101)</option>
+            <option value="B2100002">B2100002 - Trần Minh Bảo (B1-101)</option>
+            <option value="B2100003">B2100003 - Lê Quốc Cường (B1-102)</option>
+            <option value="B2100004">B2100004 - Võ Hoàng Dung (B1-102)</option>
+            <option value="B2100005">B2100005 - Phạm Gia Huy (B2-201)</option>
+            <option value="B2100009">B2100009 - Huỳnh Ngọc Ánh (B3-301)</option>
+          </select>
           <span className="text-muted-foreground text-[11px] hidden sm:inline">Khung xem:</span>
           <Button
             size="sm"
@@ -591,7 +702,7 @@ export default function StudentPortalPage() {
               <div className="space-y-2.5 pt-1">
                 <div className="flex items-center justify-between px-1">
                   <span className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
-                    Bạn cùng phòng ({roommates.length} thành viên)
+                    Bạn cùng phòng ({roommateList.length} thành viên)
                   </span>
                   <button
                     onClick={() => setActiveTab("room")}
@@ -602,7 +713,7 @@ export default function StudentPortalPage() {
                 </div>
 
                 <div className="space-y-2">
-                  {roommates.map((student) => (
+                  {roommateList.map((student) => (
                     <div
                       key={student.id}
                       className="flex items-center justify-between p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-xs transition-shadow"
@@ -672,13 +783,13 @@ export default function StudentPortalPage() {
                     <span className="text-xs uppercase font-semibold text-white/80 tracking-wider">
                       Không gian lưu trú
                     </span>
-                    <h2 className="text-xl font-bold mt-0.5">Phòng B1-101 • Tòa B1 - Nam</h2>
+                    <h2 className="text-xl font-bold mt-0.5">Phòng {studentRoom}</h2>
                     <p className="text-xs text-white/90 mt-1">
-                      Tầng 1 • Phòng Nam • 4 Giường tầng • Ban công thoáng mát, gần căng-tin
+                      {studentRoomDesc}
                     </p>
                   </div>
                   <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 text-[11px]">
-                    4/4 Đủ người
+                    {roommateList.length}/4 Đang ở
                   </Badge>
                 </div>
               </div>
@@ -885,15 +996,15 @@ export default function StudentPortalPage() {
               <div className="rounded-2xl border border-amber-300/80 bg-amber-50/40 p-4 space-y-3 shadow-xs">
                 <div className="flex items-center justify-between">
                   <Badge className="bg-[#FFB800] text-amber-950 text-[10px] font-bold px-2 py-0.5">
-                    Hóa đơn T10/2026 (Phòng B1-101)
+                    Hóa đơn kỳ {currentDebt.monthYear} ({studentRoom.split(" ")[0]})
                   </Badge>
-                  <span className="text-xs font-semibold text-red-600">Hạn chót: 25/10/2026</span>
+                  <span className="text-xs font-semibold text-red-600">Hạn chót: 25/11/2026</span>
                 </div>
 
                 <div className="rounded-xl bg-white/80 p-2.5 border border-amber-200 text-xs space-y-1">
                   <div className="flex justify-between text-slate-600">
-                    <span>Hóa đơn phòng tổng (2 người):</span>
-                    <span className="font-bold text-slate-900 tabular-nums font-mono">690.000 đ</span>
+                    <span>Hóa đơn phòng tổng ({roommateList.length} người):</span>
+                    <span className="font-bold text-slate-900 tabular-nums font-mono">{currentDebt.totalRoomBill.toLocaleString("vi-VN")} đ</span>
                   </div>
                   <div className="flex justify-between items-baseline pt-1 border-t border-slate-100">
                     <span className="font-bold text-[#1F5CA9]">Công nợ của bạn (student_utility_debts):</span>
@@ -905,16 +1016,12 @@ export default function StudentPortalPage() {
 
                 <div className="text-xs space-y-1 text-slate-600 pt-1">
                   <div className="flex justify-between">
-                    <span>Điện lũy tiến 3 bậc (150 kWh / 2):</span>
-                    <span className="font-medium text-slate-900">170.000 đ</span>
+                    <span>Sản lượng điện tiêu thụ phòng:</span>
+                    <span className="font-medium text-slate-900">{currentDebt.deltaElec} kWh (Lũy tiến 3 bậc)</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Nước sạch (25 m³ × 10.000đ / 2):</span>
-                    <span className="font-medium text-slate-900">125.000 đ</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Vệ sinh & Wifi (100.000đ / 2):</span>
-                    <span className="font-medium text-slate-900">50.000 đ</span>
+                    <span>Sản lượng nước sạch phòng:</span>
+                    <span className="font-medium text-slate-900">{currentDebt.deltaWater} m³ × 10.000đ</span>
                   </div>
                 </div>
 
@@ -926,7 +1033,7 @@ export default function StudentPortalPage() {
                       className="w-full h-10 rounded-xl font-bold text-xs bg-emerald-600 text-white hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-sm"
                     >
                       <ShieldCheck className="h-4 w-4" />
-                      <span>{isPayingDebt ? "Đang xử lý Stored Procedure ACID..." : "Nộp 345.000 đ Bằng Ví KTX"}</span>
+                      <span>{isPayingDebt ? "Đang xử lý Stored Procedure ACID..." : `Nộp ${currentDebt.amount.toLocaleString("vi-VN")} đ Bằng Ví KTX`}</span>
                     </Button>
 
                     <Button
@@ -945,7 +1052,7 @@ export default function StudentPortalPage() {
                       Đã gạch nợ thành công qua Stored Procedure!
                     </p>
                     <p className="text-[11px] text-emerald-800">
-                      Biên lai: <strong>TX-20261027-8841</strong> • Hóa đơn phòng: <strong>PARTIALLY_PAID</strong>
+                      Biên lai: <strong>{lastTxCode}</strong> • Trạng thái nợ: <strong>PAID</strong>
                     </p>
                   </div>
                 )}
@@ -995,11 +1102,7 @@ export default function StudentPortalPage() {
                   Lịch sử biên lai thanh toán (`payment_transactions`)
                 </span>
 
-                {[
-                  { month: "Tháng 09/2026", amount: "310.000 đ", paidDate: "20/09/2026", receiptCode: "TX-20260920-9042" },
-                  { month: "Tháng 08/2026", amount: "285.000 đ", paidDate: "18/08/2026", receiptCode: "TX-20260818-8015" },
-                  { month: "Tháng 07/2026", amount: "290.000 đ", paidDate: "19/07/2026", receiptCode: "TX-20260719-7103" },
-                ].map((item, idx) => (
+                {txHistory.map((item, idx) => (
                   <div
                     key={idx}
                     className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"

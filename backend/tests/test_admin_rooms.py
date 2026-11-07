@@ -125,3 +125,25 @@ async def test_get_admin_dashboard(client):
     assert "total_students" in data
     assert "total_unpaid_debt" in data
     assert "total_power_kwh" in data
+
+
+@pytest.mark.asyncio
+async def test_get_admin_bills_students_assignments_and_demo_reset(client):
+    headers = {"X-Role": "admin"}
+
+    res_bills = await client.get("/api/admin/bills", headers=headers)
+    assert res_bills.status_code == 200
+    assert isinstance(res_bills.json()["data"], list)
+
+    res_students = await client.get("/api/admin/students", headers=headers)
+    assert res_students.status_code == 200
+    assert len(res_students.json()["data"]) >= 12
+
+    res_assign = await client.get("/api/admin/assignments", headers=headers)
+    assert res_assign.status_code == 200
+    assert len(res_assign.json()["data"]) >= 12
+
+    res_reset = await client.post("/api/admin/demo/reset", headers=headers)
+    assert res_reset.status_code == 200
+    assert res_reset.json()["data"]["cp4_debt_id"] is not None
+    await execute("DELETE FROM utility_bills WHERE month_year = '2026-11';")

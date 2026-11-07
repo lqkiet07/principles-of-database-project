@@ -334,6 +334,81 @@
       }
     },
     "/api/admin/bills": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List Bills",
+        "operationId": "list_bills_api_admin_bills_get",
+        "parameters": [
+          {
+            "name": "month_year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Month Year"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_list_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "Admin"
@@ -341,14 +416,14 @@
         "summary": "Generate Bill",
         "operationId": "generate_bill_api_admin_bills_post",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/GenerateBillIn"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -595,7 +670,47 @@
         }
       }
     },
+    "/api/admin/students": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List Students",
+        "operationId": "list_students_api_admin_students_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_list_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/assignments": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List Assignments",
+        "operationId": "list_assignments_api_admin_assignments_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_list_"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "Admin"
@@ -629,6 +744,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/demo/reset": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Reset Demo",
+        "operationId": "reset_demo_api_admin_demo_reset_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_dict_"
                 }
               }
             }

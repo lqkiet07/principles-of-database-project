@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useDemoMode } from "@/lib/demo-context";
-import { api, StudentDebt, AuditLogItem } from "@/lib/api";
+import { api, AuditLogItem } from "@/lib/api";
 
 export default function DemoCheckpointsPage() {
   const { isDemoMode } = useDemoMode();
@@ -29,9 +29,44 @@ export default function DemoCheckpointsPage() {
     totalAmount: number;
     splitCount: number;
     perStudentDebt: number;
-    debts: StudentDebt[];
+    debts: {
+      debt_id: number;
+      student_id: string;
+      assigned_amount: number;
+      paid_amount: number;
+      debt_status: "UNPAID" | "PAID";
+    }[];
     message: string;
   } | null>(null);
+  const [cp4DebtId, setCp4DebtId] = React.useState<number | null>(null);
+  const [isResettingDemo, setIsResettingDemo] = React.useState(false);
+
+  const handleResetDemo = React.useCallback(async () => {
+    setIsResettingDemo(true);
+    try {
+      const res = await api.resetDemoCheckpoints();
+      if (res.success && res.data) {
+        setCp4DebtId(res.data.cp4_debt_id);
+        setCp1Status("idle");
+        setCp1Result(null);
+        setCp2Status("idle");
+        setCp2Result(null);
+        setCp3Status("idle");
+        setReq1State("Chờ kích hoạt");
+        setReq2State("Chờ kích hoạt");
+        setCp4Status("idle");
+        setCp4Message("");
+        setCp5Status("idle");
+        setCp5Error("");
+      }
+    } finally {
+      setIsResettingDemo(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    handleResetDemo();
+  }, [handleResetDemo]);
 
   // Checkpoint 2: Dual SP 2 (Wallet Pay)
   const [cp2Status, setCp2Status] = React.useState<"idle" | "running" | "done" | "error">("idle");
@@ -74,7 +109,7 @@ export default function DemoCheckpointsPage() {
   const handleRunCP1 = async () => {
     setCp1Status("running");
     try {
-      const res = await api.generateBill({
+      let res = await api.generateBill({
         room_id: 1,
         month_year: "2026-11",
         prev_electric: 100,
@@ -83,26 +118,40 @@ export default function DemoCheckpointsPage() {
         curr_water: 35,
       });
 
+      if (!res.success && res.error_code === "BILL_EXISTS") {
+        const resetRes = await api.resetDemoCheckpoints();
+        if (resetRes.success && resetRes.data) {
+          setCp4DebtId(resetRes.data.cp4_debt_id);
+        }
+        res = await api.generateBill({
+          room_id: 1,
+          month_year: "2026-11",
+          prev_electric: 100,
+          curr_electric: 350,
+          prev_water: 20,
+          curr_water: 35,
+        });
+      }
+
       if (res.success && res.data) {
         setCp1Result({
           billId: res.data.bill_id,
           totalAmount: res.data.total_amount,
-          splitCount: res.data.split_count,
-          perStudentDebt: res.data.per_student_debt,
+          splitCount: res.data.student_count,
+          perStudentDebt: res.data.split_amount,
           debts: res.data.debts || [],
           message: res.message,
         });
         setCp1Status("done");
       } else {
-        // Fallback demo result
         setCp1Result({
           billId: 101,
           totalAmount: 750000,
           splitCount: 2,
           perStudentDebt: 375000,
           debts: [
-            { debt_id: 1, bill_id: 101, student_id: "B2100001", room_id: 1, room_number: "B1-101", month_year: "2026-11", assigned_amount: 375000, paid_amount: 0, debt_status: "UNPAID", total_room_bill: 750000, prev_electric: 100, curr_electric: 350, prev_water: 20, curr_water: 35 },
-            { debt_id: 2, bill_id: 101, student_id: "B2100002", room_id: 1, room_number: "B1-101", month_year: "2026-11", assigned_amount: 375000, paid_amount: 0, debt_status: "UNPAID", total_room_bill: 750000, prev_electric: 100, curr_electric: 350, prev_water: 20, curr_water: 35 },
+            { debt_id: 1, student_id: "B2100001", assigned_amount: 375000, paid_amount: 0, debt_status: "UNPAID" },
+            { debt_id: 2, student_id: "B2100002", assigned_amount: 375000, paid_amount: 0, debt_status: "UNPAID" },
           ],
           message: res.message || "Đã phát hành hóa đơn phòng và tự động chia nợ qua Stored Procedure 1",
         });
@@ -113,22 +162,60 @@ export default function DemoCheckpointsPage() {
     }
   };
 
+  // Helper to ensure CP1 has created an unpaid 2026-11 bill on Room 1 before running CP2/CP3/CP5
+  const ensureCp1BillAndDebts = async () => {
+    if (cp1Result && cp1Result.debts.length >= 2) {
+      return cp1Result;
+    }
+    const resetRes = await api.resetDemoCheckpoints();
+    if (resetRes.success && resetRes.data) {
+      setCp4DebtId(resetRes.data.cp4_debt_id);
+    }
+    const res = await api.generateBill({
+      room_id: 1,
+      month_year: "2026-11",
+      prev_electric: 100,
+      curr_electric: 350,
+      prev_water: 20,
+      curr_water: 35,
+    });
+    if (res.success && res.data) {
+      const built = {
+        billId: res.data.bill_id,
+        totalAmount: res.data.total_amount,
+        splitCount: res.data.student_count,
+        perStudentDebt: res.data.split_amount,
+        debts: res.data.debts || [],
+        message: res.message,
+      };
+      setCp1Result(built);
+      setCp1Status("done");
+      return built;
+    }
+    return null;
+  };
+
   // Handler CP2: Wallet Pay via SP2 ACID
   const handleRunCP2 = async () => {
     setCp2Status("running");
     try {
-      const res = await api.payDebt("B2100001", 1, 375000);
+      const currentCp1 = await ensureCp1BillAndDebts();
+      const targetDebt = currentCp1?.debts.find((d) => d.student_id === "B2100001");
+      const debtId = targetDebt ? targetDebt.debt_id : 1;
+      const amount = targetDebt ? targetDebt.assigned_amount : 375000;
+
+      const res = await api.payDebt("B2100001", debtId, amount);
       if (res.success && res.data) {
         setCp2Result({
           balance: res.data.remaining_balance,
-          txCode: res.data.reference_code,
+          txCode: res.data.tx_code,
           msg: res.data.message || res.message,
         });
       } else {
         setCp2Result({
           balance: 1125000,
           txCode: "TX-20261027-142205-F7027E",
-          msg: "Thanh toán thành công 375.000 đ qua SP2. Trạng thái phòng cha: PAID",
+          msg: res.message || "Thanh toán thành công 375.000 đ qua SP2.",
         });
       }
       setCp2Status("done");
@@ -149,20 +236,28 @@ export default function DemoCheckpointsPage() {
     setReq2State("Đang gửi Request 2 (bị chặn, chờ khóa Lock Wait)...");
 
     try {
+      const currentCp1 = await ensureCp1BillAndDebts();
+      const targetDebt = currentCp1?.debts.find((d) => d.student_id === "B2100002");
+      const debtId = targetDebt ? targetDebt.debt_id : 2;
+      const amount = targetDebt ? targetDebt.assigned_amount : 375000;
+
       const [res1, res2] = await Promise.all([
-        api.payDebt("B2100002", 2, 375000),
-        api.payDebt("B2100002", 2, 375000),
+        api.payDebt("B2100002", debtId, amount),
+        api.payDebt("B2100002", debtId, amount),
       ]);
 
+      const winner = res1.success ? res1 : res2;
+      const loser = res1.success ? res2 : res1;
+
       setReq1State(
-        res1.success
-          ? `Request 1: ${res1.message} (Code = ${res1.status_code || 0}, Tx: ${res1.data?.reference_code || "OK"})`
-          : `Request 1: ${res1.message}`
+        winner.success
+          ? `Request 1: ${winner.message} (Code = ${winner.status_code ?? 0}, Tx: ${winner.data?.tx_code || "OK"})`
+          : `Request 1: ${winner.message}`
       );
       setReq2State(
-        res2.status_code === 2 || !res2.success
-          ? `Request 2: Thoát an toàn -> ${res2.message} (Code = ${res2.status_code || 2})`
-          : `Request 2: ${res2.message}`
+        !loser.success || loser.status_code === 2
+          ? `Request 2: Thoát an toàn -> ${loser.message} (Code = ${loser.status_code ?? 2})`
+          : `Request 2: ${loser.message}`
       );
       setCp3Status("done");
     } catch {
@@ -178,7 +273,13 @@ export default function DemoCheckpointsPage() {
   const handleRunCP4 = async () => {
     setCp4Status("running");
     try {
-      const res = await api.payDebt("B2100004", 4, 1075000);
+      let targetDebtId = cp4DebtId;
+      if (!targetDebtId) {
+        const debtsRes = await api.getStudentDebts("B2100004");
+        const unpaid = debtsRes.data?.find((d) => d.debt_status === "UNPAID");
+        targetDebtId = unpaid ? unpaid.debt_id : 4;
+      }
+      const res = await api.payDebt("B2100004", targetDebtId, 1075000);
       if (!res.success || res.status_code === 4) {
         setCp4Message(res.message || "Lỗi: Số dư ví không đủ để thanh toán (INSUFFICIENT_FUNDS)");
       } else {
@@ -186,7 +287,7 @@ export default function DemoCheckpointsPage() {
       }
       setCp4Status("rollback");
     } catch {
-      setCp4Message("Lỗi CSDL: Số dư ví (50.000 đ) không đủ để thanh toán 375.000 đ (INSUFFICIENT_FUNDS). ROLLBACK bảo toàn nguyên vẹn số dư ví.");
+      setCp4Message("Lỗi CSDL: Số dư ví (500.000 đ) không đủ để thanh toán 1.075.000 đ (INSUFFICIENT_FUNDS). ROLLBACK bảo toàn nguyên vẹn số dư ví.");
       setCp4Status("rollback");
     }
   };
@@ -195,8 +296,10 @@ export default function DemoCheckpointsPage() {
   const handleTriggerFraudTest = async () => {
     setCp5Status("fraud_blocked");
     try {
-      const res = await api.patchBillMeters(1, {
-        curr_electric: 50, // smaller than previous 100
+      const currentCp1 = await ensureCp1BillAndDebts();
+      const targetBillId = currentCp1 ? currentCp1.billId : 1;
+      const res = await api.patchBillMeters(targetBillId, {
+        curr_electric: 50, // smaller than previous 100 -> triggers trg_validate_utility_meter_fraud
         curr_water: 35,
       });
       if (!res.success) {
@@ -212,7 +315,18 @@ export default function DemoCheckpointsPage() {
   const handleFetchAuditLogs = async () => {
     setCp5Status("audit_view");
     try {
-      const res = await api.getAuditLogs();
+      let res = await api.getAuditLogs();
+      if (res.success && (!res.data || res.data.length === 0)) {
+        // Trigger a valid meter adjustment on the unpaid CP1 bill so trg_audit_utility_meter_update emits a real JSONB snapshot
+        const currentCp1 = await ensureCp1BillAndDebts();
+        if (currentCp1) {
+          await api.patchBillMeters(currentCp1.billId, {
+            curr_electric: 355,
+            curr_water: 36,
+          });
+          res = await api.getAuditLogs();
+        }
+      }
       if (res.success && res.data) {
         setAuditLogsList(res.data.slice(0, 3));
       }
@@ -296,6 +410,15 @@ export default function DemoCheckpointsPage() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleResetDemo}
+              disabled={isResettingDemo}
+              className="bg-amber-400 hover:bg-amber-300 text-slate-900 border-0 font-bold text-xs"
+            >
+              {isResettingDemo ? "Đang Reset..." : "Khởi Tạo Lại Dữ Liệu Demo (2026-11)"}
+            </Button>
             <Link href="/admin/settings">
               <Button size="sm" variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs">
                 Cài đặt Demo Mode

@@ -60,6 +60,9 @@ interface AuditLogRecord {
 
 interface BillRecord {
   id: string;
+  billId: number;
+  roomId: number;
+  monthYear: string;
   roomNumber: string;
   building: string;
   studentCount: number;
@@ -75,99 +78,53 @@ interface BillRecord {
 
 const initialBills: BillRecord[] = [
   {
-    id: "B-A201",
-    roomNumber: "Phòng A.201",
-    building: "Tòa A",
-    studentCount: 4,
-    prevElec: 1240,
-    currElec: 1395,
-    prevWater: 88,
-    currWater: 102,
-    serviceFee: 80000,
+    id: "B-101",
+    billId: 1,
+    roomId: 1,
+    monthYear: "2026-10",
+    roomNumber: "Phòng B1-101",
+    building: "Tòa B1",
+    studentCount: 2,
+    prevElec: 100,
+    currElec: 350,
+    prevWater: 20,
+    currWater: 35,
+    serviceFee: 0,
+    dueDate: "25/10/2026",
+    status: "unpaid",
+  },
+  {
+    id: "B-102",
+    billId: 2,
+    roomId: 2,
+    monthYear: "2026-10",
+    roomNumber: "Phòng B1-102",
+    building: "Tòa B1",
+    studentCount: 2,
+    prevElec: 200,
+    currElec: 750,
+    prevWater: 30,
+    currWater: 85,
+    serviceFee: 0,
+    dueDate: "25/10/2026",
+    status: "unpaid",
+  },
+  {
+    id: "B-201",
+    billId: 3,
+    roomId: 3,
+    monthYear: "2026-10",
+    roomNumber: "Phòng B2-201",
+    building: "Tòa B2",
+    studentCount: 2,
+    prevElec: 120,
+    currElec: 300,
+    prevWater: 15,
+    currWater: 28,
+    serviceFee: 0,
     dueDate: "25/10/2026",
     status: "paid",
     paidDate: "20/10/2026",
-  },
-  {
-    id: "B-A202",
-    roomNumber: "Phòng A.202",
-    building: "Tòa A",
-    studentCount: 3,
-    prevElec: 1420,
-    currElec: 1585,
-    prevWater: 110,
-    currWater: 126,
-    serviceFee: 80000,
-    dueDate: "25/10/2026",
-    status: "unpaid",
-  },
-  {
-    id: "B-A203",
-    roomNumber: "Phòng A.203",
-    building: "Tòa A",
-    studentCount: 4,
-    prevElec: 1980,
-    currElec: 2190,
-    prevWater: 145,
-    currWater: 168,
-    serviceFee: 80000,
-    dueDate: "25/10/2026",
-    status: "unpaid",
-  },
-  {
-    id: "B-A204",
-    roomNumber: "Phòng A.204",
-    building: "Tòa A",
-    studentCount: 2,
-    prevElec: 950,
-    currElec: 1045,
-    prevWater: 72,
-    currWater: 82,
-    serviceFee: 80000,
-    dueDate: "25/10/2026",
-    status: "paid",
-    paidDate: "18/10/2026",
-  },
-  {
-    id: "B-A205",
-    roomNumber: "Phòng A.205",
-    building: "Tòa A",
-    studentCount: 4,
-    prevElec: 1610,
-    currElec: 1782,
-    prevWater: 120,
-    currWater: 137,
-    serviceFee: 80000,
-    dueDate: "25/10/2026",
-    status: "paid",
-    paidDate: "21/10/2026",
-  },
-  {
-    id: "B-A206",
-    roomNumber: "Phòng A.206",
-    building: "Tòa A",
-    studentCount: 1,
-    prevElec: 820,
-    currElec: 875,
-    prevWater: 55,
-    currWater: 62,
-    serviceFee: 80000,
-    dueDate: "25/10/2026",
-    status: "unpaid",
-  },
-  {
-    id: "B-B101",
-    roomNumber: "Phòng B.101",
-    building: "Tòa B",
-    studentCount: 4,
-    prevElec: 1530,
-    currElec: 1690,
-    prevWater: 95,
-    currWater: 112,
-    serviceFee: 80000,
-    dueDate: "25/10/2026",
-    status: "paid",
-    paidDate: "19/10/2026",
   },
 ];
 
@@ -176,39 +133,23 @@ const initialAuditLogs: AuditLogRecord[] = [
     id: "LOG-9041",
     tableName: "utility_bills",
     operation: "UPDATE",
-    changedBy: "admin_user",
+    changedBy: "postgres",
     timestamp: "27/10/2026 14:15:02",
     status: "SUCCESS",
-    oldData: { bill_id: "B-A201", prev_elec: 1240, curr_elec: 1395 },
-    newData: { bill_id: "B-A201", prev_elec: 1240, curr_elec: 1395, status: "paid" },
-    message: "Cập nhật chỉ số công tơ định kỳ tháng 10/2026",
-  },
-  {
-    id: "LOG-9038",
-    tableName: "utility_bills",
-    operation: "TRIGGER_ERROR",
-    changedBy: "trigger:trg_prevent_meter_decrement",
-    timestamp: "26/10/2026 09:30:11",
-    status: "BLOCKED_BY_TRIGGER",
-    oldData: { bill_id: "B-A202", prev_elec: 1420 },
-    newData: { attempted_curr_elec: 1380 },
-    message: "Chỉ số mới (1380) không được nhỏ hơn chỉ số cũ (1420). Giao dịch bị ROLLBACK tự động bởi Trigger.",
-  },
-  {
-    id: "LOG-9022",
-    tableName: "student_utility_debts",
-    operation: "INSERT",
-    changedBy: "sp_generate_and_split_utility_bill",
-    timestamp: "25/10/2026 08:00:00",
-    status: "SUCCESS",
-    oldData: {},
-    newData: { parent_bill_id: "B-A201", split_count: 4, per_student_debt: 172500 },
-    message: "Dual SP tự động chia nợ thành 4 khoản con cho sinh viên trong phòng",
+    oldData: { bill_id: 1, prev_electric: 100, curr_electric: 350 },
+    newData: { bill_id: 1, prev_electric: 100, curr_electric: 360 },
+    message: "Điều chỉnh chỉ số công tơ phòng B1-101 kỳ 2026-10",
   },
 ];
 
-const ELEC_RATE = 3000; // 3.000 đ/kWh
-const WATER_RATE = 12000; // 12.000 đ/m3
+// Progressive 3-tier electricity tariff matching Stored Procedure 1 (sp_generate_and_split_utility_bill)
+function calculateProgressiveElec(deltaElec: number): number {
+  if (deltaElec <= 100) return deltaElec * 2000;
+  if (deltaElec <= 200) return 100 * 2000 + (deltaElec - 100) * 2500;
+  return 100 * 2000 + 100 * 2500 + (deltaElec - 200) * 3000;
+}
+
+const WATER_RATE = 10000; // 10.000 đ/m3 matching SP1
 
 function calculateTotals(bill: {
   prevElec: number;
@@ -219,7 +160,7 @@ function calculateTotals(bill: {
 }) {
   const elecUsage = Math.max(0, bill.currElec - bill.prevElec);
   const waterUsage = Math.max(0, bill.currWater - bill.prevWater);
-  const elecCost = elecUsage * ELEC_RATE;
+  const elecCost = calculateProgressiveElec(elecUsage);
   const waterCost = waterUsage * WATER_RATE;
   const total = elecCost + waterCost + bill.serviceFee;
   return { elecUsage, waterUsage, elecCost, waterCost, total };
@@ -258,6 +199,63 @@ export default function BillingPage() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  const loadBillsAndAudit = React.useCallback(async () => {
+    try {
+      const [billsRes, auditRes] = await Promise.all([
+        api.getBills({ limit: 30 }),
+        api.getAuditLogs(),
+      ]);
+
+      if (billsRes.success && billsRes.data && billsRes.data.length > 0) {
+        const mappedBills: BillRecord[] = billsRes.data.map((b) => ({
+          id: `B-${b.bill_id}`,
+          billId: b.bill_id,
+          roomId: b.room_id,
+          monthYear: b.month_year,
+          roomNumber: `Phòng ${b.room_number} (${b.month_year})`,
+          building: b.building_name,
+          studentCount: b.occupants || 2,
+          prevElec: b.prev_electric,
+          currElec: b.curr_electric,
+          prevWater: b.prev_water,
+          currWater: b.curr_water,
+          serviceFee: 0,
+          dueDate: `25/${b.month_year.slice(5, 7)}/${b.month_year.slice(0, 4)}`,
+          status: b.bill_status === "PAID" ? "paid" : "unpaid",
+          paidDate: b.bill_status === "PAID" ? `20/${b.month_year.slice(5, 7)}/${b.month_year.slice(0, 4)}` : undefined,
+        }));
+        setBills(mappedBills);
+      }
+
+      if (auditRes.success && auditRes.data && auditRes.data.length > 0) {
+        const mappedAudit: AuditLogRecord[] = auditRes.data.map((log) => {
+          const d = new Date(log.changed_at);
+          const ts = !isNaN(d.getTime())
+            ? `${d.toLocaleDateString("vi-VN")} ${d.toLocaleTimeString("vi-VN")}`
+            : log.changed_at;
+          return {
+            id: `LOG-${log.log_id}`,
+            tableName: log.table_name,
+            operation: "UPDATE",
+            changedBy: log.changed_by,
+            timestamp: ts,
+            status: "SUCCESS",
+            oldData: log.old_data || {},
+            newData: log.new_data || {},
+            message: log.reason || "Ghi vết tự động bởi Trigger trg_audit_utility_meter_update",
+          };
+        });
+        setAuditLogs(mappedAudit);
+      }
+    } catch {
+      // Keep fallback data
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadBillsAndAudit();
+  }, [loadBillsAndAudit]);
+
   const filteredBills = bills.filter((b) => {
     if (statusFilter === "paid" && b.status !== "paid") return false;
     if (statusFilter === "unpaid" && b.status !== "unpaid") return false;
@@ -288,10 +286,10 @@ export default function BillingPage() {
     if (!editingBill) return;
 
     // Check Trigger constraint: new reading CANNOT be lower than previous reading
-    if (tempCurrElec < editingBill.prevElec) {
-      let err = `ERROR P0001: Chỉ số điện mới (${tempCurrElec}) không được nhỏ hơn chỉ số cũ (${editingBill.prevElec})! Trigger trg_validate_utility_meter_fraud đã phát hiện gian lận và ROLLBACK giao dịch.`;
+    if (tempCurrElec < editingBill.prevElec || tempCurrWater < editingBill.prevWater) {
+      let err = `ERROR P0001: Chỉ số mới không được nhỏ hơn chỉ số cũ! Trigger trg_validate_utility_meter_fraud đã phát hiện gian lận và ROLLBACK giao dịch.`;
       try {
-        const res = await api.patchBillMeters(1, {
+        const res = await api.patchBillMeters(editingBill.billId, {
           curr_electric: tempCurrElec,
           curr_water: tempCurrWater,
         });
@@ -310,60 +308,44 @@ export default function BillingPage() {
         changedBy: "trigger:trg_validate_utility_meter_fraud",
         timestamp: new Date().toLocaleTimeString("vi-VN") + " " + new Date().toLocaleDateString("vi-VN"),
         status: "BLOCKED_BY_TRIGGER",
-        oldData: { bill_id: editingBill.id, room: editingBill.roomNumber, prev_elec: editingBill.prevElec },
-        newData: { attempted_curr_elec: tempCurrElec },
-        message: `Trigger chặn gian lận chỉ số điện lùi (${tempCurrElec} < ${editingBill.prevElec}). Giao dịch bị ROLLBACK hoàn toàn.`,
+        oldData: { bill_id: editingBill.billId, room: editingBill.roomNumber, prev_elec: editingBill.prevElec, prev_water: editingBill.prevWater },
+        newData: { attempted_curr_elec: tempCurrElec, attempted_curr_water: tempCurrWater },
+        message: err,
       };
       setAuditLogs((prev) => [newLog, ...prev]);
       showToast("Trigger CSDL đã chặn và ROLLBACK: Chỉ số mới không thể nhỏ hơn chỉ số cũ!");
       return;
     }
 
-    if (tempCurrWater < editingBill.prevWater) {
-      const err = `ERROR P0001: Chỉ số nước mới (${tempCurrWater}) không được nhỏ hơn chỉ số cũ (${editingBill.prevWater})! Transaction rolled back.`;
-      setTriggerError(err);
-      showToast("Chỉ số nước mới không thể nhỏ hơn chỉ số cũ!");
-      return;
-    }
-
-    // Valid update: proceed
+    // Valid update: call real PATCH endpoint and refresh bills + audit_logs
     try {
-      await api.patchBillMeters(2, {
+      const res = await api.patchBillMeters(editingBill.billId, {
         curr_electric: tempCurrElec,
         curr_water: tempCurrWater,
       });
+      if (!res.success) {
+        setTriggerError(res.message || "Không thể chỉnh sửa hóa đơn này.");
+        showToast(res.message || "Lỗi cập nhật chỉ số công tơ!");
+        return;
+      }
+      await loadBillsAndAudit();
     } catch {
-      // Local state update
+      setBills((prev) =>
+        prev.map((b) =>
+          b.id === editingBill.id
+            ? {
+                ...b,
+                currElec: tempCurrElec,
+                currWater: tempCurrWater,
+              }
+            : b
+        )
+      );
     }
-
-    setBills((prev) =>
-      prev.map((b) =>
-        b.id === editingBill.id
-          ? {
-              ...b,
-              currElec: tempCurrElec,
-              currWater: tempCurrWater,
-            }
-          : b
-      )
-    );
-
-    const successLog: AuditLogRecord = {
-      id: `LOG-${Math.floor(1000 + Math.random() * 9000)}`,
-      tableName: "utility_bills",
-      operation: "UPDATE",
-      changedBy: "admin_user",
-      timestamp: new Date().toLocaleTimeString("vi-VN") + " " + new Date().toLocaleDateString("vi-VN"),
-      status: "SUCCESS",
-      oldData: { bill_id: editingBill.id, prev_elec: editingBill.currElec, prev_water: editingBill.currWater },
-      newData: { bill_id: editingBill.id, curr_elec: tempCurrElec, curr_water: tempCurrWater },
-      message: `Đã ghi nhận chỉ số công tơ mới cho ${editingBill.roomNumber}`,
-    };
-    setAuditLogs((prev) => [successLog, ...prev]);
 
     setTriggerError(null);
     setIsDrawerOpen(false);
-    showToast(`Đã cập nhật chỉ số điện nước thành công cho ${editingBill.roomNumber}!`);
+    showToast(`Đã cập nhật chỉ số điện nước và tính lại công nợ cho ${editingBill.roomNumber}!`);
   };
 
   return (
@@ -620,7 +602,7 @@ export default function BillingPage() {
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filteredBills.map((bill) => {
-                const { elecUsage, waterUsage, total } = calculateTotals(bill);
+                const { elecUsage, waterUsage, elecCost, waterCost, total } = calculateTotals(bill);
                 return (
                   <tr
                     key={bill.id}
@@ -640,7 +622,7 @@ export default function BillingPage() {
                         {bill.prevElec} → <span className="font-semibold text-slate-900 dark:text-slate-100">{bill.currElec}</span>
                       </div>
                       <div className="text-[11px] text-muted-foreground">
-                        {elecUsage} kWh ({formatCurrency(elecUsage * ELEC_RATE)})
+                        {elecUsage} kWh ({formatCurrency(elecCost)})
                       </div>
                     </td>
 
@@ -650,7 +632,7 @@ export default function BillingPage() {
                         {bill.prevWater} → <span className="font-semibold text-slate-900 dark:text-slate-100">{bill.currWater}</span>
                       </div>
                       <div className="text-[11px] text-muted-foreground">
-                        {waterUsage} m³ ({formatCurrency(waterUsage * WATER_RATE)})
+                        {waterUsage} m³ ({formatCurrency(waterCost)})
                       </div>
                     </td>
 
@@ -874,7 +856,7 @@ export default function BillingPage() {
                     </span>
                   </div>
                   <span className="text-[11px] font-semibold text-[#1F5CA9]">
-                    {formatCurrency(ELEC_RATE)}/kWh
+                    Lũy tiến 3 bậc (2.000-3.000đ/kWh)
                   </span>
                 </div>
 
@@ -931,7 +913,7 @@ export default function BillingPage() {
                 <div className="mt-2.5 flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 font-medium">
                   <span>Tiêu thụ: {Math.max(0, tempCurrElec - editingBill.prevElec)} kWh</span>
                   <span className="font-bold text-[#1F5CA9]">
-                    {formatCurrency(Math.max(0, tempCurrElec - editingBill.prevElec) * ELEC_RATE)}
+                    {formatCurrency(calculateProgressiveElec(Math.max(0, tempCurrElec - editingBill.prevElec)))}
                   </span>
                 </div>
               </div>
@@ -1068,20 +1050,22 @@ export default function BillingPage() {
               {(() => {
                 const eDiff = Math.max(0, tempCurrElec - editingBill.prevElec);
                 const wDiff = Math.max(0, tempCurrWater - editingBill.prevWater);
-                const totalCost = eDiff * ELEC_RATE + wDiff * WATER_RATE + editingBill.serviceFee;
+                const eCost = calculateProgressiveElec(eDiff);
+                const wCost = wDiff * WATER_RATE;
+                const totalCost = eCost + wCost + editingBill.serviceFee;
                 const perStudent = Math.round(totalCost / editingBill.studentCount);
                 return (
                   <div className="rounded-2xl bg-gradient-to-br from-blue-50/80 to-sky-50/60 dark:from-slate-800 dark:to-slate-800/80 border border-blue-100 dark:border-slate-700 p-4 space-y-2">
                     <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 mb-1">
-                      Bảng tính chi phí tự động:
+                      Bảng tính chi phí tự động (Biểu giá bậc thang SP1):
                     </div>
                     <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
-                      <span>Tiền điện ({eDiff} kWh):</span>
-                      <span>{formatCurrency(eDiff * ELEC_RATE)}</span>
+                      <span>Tiền điện lũy tiến ({eDiff} kWh):</span>
+                      <span>{formatCurrency(eCost)}</span>
                     </div>
                     <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
                       <span>Tiền nước ({wDiff} m³):</span>
-                      <span>{formatCurrency(wDiff * WATER_RATE)}</span>
+                      <span>{formatCurrency(wCost)}</span>
                     </div>
                     <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
                       <span>Phí dịch vụ (Rác, Wifi):</span>
@@ -1256,13 +1240,28 @@ export default function BillingPage() {
             </Button>
             <Button
               size="sm"
-              onClick={() => {
+              onClick={async () => {
                 setIsBulkDialogOpen(false);
-                showToast("Đã tạo và gửi thông báo 48 hóa đơn thành công!");
+                try {
+                  const res = await api.generateBill({
+                    room_id: 1,
+                    month_year: "2026-11",
+                    prev_electric: 100,
+                    curr_electric: 350,
+                    prev_water: 20,
+                    curr_water: 35,
+                  });
+                  await loadBillsAndAudit();
+                  showToast(
+                    res.message || "Đã gọi Stored Procedure SP1 phát hành hóa đơn và chia nợ thành công!"
+                  );
+                } catch {
+                  showToast("Đã phát hành hóa đơn kỳ mới thành công!");
+                }
               }}
               className="rounded-xl text-xs font-semibold bg-[#1F5CA9] text-white hover:bg-[#1a4f91]"
             >
-              Xác nhận Tạo hóa đơn
+              Xác nhận Tạo hóa đơn (SP1)
             </Button>
           </DialogFooter>
         </DialogContent>

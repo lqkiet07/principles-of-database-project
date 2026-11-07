@@ -135,6 +135,38 @@ export default function AdminDashboardPage() {
     };
   }, []);
 
+  const dynamicDonutData = React.useMemo(() => {
+    if (!dashboard) return roomAvailabilityData;
+    const occupied = dashboard.total_occupancy;
+    const available = Math.max(0, dashboard.total_capacity - dashboard.total_occupancy);
+    return [
+      { name: "Occupied", value: occupied, color: "#1F5CA9" },
+      { name: "Available", value: available, color: "#00AFEF" },
+      { name: "Maintenance", value: 0, color: "#FFB800" },
+    ];
+  }, [dashboard]);
+
+  const dynamicForecastChart = React.useMemo(() => {
+    if (!forecast || !forecast.history || forecast.history.length === 0) {
+      return forecastData;
+    }
+    const recentHist = forecast.history.slice(-5);
+    const points: Array<{ month: string; actual: number | null; forecast: number | null }> =
+      recentHist.map((h, idx) => ({
+        month: h.month_year,
+        actual: h.actual_kwh,
+        forecast: idx === recentHist.length - 1 ? h.actual_kwh : null,
+      }));
+    for (const p of forecast.predictions || []) {
+      points.push({
+        month: `${p.month_year} (AI)`,
+        actual: null,
+        forecast: p.predicted_kwh,
+      });
+    }
+    return points;
+  }, [forecast]);
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -357,7 +389,7 @@ export default function AdminDashboardPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={roomAvailabilityData}
+                    data={dynamicDonutData}
                     cx="50%"
                     cy="50%"
                     innerRadius={55}
@@ -365,7 +397,7 @@ export default function AdminDashboardPage() {
                     paddingAngle={3}
                     dataKey="value"
                   >
-                    {roomAvailabilityData.map((entry, index) => (
+                    {dynamicDonutData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -456,10 +488,10 @@ export default function AdminDashboardPage() {
           <CardContent className="pt-3">
             <div className="h-[200px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={forecastData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+                <LineChart data={dynamicForecastChart} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" opacity={0.6} />
                   <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={12} stroke="#64748B" />
-                  <YAxis tickLine={false} axisLine={false} fontSize={12} stroke="#64748B" domain={[10000, 25000]} />
+                  <YAxis tickLine={false} axisLine={false} fontSize={12} stroke="#64748B" domain={["auto", "auto"]} />
                   <RechartsTooltip
                     contentStyle={{
                       backgroundColor: "#FFFFFF",
@@ -474,7 +506,16 @@ export default function AdminDashboardPage() {
               </ResponsiveContainer>
             </div>
             <p className="text-[11px] text-slate-500 mt-1 italic">
-              * Dự báo tháng 11/2026: ~<strong>20.600 kWh</strong> (Độ tin cậy R² = 0.942). Giúp ban quản lý chuẩn bị ngân sách vận hành.
+              {forecast && forecast.predictions && forecast.predictions.length > 0 ? (
+                <>
+                  * Dự báo kỳ tiếp theo ({forecast.predictions[0].month_year}) cho <strong>{forecast.building_name}</strong>:{" "}
+                  <strong>{forecast.predictions[0].predicted_kwh.toLocaleString("vi-VN")} kWh</strong> (Mô hình {forecast.model_name}, sai số MAE = {forecast.mae} kWh).
+                </>
+              ) : (
+                <>
+                  * Dự báo tháng 11/2026: ~<strong>20.600 kWh</strong> (Độ tin cậy R² = 0.942). Giúp ban quản lý chuẩn bị ngân sách vận hành.
+                </>
+              )}
             </p>
           </CardContent>
         </Card>
@@ -495,35 +536,78 @@ export default function AdminDashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2.5 pt-1">
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-2.5">
-              <div className="flex justify-between items-center text-xs font-bold text-emerald-800">
-                <span>Cụm 0: Sinh Viên Gương Mẫu</span>
-                <span>82%</span>
-              </div>
-              <p className="text-[10px] text-emerald-700 mt-0.5">
-                Không vi phạm giới nghiêm, nộp tiền đúng hạn 100%.
-              </p>
-            </div>
+            {clusters && clusters.clusters && clusters.clusters.length > 0 ? (
+              clusters.clusters.map((cl, idx) => {
+                const pct =
+                  clusters.total_students > 0
+                    ? Math.round((cl.student_count / clusters.total_students) * 100)
+                    : 0;
+                const styles = [
+                  {
+                    box: "border-emerald-200 bg-emerald-50/50",
+                    title: "text-emerald-800",
+                    desc: "text-emerald-700",
+                  },
+                  {
+                    box: "border-amber-200 bg-amber-50/50",
+                    title: "text-amber-800",
+                    desc: "text-amber-700",
+                  },
+                  {
+                    box: "border-red-200 bg-red-50/50",
+                    title: "text-red-800",
+                    desc: "text-red-700",
+                  },
+                ][idx % 3];
+                return (
+                  <div key={cl.cluster_id} className={`rounded-xl border p-2.5 ${styles.box}`}>
+                    <div className={`flex justify-between items-center text-xs font-bold ${styles.title}`}>
+                      <span>
+                        Cụm {cl.cluster_id}: {cl.label_vi}
+                      </span>
+                      <span>
+                        {cl.student_count} SV ({pct}%)
+                      </span>
+                    </div>
+                    <p className={`text-[10px] mt-0.5 ${styles.desc}`}>
+                      {cl.description} (TB đi trễ: {cl.avg_late_count} lần, TB điện: {cl.avg_power_kwh} kWh)
+                    </p>
+                  </div>
+                );
+              })
+            ) : (
+              <>
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-2.5">
+                  <div className="flex justify-between items-center text-xs font-bold text-emerald-800">
+                    <span>Cụm 0: Sinh Viên Gương Mẫu</span>
+                    <span>82%</span>
+                  </div>
+                  <p className="text-[10px] text-emerald-700 mt-0.5">
+                    Không vi phạm giới nghiêm, nộp tiền đúng hạn 100%.
+                  </p>
+                </div>
 
-            <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-2.5">
-              <div className="flex justify-between items-center text-xs font-bold text-amber-800">
-                <span>Cụm 1: Rủi Ro Tài Chính</span>
-                <span>12%</span>
-              </div>
-              <p className="text-[10px] text-amber-700 mt-0.5">
-                Nợ điện nước kéo dài &gt; 15 ngày, cần SMS nhắc nhở.
-              </p>
-            </div>
+                <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-2.5">
+                  <div className="flex justify-between items-center text-xs font-bold text-amber-800">
+                    <span>Cụm 1: Rủi Ro Tài Chính</span>
+                    <span>12%</span>
+                  </div>
+                  <p className="text-[10px] text-amber-700 mt-0.5">
+                    Nợ điện nước kéo dài &gt; 15 ngày, cần SMS nhắc nhở.
+                  </p>
+                </div>
 
-            <div className="rounded-xl border border-red-200 bg-red-50/50 p-2.5">
-              <div className="flex justify-between items-center text-xs font-bold text-red-800">
-                <span>Cụm 2: Cảnh Báo An Ninh</span>
-                <span>6%</span>
-              </div>
-              <p className="text-[10px] text-red-700 mt-0.5">
-                Về muộn sau 23:00 trên 3 lần trong tháng.
-              </p>
-            </div>
+                <div className="rounded-xl border border-red-200 bg-red-50/50 p-2.5">
+                  <div className="flex justify-between items-center text-xs font-bold text-red-800">
+                    <span>Cụm 2: Cảnh Báo An Ninh</span>
+                    <span>6%</span>
+                  </div>
+                  <p className="text-[10px] text-red-700 mt-0.5">
+                    Về muộn sau 23:00 trên 3 lần trong tháng.
+                  </p>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

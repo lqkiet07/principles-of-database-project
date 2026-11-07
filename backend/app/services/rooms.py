@@ -30,6 +30,31 @@ async def get_rooms_list(
         """,
         tuple(params),
     )
+
+    occ_rows = await fetch_all(
+        """
+        SELECT ra.assignment_id, ra.room_id, ra.student_id, s.full_name, s.major,
+               ra.bed_number, ra.start_date, ra.end_date
+        FROM room_assignments ra
+        JOIN students s ON s.student_id = ra.student_id
+        WHERE ra.is_active = TRUE
+        ORDER BY ra.room_id, ra.bed_number;
+        """
+    )
+    occ_by_room: dict[int, list[dict[str, Any]]] = {}
+    for occ in occ_rows:
+        occ_by_room.setdefault(occ["room_id"], []).append(
+            {
+                "assignment_id": occ["assignment_id"],
+                "student_id": occ["student_id"],
+                "full_name": occ["full_name"],
+                "major": occ["major"],
+                "bed_number": occ["bed_number"],
+                "start_date": str(occ["start_date"]),
+                "end_date": str(occ["end_date"]) if occ["end_date"] else None,
+            }
+        )
+
     return [
         {
             "room_id": r["room_id"],
@@ -42,6 +67,7 @@ async def get_rooms_list(
             "base_price": float(r["base_price"]),
             "status": r["status"],
             "description": r["description"],
+            "occupants": occ_by_room.get(r["room_id"], []),
         }
         for r in rows
     ]
