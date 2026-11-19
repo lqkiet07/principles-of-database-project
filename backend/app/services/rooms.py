@@ -73,74 +73,60 @@ async def get_rooms_list(
     ]
 
 
+async def _validate_assignment_preconditions(
+    cur: Any, payload: AssignmentIn
+) -> dict[str, Any]:
+    await cur.execute(
+        "SELECT room_id, capacity, current_occupancy, status FROM rooms WHERE room_id = %s FOR UPDATE;",
+        (payload.room_id,),
+    )
+    room = await cur.fetchone()
+    if not room:
+        raise ApiError(404, "ROOM_NOT_FOUND", f"Phòng #{payload.room_id} không tồn tại.")
+    if room["status"] == "MAINTENANCE":
+        raise ApiError(422, "ROOM_IN_MAINTENANCE", "Phòng đang bảo trì, không thể xếp chỗ.")
+    if room["current_occupancy"] >= room["capacity"]:
+        raise ApiError(422, "ROOM_OVER_CAPACITY", "Phòng đã đủ chỗ (vượt quá sức chứa).")
+    if payload.bed_number > room["capacity"]:
+        raise ApiError(
+            422,
+            "INVALID_BED_NUMBER",
+            f"Số giường {payload.bed_number} vượt quá sức chứa phòng {room['capacity']}.",
+        )
+
+    await cur.execute(
+        "SELECT student_id, status FROM students WHERE student_id = %s;",
+        (payload.student_id,),
+    )
+    student = await cur.fetchone()
+    if not student:
+        raise ApiError(404, "STUDENT_NOT_FOUND", f"Sinh viên {payload.student_id} không tồn tại.")
+    if student["status"] != "ACTIVE":
+        raise ApiError(422, "STUDENT_NOT_ACTIVE", "Sinh viên không ở trạng thái hoạt động.")
+
+    await cur.execute(
+        "SELECT assignment_id FROM room_assignments WHERE student_id = %s AND is_active = TRUE;",
+        (payload.student_id,),
+    )
+    if await cur.fetchone():
+        raise ApiError(409, "STUDENT_ALREADY_ASSIGNED", "Sinh viên đã có hợp đồng lưu trú còn hiệu lực.")
+
+    await cur.execute(
+        "SELECT assignment_id FROM room_assignments WHERE room_id = %s AND bed_number = %s AND is_active = TRUE;",
+        (payload.room_id, payload.bed_number),
+    )
+    if await cur.fetchone():
+        raise ApiError(
+            409,
+            "BED_ALREADY_OCCUPIED",
+            f"Giường số {payload.bed_number} của phòng này đã có người ở.",
+        )
+    return room
+
+
 async def assign_student(payload: AssignmentIn) -> dict[str, Any]:
-    async with (
-        get_connection() as conn,
-        conn.transaction(),
-        conn.cursor() as cur,
-    ):
-        await cur.execute(
-            "SELECT room_id, capacity, current_occupancy, status FROM rooms WHERE room_id = %s FOR UPDATE;",
-            (payload.room_id,),
-        )
-        room = await cur.fetchone()
-        if not room:
-            raise ApiError(
-                404, "ROOM_NOT_FOUND", f"Phòng #{payload.room_id} không tồn tại."
-            )
-        if room["status"] == "MAINTENANCE":
-            raise ApiError(
-                422, "ROOM_IN_MAINTENANCE", "Phòng đang bảo trì, không thể xếp chỗ."
-            )
-        if room["current_occupancy"] >= room["capacity"]:
-            raise ApiError(
-                422, "ROOM_OVER_CAPACITY", "Phòng đã đủ chỗ (vượt quá sức chứa)."
-            )
-        if payload.bed_number > room["capacity"]:
-            raise ApiError(
-                422,
-                "INVALID_BED_NUMBER",
-                f"Số giường {payload.bed_number} vượt quá sức chứa phòng {room['capacity']}.",
-            )
-
-        await cur.execute(
-            "SELECT student_id, status FROM students WHERE student_id = %s;",
-            (payload.student_id,),
-        )
-        student = await cur.fetchone()
-        if not student:
-            raise ApiError(
-                404,
-                "STUDENT_NOT_FOUND",
-                f"Sinh viên {payload.student_id} không tồn tại.",
-            )
-        if student["status"] != "ACTIVE":
-            raise ApiError(
-                422, "STUDENT_NOT_ACTIVE", "Sinh viên không ở trạng thái hoạt động."
-            )
-
-        await cur.execute(
-            "SELECT assignment_id FROM room_assignments WHERE student_id = %s AND is_active = TRUE;",
-            (payload.student_id,),
-        )
-        if await cur.fetchone():
-            raise ApiError(
-                409,
-                "STUDENT_ALREADY_ASSIGNED",
-                "Sinh viên đã có hợp đồng lưu trú còn hiệu lực.",
-            )
-
-        await cur.execute(
-            "SELECT assignment_id FROM room_assignments WHERE room_id = %s AND bed_number = %s AND is_active = TRUE;",
-            (payload.room_id, payload.bed_number),
-        )
-        if await cur.fetchone():
-            raise ApiError(
-                409,
-                "BED_ALREADY_OCCUPIED",
-                f"Giường số {payload.bed_number} của phòng này đã có người ở.",
-            )
-
+    async with get_connection() as conn, conn.transaction(), conn.cursor() as cur:
+        room = await _validate_assignment_preconditions(cur, payload)
         await cur.execute(
             """
             INSERT INTO room_assignments (room_id, student_id, bed_number, start_date, end_date, is_active)
@@ -176,24 +162,16 @@ async def assign_student(payload: AssignmentIn) -> dict[str, Any]:
 
 
 async def unassign_student(assignment_id: int) -> dict[str, Any]:
-    async with (
-        get_connection() as conn,
-        conn.transaction(),
-        conn.cursor() as cur,
-    ):
+    async with get_connection() as conn, conn.transaction(), conn.cursor() as cur:
         await cur.execute(
             "SELECT assignment_id, room_id, is_active FROM room_assignments WHERE assignment_id = %s FOR UPDATE;",
             (assignment_id,),
         )
         assign = await cur.fetchone()
         if not assign:
-            raise ApiError(
-                404, "ASSIGNMENT_NOT_FOUND", f"Hợp đồng #{assignment_id} không tồn tại."
-            )
+            raise ApiError(404, "ASSIGNMENT_NOT_FOUND", f"Hợp đồng #{assignment_id} không tồn tại.")
         if not assign["is_active"]:
-            raise ApiError(
-                422, "ASSIGNMENT_ALREADY_INACTIVE", "Hợp đồng đã kết thúc trước đó."
-            )
+            raise ApiError(422, "ASSIGNMENT_ALREADY_INACTIVE", "Hợp đồng đã kết thúc trước đó.")
 
         await cur.execute(
             "UPDATE room_assignments SET is_active = FALSE, end_date = CURRENT_DATE WHERE assignment_id = %s RETURNING end_date;",
@@ -201,15 +179,14 @@ async def unassign_student(assignment_id: int) -> dict[str, Any]:
         )
         end_row = await cur.fetchone()
 
-        room_id = assign["room_id"]
         await cur.execute(
             """
-            UPDATE rooms 
+            UPDATE rooms
             SET current_occupancy = GREATEST(0, current_occupancy - 1),
                 status = 'AVAILABLE'
             WHERE room_id = %s;
             """,
-            (room_id,),
+            (assign["room_id"],),
         )
 
     return {

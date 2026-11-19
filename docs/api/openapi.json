@@ -45,15 +45,25 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
           }
         }
       }
@@ -82,20 +92,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_dict_"
+                  "$ref": "#/components/schemas/ApiResponse_StudentProfileOut_"
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
           }
         }
       }
@@ -124,20 +144,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_dict_"
+                  "$ref": "#/components/schemas/ApiResponse_StudentRoomOut_"
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
           }
         }
       }
@@ -166,20 +196,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_list_"
+                  "$ref": "#/components/schemas/ApiResponse_list_StudentDebtOut__"
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
           }
         }
       }
@@ -208,20 +248,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_list_"
+                  "$ref": "#/components/schemas/ApiResponse_list_TransactionOut__"
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
           }
         }
       }
@@ -315,20 +365,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_dict_"
+                  "$ref": "#/components/schemas/ApiResponse_StudentAccessLogsOut_"
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
           }
         }
       }
@@ -392,20 +452,50 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_list_"
+                  "$ref": "#/components/schemas/ApiResponse_list_AdminBillOut__"
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "403": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
           }
         }
       },
@@ -436,15 +526,45 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "403": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
           }
         }
       }
@@ -488,15 +608,45 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "403": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
           }
         }
       }
@@ -592,15 +742,45 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "403": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
           }
         }
       }
@@ -652,20 +832,50 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_list_"
+                  "$ref": "#/components/schemas/ApiResponse_list_RoomOut__"
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "403": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
           }
         }
       }
@@ -683,7 +893,47 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_list_"
+                  "$ref": "#/components/schemas/ApiResponse_list_AdminStudentOut__"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
             }
@@ -704,7 +954,47 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_list_"
+                  "$ref": "#/components/schemas/ApiResponse_list_AdminAssignmentOut__"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
             }
@@ -738,12 +1028,42 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
             }
@@ -764,7 +1084,47 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_dict_"
+                  "$ref": "#/components/schemas/ApiResponse_DemoResetOut_"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
             }
@@ -796,20 +1156,50 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_dict_"
+                  "$ref": "#/components/schemas/ApiResponse_CheckoutOut_"
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "403": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
           }
         }
       }
@@ -828,6 +1218,46 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponse_DashboardSummaryOut_"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
             }
@@ -947,20 +1377,50 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_dict_"
+                  "$ref": "#/components/schemas/ApiResponse_AdminAccessLogsOut_"
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "403": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
           }
         }
       }
@@ -1028,15 +1488,45 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "403": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
           }
         }
       }
@@ -1054,7 +1544,47 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_dict_"
+                  "$ref": "#/components/schemas/ApiResponse_ReindexOut_"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
             }
@@ -1090,12 +1620,32 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
             }
@@ -1142,20 +1692,40 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_list_"
+                  "$ref": "#/components/schemas/ApiResponse_list_SemanticRoomOut__"
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
           }
         }
       }
@@ -1191,15 +1761,35 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
           }
         }
       }
@@ -1218,6 +1808,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponse_ClusterAnalysisOut_"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
             }
@@ -1247,6 +1867,524 @@
   },
   "components": {
     "schemas": {
+      "AccessLogItemOut": {
+        "properties": {
+          "log_id": {
+            "type": "integer",
+            "title": "Log Id"
+          },
+          "gate_name": {
+            "type": "string",
+            "title": "Gate Name"
+          },
+          "check_time": {
+            "type": "string",
+            "title": "Check Time"
+          },
+          "is_late": {
+            "type": "boolean",
+            "title": "Is Late"
+          }
+        },
+        "type": "object",
+        "required": [
+          "log_id",
+          "gate_name",
+          "check_time",
+          "is_late"
+        ],
+        "title": "AccessLogItemOut"
+      },
+      "AdminAccessLogItemOut": {
+        "properties": {
+          "log_id": {
+            "type": "integer",
+            "title": "Log Id"
+          },
+          "student_id": {
+            "type": "string",
+            "title": "Student Id"
+          },
+          "student_name": {
+            "type": "string",
+            "title": "Student Name"
+          },
+          "gate_name": {
+            "type": "string",
+            "title": "Gate Name"
+          },
+          "check_time": {
+            "type": "string",
+            "title": "Check Time"
+          },
+          "is_late": {
+            "type": "boolean",
+            "title": "Is Late"
+          }
+        },
+        "type": "object",
+        "required": [
+          "log_id",
+          "student_id",
+          "student_name",
+          "gate_name",
+          "check_time",
+          "is_late"
+        ],
+        "title": "AdminAccessLogItemOut"
+      },
+      "AdminAccessLogsOut": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "late_count": {
+            "type": "integer",
+            "title": "Late Count"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminAccessLogItemOut"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "late_count",
+          "items"
+        ],
+        "title": "AdminAccessLogsOut"
+      },
+      "AdminAssignmentOut": {
+        "properties": {
+          "assignment_id": {
+            "type": "integer",
+            "title": "Assignment Id"
+          },
+          "room_id": {
+            "type": "integer",
+            "title": "Room Id"
+          },
+          "room_number": {
+            "type": "string",
+            "title": "Room Number"
+          },
+          "building_id": {
+            "type": "string",
+            "title": "Building Id"
+          },
+          "building_name": {
+            "type": "string",
+            "title": "Building Name"
+          },
+          "base_price": {
+            "type": "number",
+            "title": "Base Price"
+          },
+          "capacity": {
+            "type": "integer",
+            "title": "Capacity"
+          },
+          "current_occupancy": {
+            "type": "integer",
+            "title": "Current Occupancy"
+          },
+          "student_id": {
+            "type": "string",
+            "title": "Student Id"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "major": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "bed_number": {
+            "type": "integer",
+            "title": "Bed Number"
+          },
+          "start_date": {
+            "type": "string",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assignment_id",
+          "room_id",
+          "room_number",
+          "building_id",
+          "building_name",
+          "base_price",
+          "capacity",
+          "current_occupancy",
+          "student_id",
+          "full_name",
+          "bed_number",
+          "start_date",
+          "is_active"
+        ],
+        "title": "AdminAssignmentOut"
+      },
+      "AdminBillOut": {
+        "properties": {
+          "bill_id": {
+            "type": "integer",
+            "title": "Bill Id"
+          },
+          "room_id": {
+            "type": "integer",
+            "title": "Room Id"
+          },
+          "room_number": {
+            "type": "string",
+            "title": "Room Number"
+          },
+          "building_id": {
+            "type": "string",
+            "title": "Building Id"
+          },
+          "building_name": {
+            "type": "string",
+            "title": "Building Name"
+          },
+          "occupants": {
+            "type": "integer",
+            "title": "Occupants"
+          },
+          "month_year": {
+            "type": "string",
+            "title": "Month Year"
+          },
+          "prev_electric": {
+            "type": "integer",
+            "title": "Prev Electric"
+          },
+          "curr_electric": {
+            "type": "integer",
+            "title": "Curr Electric"
+          },
+          "prev_water": {
+            "type": "integer",
+            "title": "Prev Water"
+          },
+          "curr_water": {
+            "type": "integer",
+            "title": "Curr Water"
+          },
+          "total_amount": {
+            "type": "number",
+            "title": "Total Amount"
+          },
+          "paid_amount": {
+            "type": "number",
+            "title": "Paid Amount"
+          },
+          "bill_status": {
+            "type": "string",
+            "title": "Bill Status"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bill_id",
+          "room_id",
+          "room_number",
+          "building_id",
+          "building_name",
+          "occupants",
+          "month_year",
+          "prev_electric",
+          "curr_electric",
+          "prev_water",
+          "curr_water",
+          "total_amount",
+          "paid_amount",
+          "bill_status"
+        ],
+        "title": "AdminBillOut"
+      },
+      "AdminStudentOut": {
+        "properties": {
+          "student_id": {
+            "type": "string",
+            "title": "Student Id"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "gender": {
+            "type": "string",
+            "title": "Gender"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "major": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major"
+          },
+          "cohort": {
+            "type": "integer",
+            "title": "Cohort"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "wallet_balance": {
+            "type": "number",
+            "title": "Wallet Balance"
+          },
+          "assignment_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignment Id"
+          },
+          "room_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Room Id"
+          },
+          "room_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Room Number"
+          },
+          "building_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Building Id"
+          },
+          "bed_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bed Number"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "unpaid_debt": {
+            "type": "number",
+            "title": "Unpaid Debt"
+          },
+          "late_count": {
+            "type": "integer",
+            "title": "Late Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "student_id",
+          "full_name",
+          "gender",
+          "email",
+          "cohort",
+          "status",
+          "wallet_balance",
+          "unpaid_debt",
+          "late_count"
+        ],
+        "title": "AdminStudentOut"
+      },
+      "ApiErrorResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "status_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Code"
+          },
+          "error_code": {
+            "type": "string",
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "data": {
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error_code",
+          "message"
+        ],
+        "title": "ApiErrorResponse"
+      },
+      "ApiResponse_AdminAccessLogsOut_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AdminAccessLogsOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[AdminAccessLogsOut]"
+      },
       "ApiResponse_AssignmentOut_": {
         "properties": {
           "success": {
@@ -1331,6 +2469,48 @@
         "type": "object",
         "title": "ApiResponse[BenchmarkOut]"
       },
+      "ApiResponse_CheckoutOut_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CheckoutOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[CheckoutOut]"
+      },
       "ApiResponse_ClusterAnalysisOut_": {
         "properties": {
           "success": {
@@ -1414,6 +2594,48 @@
         },
         "type": "object",
         "title": "ApiResponse[DashboardSummaryOut]"
+      },
+      "ApiResponse_DemoResetOut_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DemoResetOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[DemoResetOut]"
       },
       "ApiResponse_ForecastOut_": {
         "properties": {
@@ -1583,6 +2805,174 @@
         "type": "object",
         "title": "ApiResponse[PaymentOut]"
       },
+      "ApiResponse_ReindexOut_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReindexOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[ReindexOut]"
+      },
+      "ApiResponse_StudentAccessLogsOut_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StudentAccessLogsOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[StudentAccessLogsOut]"
+      },
+      "ApiResponse_StudentProfileOut_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StudentProfileOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[StudentProfileOut]"
+      },
+      "ApiResponse_StudentRoomOut_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StudentRoomOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[StudentRoomOut]"
+      },
       "ApiResponse_TopupOut_": {
         "properties": {
           "success": {
@@ -1625,7 +3015,7 @@
         "type": "object",
         "title": "ApiResponse[TopupOut]"
       },
-      "ApiResponse_dict_": {
+      "ApiResponse_list_AdminAssignmentOut__": {
         "properties": {
           "success": {
             "type": "boolean",
@@ -1656,51 +3046,9 @@
           "data": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "title": "ApiResponse[dict]"
-      },
-      "ApiResponse_list_": {
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "title": "Success",
-            "default": true
-          },
-          "status_code": {
-            "type": "integer",
-            "title": "Status Code",
-            "default": 0
-          },
-          "error_code": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error Code"
-          },
-          "message": {
-            "type": "string",
-            "title": "Message",
-            "default": "Thành công"
-          },
-          "data": {
-            "anyOf": [
-              {
-                "items": {},
+                "items": {
+                  "$ref": "#/components/schemas/AdminAssignmentOut"
+                },
                 "type": "array"
               },
               {
@@ -1711,7 +3059,99 @@
           }
         },
         "type": "object",
-        "title": "ApiResponse[list]"
+        "title": "ApiResponse[list[AdminAssignmentOut]]"
+      },
+      "ApiResponse_list_AdminBillOut__": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AdminBillOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[list[AdminBillOut]]"
+      },
+      "ApiResponse_list_AdminStudentOut__": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AdminStudentOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[list[AdminStudentOut]]"
       },
       "ApiResponse_list_AuditLogItem__": {
         "properties": {
@@ -1758,6 +3198,190 @@
         },
         "type": "object",
         "title": "ApiResponse[list[AuditLogItem]]"
+      },
+      "ApiResponse_list_RoomOut__": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/RoomOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[list[RoomOut]]"
+      },
+      "ApiResponse_list_SemanticRoomOut__": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SemanticRoomOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[list[SemanticRoomOut]]"
+      },
+      "ApiResponse_list_StudentDebtOut__": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/StudentDebtOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[list[StudentDebtOut]]"
+      },
+      "ApiResponse_list_TransactionOut__": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Thành công"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TransactionOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[list[TransactionOut]]"
       },
       "AssignmentIn": {
         "properties": {
@@ -1978,6 +3602,29 @@
         ],
         "title": "BenchmarkOut"
       },
+      "CheckoutOut": {
+        "properties": {
+          "assignment_id": {
+            "type": "integer",
+            "title": "Assignment Id"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "end_date": {
+            "type": "string",
+            "title": "End Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assignment_id",
+          "is_active",
+          "end_date"
+        ],
+        "title": "CheckoutOut"
+      },
       "ClusterAnalysisOut": {
         "properties": {
           "total_students": {
@@ -2194,6 +3841,40 @@
         ],
         "title": "DebtItem"
       },
+      "DemoResetOut": {
+        "properties": {
+          "reset_month": {
+            "type": "string",
+            "title": "Reset Month"
+          },
+          "cp4_student_id": {
+            "type": "string",
+            "title": "Cp4 Student Id"
+          },
+          "cp4_debt_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cp4 Debt Id"
+          },
+          "cp4_assigned_amount": {
+            "type": "number",
+            "title": "Cp4 Assigned Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reset_month",
+          "cp4_student_id",
+          "cp4_assigned_amount"
+        ],
+        "title": "DemoResetOut"
+      },
       "ForecastFuturePoint": {
         "properties": {
           "month_year": {
@@ -2379,19 +4060,6 @@
         ],
         "title": "GenerateBillOut"
       },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "type": "array",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "title": "HTTPValidationError"
-      },
       "MeterUpdateIn": {
         "properties": {
           "curr_electric": {
@@ -2543,6 +4211,555 @@
         ],
         "title": "PaymentOut"
       },
+      "ReindexOut": {
+        "properties": {
+          "reindexed_count": {
+            "type": "integer",
+            "title": "Reindexed Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reindexed_count"
+        ],
+        "title": "ReindexOut"
+      },
+      "RoomOccupantOut": {
+        "properties": {
+          "assignment_id": {
+            "type": "integer",
+            "title": "Assignment Id"
+          },
+          "student_id": {
+            "type": "string",
+            "title": "Student Id"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "major": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major"
+          },
+          "bed_number": {
+            "type": "integer",
+            "title": "Bed Number"
+          },
+          "start_date": {
+            "type": "string",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assignment_id",
+          "student_id",
+          "full_name",
+          "bed_number",
+          "start_date"
+        ],
+        "title": "RoomOccupantOut"
+      },
+      "RoomOut": {
+        "properties": {
+          "room_id": {
+            "type": "integer",
+            "title": "Room Id"
+          },
+          "room_number": {
+            "type": "string",
+            "title": "Room Number"
+          },
+          "building_id": {
+            "type": "string",
+            "title": "Building Id"
+          },
+          "building_name": {
+            "type": "string",
+            "title": "Building Name"
+          },
+          "gender_zone": {
+            "type": "string",
+            "title": "Gender Zone"
+          },
+          "capacity": {
+            "type": "integer",
+            "title": "Capacity"
+          },
+          "current_occupancy": {
+            "type": "integer",
+            "title": "Current Occupancy"
+          },
+          "base_price": {
+            "type": "number",
+            "title": "Base Price"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "occupants": {
+            "items": {
+              "$ref": "#/components/schemas/RoomOccupantOut"
+            },
+            "type": "array",
+            "title": "Occupants"
+          }
+        },
+        "type": "object",
+        "required": [
+          "room_id",
+          "room_number",
+          "building_id",
+          "building_name",
+          "gender_zone",
+          "capacity",
+          "current_occupancy",
+          "base_price",
+          "status",
+          "occupants"
+        ],
+        "title": "RoomOut"
+      },
+      "RoommateOut": {
+        "properties": {
+          "student_id": {
+            "type": "string",
+            "title": "Student Id"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "major": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major"
+          },
+          "bed_number": {
+            "type": "integer",
+            "title": "Bed Number"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "student_id",
+          "full_name",
+          "bed_number"
+        ],
+        "title": "RoommateOut"
+      },
+      "SemanticRoomOut": {
+        "properties": {
+          "room_id": {
+            "type": "integer",
+            "title": "Room Id"
+          },
+          "room_number": {
+            "type": "string",
+            "title": "Room Number"
+          },
+          "building_id": {
+            "type": "string",
+            "title": "Building Id"
+          },
+          "building_name": {
+            "type": "string",
+            "title": "Building Name"
+          },
+          "gender_zone": {
+            "type": "string",
+            "title": "Gender Zone"
+          },
+          "capacity": {
+            "type": "integer",
+            "title": "Capacity"
+          },
+          "current_occupancy": {
+            "type": "integer",
+            "title": "Current Occupancy"
+          },
+          "base_price": {
+            "type": "number",
+            "title": "Base Price"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "cosine_distance": {
+            "type": "number",
+            "title": "Cosine Distance"
+          },
+          "similarity": {
+            "type": "number",
+            "title": "Similarity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "room_id",
+          "room_number",
+          "building_id",
+          "building_name",
+          "gender_zone",
+          "capacity",
+          "current_occupancy",
+          "base_price",
+          "status",
+          "cosine_distance",
+          "similarity"
+        ],
+        "title": "SemanticRoomOut"
+      },
+      "StudentAccessLogsOut": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "late_count": {
+            "type": "integer",
+            "title": "Late Count"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AccessLogItemOut"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "late_count",
+          "items"
+        ],
+        "title": "StudentAccessLogsOut"
+      },
+      "StudentDebtOut": {
+        "properties": {
+          "debt_id": {
+            "type": "integer",
+            "title": "Debt Id"
+          },
+          "bill_id": {
+            "type": "integer",
+            "title": "Bill Id"
+          },
+          "student_id": {
+            "type": "string",
+            "title": "Student Id"
+          },
+          "room_id": {
+            "type": "integer",
+            "title": "Room Id"
+          },
+          "month_year": {
+            "type": "string",
+            "title": "Month Year"
+          },
+          "room_number": {
+            "type": "string",
+            "title": "Room Number"
+          },
+          "bill_total_amount": {
+            "type": "number",
+            "title": "Bill Total Amount"
+          },
+          "total_room_bill": {
+            "type": "number",
+            "title": "Total Room Bill"
+          },
+          "assigned_amount": {
+            "type": "number",
+            "title": "Assigned Amount"
+          },
+          "paid_amount": {
+            "type": "number",
+            "title": "Paid Amount"
+          },
+          "remaining_amount": {
+            "type": "number",
+            "title": "Remaining Amount"
+          },
+          "debt_status": {
+            "type": "string",
+            "title": "Debt Status"
+          },
+          "bill_status": {
+            "type": "string",
+            "title": "Bill Status"
+          },
+          "prev_electric": {
+            "type": "integer",
+            "title": "Prev Electric"
+          },
+          "curr_electric": {
+            "type": "integer",
+            "title": "Curr Electric"
+          },
+          "prev_water": {
+            "type": "integer",
+            "title": "Prev Water"
+          },
+          "curr_water": {
+            "type": "integer",
+            "title": "Curr Water"
+          }
+        },
+        "type": "object",
+        "required": [
+          "debt_id",
+          "bill_id",
+          "student_id",
+          "room_id",
+          "month_year",
+          "room_number",
+          "bill_total_amount",
+          "total_room_bill",
+          "assigned_amount",
+          "paid_amount",
+          "remaining_amount",
+          "debt_status",
+          "bill_status",
+          "prev_electric",
+          "curr_electric",
+          "prev_water",
+          "curr_water"
+        ],
+        "title": "StudentDebtOut"
+      },
+      "StudentProfileOut": {
+        "properties": {
+          "student_id": {
+            "type": "string",
+            "title": "Student Id"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "major": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "wallet": {
+            "$ref": "#/components/schemas/StudentWalletOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "student_id",
+          "full_name",
+          "email",
+          "status",
+          "wallet"
+        ],
+        "title": "StudentProfileOut"
+      },
+      "StudentRoomOut": {
+        "properties": {
+          "assignment_id": {
+            "type": "integer",
+            "title": "Assignment Id"
+          },
+          "room_id": {
+            "type": "integer",
+            "title": "Room Id"
+          },
+          "room_number": {
+            "type": "string",
+            "title": "Room Number"
+          },
+          "building_id": {
+            "type": "string",
+            "title": "Building Id"
+          },
+          "building_name": {
+            "type": "string",
+            "title": "Building Name"
+          },
+          "gender_zone": {
+            "type": "string",
+            "title": "Gender Zone"
+          },
+          "bed_number": {
+            "type": "integer",
+            "title": "Bed Number"
+          },
+          "capacity": {
+            "type": "integer",
+            "title": "Capacity"
+          },
+          "current_occupancy": {
+            "type": "integer",
+            "title": "Current Occupancy"
+          },
+          "base_price": {
+            "type": "number",
+            "title": "Base Price"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "start_date": {
+            "type": "string",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "roommates": {
+            "items": {
+              "$ref": "#/components/schemas/RoommateOut"
+            },
+            "type": "array",
+            "title": "Roommates"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assignment_id",
+          "room_id",
+          "room_number",
+          "building_id",
+          "building_name",
+          "gender_zone",
+          "bed_number",
+          "capacity",
+          "current_occupancy",
+          "base_price",
+          "start_date",
+          "roommates"
+        ],
+        "title": "StudentRoomOut"
+      },
+      "StudentWalletOut": {
+        "properties": {
+          "balance": {
+            "type": "number",
+            "title": "Balance"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "balance"
+        ],
+        "title": "StudentWalletOut"
+      },
       "TopupIn": {
         "properties": {
           "amount": {
@@ -2581,45 +4798,60 @@
         ],
         "title": "TopupOut"
       },
-      "ValidationError": {
+      "TransactionOut": {
         "properties": {
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Location"
+          "tx_id": {
+            "type": "integer",
+            "title": "Tx Id"
           },
-          "msg": {
+          "debt_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Debt Id"
+          },
+          "bill_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bill Id"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "tx_time": {
             "type": "string",
-            "title": "Message"
+            "title": "Tx Time"
           },
-          "type": {
+          "reference_code": {
             "type": "string",
-            "title": "Error Type"
+            "title": "Reference Code"
           },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
+          "status": {
+            "type": "string",
+            "title": "Status"
           }
         },
         "type": "object",
         "required": [
-          "loc",
-          "msg",
-          "type"
+          "tx_id",
+          "amount",
+          "tx_time",
+          "reference_code",
+          "status"
         ],
-        "title": "ValidationError"
+        "title": "TransactionOut"
       }
     }
   }

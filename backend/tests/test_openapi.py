@@ -45,3 +45,22 @@ def test_openapi_schema_contains_all_endpoints():
     )
     assert out_file.exists()
     assert out_file.stat().st_size > 1000
+
+
+def test_openapi_paths_use_typed_schemas():
+    schema = app.openapi()
+    assert "/api/test-error" not in schema["paths"]
+    assert "ApiErrorResponse" in schema["components"]["schemas"]
+
+    for path, methods in schema["paths"].items():
+        if not path.startswith("/api/"):
+            continue
+        for method, spec in methods.items():
+            ok_resp = spec["responses"].get("200") or spec["responses"].get("201")
+            assert ok_resp is not None
+            json_schema = ok_resp["content"]["application/json"]["schema"]
+            ref = json_schema.get("$ref", "")
+            assert ref, f"Expected schema ref on {method.upper()} {path}"
+            assert not ref.endswith(("ApiResponse_dict_", "ApiResponse_list_", "ApiResponse_Any_")), (
+                f"Untyped response schema on {method.upper()} {path}: {ref}"
+            )

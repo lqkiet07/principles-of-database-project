@@ -32,6 +32,89 @@ class TopupOut(BaseModel):
     new_balance: float
 
 
+class StudentWalletOut(BaseModel):
+    balance: float
+    updated_at: str | None = None
+
+
+class StudentProfileOut(BaseModel):
+    student_id: str
+    full_name: str
+    email: str
+    phone: str | None = None
+    major: str | None = None
+    status: str
+    wallet: StudentWalletOut
+
+
+class RoommateOut(BaseModel):
+    student_id: str
+    full_name: str
+    major: str | None = None
+    bed_number: int
+    phone: str | None = None
+
+
+class StudentRoomOut(BaseModel):
+    assignment_id: int
+    room_id: int
+    room_number: str
+    building_id: str
+    building_name: str
+    gender_zone: str
+    bed_number: int
+    capacity: int
+    current_occupancy: int
+    base_price: float
+    description: str | None = None
+    start_date: str
+    end_date: str | None = None
+    roommates: list[RoommateOut]
+
+
+class StudentDebtOut(BaseModel):
+    debt_id: int
+    bill_id: int
+    student_id: str
+    room_id: int
+    month_year: str
+    room_number: str
+    bill_total_amount: float
+    total_room_bill: float
+    assigned_amount: float
+    paid_amount: float
+    remaining_amount: float
+    debt_status: str
+    bill_status: str
+    prev_electric: int
+    curr_electric: int
+    prev_water: int
+    curr_water: int
+
+
+class TransactionOut(BaseModel):
+    tx_id: int
+    debt_id: int | None = None
+    bill_id: int | None = None
+    amount: float
+    tx_time: str
+    reference_code: str
+    status: str
+
+
+class AccessLogItemOut(BaseModel):
+    log_id: int
+    gate_name: str
+    check_time: str
+    is_late: bool
+
+
+class StudentAccessLogsOut(BaseModel):
+    total: int
+    late_count: int
+    items: list[AccessLogItemOut]
+
+
 class GenerateBillIn(BaseModel):
     room_id: int = Field(..., ge=1)
     month_year: str = Field(..., pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
@@ -94,6 +177,135 @@ class AssignmentOut(BaseModel):
     start_date: str
     end_date: str | None = None
     is_active: bool
+
+
+class CheckoutOut(BaseModel):
+    assignment_id: int
+    is_active: bool
+    end_date: str
+
+
+class RoomOccupantOut(BaseModel):
+    assignment_id: int
+    student_id: str
+    full_name: str
+    major: str | None = None
+    bed_number: int
+    start_date: str
+    end_date: str | None = None
+
+
+class RoomOut(BaseModel):
+    room_id: int
+    room_number: str
+    building_id: str
+    building_name: str
+    gender_zone: str
+    capacity: int
+    current_occupancy: int
+    base_price: float
+    status: str
+    description: str | None = None
+    occupants: list[RoomOccupantOut]
+
+
+class SemanticRoomOut(BaseModel):
+    room_id: int
+    room_number: str
+    building_id: str
+    building_name: str
+    gender_zone: str
+    capacity: int
+    current_occupancy: int
+    base_price: float
+    description: str | None = None
+    status: str
+    cosine_distance: float
+    similarity: float
+
+
+class AdminBillOut(BaseModel):
+    bill_id: int
+    room_id: int
+    room_number: str
+    building_id: str
+    building_name: str
+    occupants: int
+    month_year: str
+    prev_electric: int
+    curr_electric: int
+    prev_water: int
+    curr_water: int
+    total_amount: float
+    paid_amount: float
+    bill_status: str
+    created_at: str | None = None
+
+
+class AdminStudentOut(BaseModel):
+    student_id: str
+    full_name: str
+    gender: str
+    email: str
+    phone: str | None = None
+    major: str | None = None
+    cohort: int
+    status: str
+    wallet_balance: float
+    assignment_id: int | None = None
+    room_id: int | None = None
+    room_number: str | None = None
+    building_id: str | None = None
+    bed_number: int | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+    unpaid_debt: float
+    late_count: int
+
+
+class AdminAssignmentOut(BaseModel):
+    assignment_id: int
+    room_id: int
+    room_number: str
+    building_id: str
+    building_name: str
+    base_price: float
+    capacity: int
+    current_occupancy: int
+    student_id: str
+    full_name: str
+    major: str | None = None
+    phone: str | None = None
+    bed_number: int
+    start_date: str
+    end_date: str | None = None
+    is_active: bool
+
+
+class DemoResetOut(BaseModel):
+    reset_month: str
+    cp4_student_id: str
+    cp4_debt_id: int | None = None
+    cp4_assigned_amount: float
+
+
+class AdminAccessLogItemOut(BaseModel):
+    log_id: int
+    student_id: str
+    student_name: str
+    gate_name: str
+    check_time: str
+    is_late: bool
+
+
+class AdminAccessLogsOut(BaseModel):
+    total: int
+    late_count: int
+    items: list[AdminAccessLogItemOut]
+
+
+class ReindexOut(BaseModel):
+    reindexed_count: int
 
 
 class DashboardSummaryOut(BaseModel):

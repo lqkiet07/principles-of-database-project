@@ -3,12 +3,26 @@ from fastapi import APIRouter, Query
 from app.ai.clustering import perform_student_clustering
 from app.ai.forecasting import predict_building_consumption
 from app.ai.semantic_search import search_available_rooms
-from app.schemas import ApiResponse, ClusterAnalysisOut, ForecastOut
+from app.schemas import (
+    ApiErrorResponse,
+    ApiResponse,
+    ClusterAnalysisOut,
+    ForecastOut,
+    SemanticRoomOut,
+)
 
-router = APIRouter(prefix="/api/ai", tags=["AI"])
+router = APIRouter(
+    prefix="/api/ai",
+    tags=["AI"],
+    responses={
+        404: {"model": ApiErrorResponse},
+        422: {"model": ApiErrorResponse},
+        503: {"model": ApiErrorResponse},
+    },
+)
 
 
-@router.get("/semantic-search", response_model=ApiResponse[list])
+@router.get("/semantic-search", response_model=ApiResponse[list[SemanticRoomOut]])
 async def semantic_search(
     q: str = Query(
         ..., min_length=1, description="Natural language search prompt for rooms"

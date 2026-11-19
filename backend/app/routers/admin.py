@@ -3,16 +3,25 @@ from fastapi import APIRouter, Depends, Query, status
 from app.config import settings
 from app.errors import ApiError
 from app.schemas import (
+    AdminAccessLogsOut,
+    AdminAssignmentOut,
+    AdminBillOut,
+    AdminStudentOut,
+    ApiErrorResponse,
     ApiResponse,
     AssignmentIn,
     AssignmentOut,
     AuditLogItem,
     BenchmarkOut,
+    CheckoutOut,
     DashboardSummaryOut,
+    DemoResetOut,
     GenerateBillIn,
     GenerateBillOut,
     MeterUpdateIn,
     MeterUpdateOut,
+    ReindexOut,
+    RoomOut,
 )
 from app.services import admin as admin_service
 from app.services import benchmark as benchmark_service
@@ -20,12 +29,22 @@ from app.services import billing as billing_service
 from app.services import rooms as room_service
 from app.services.security import require_admin_role
 
+ERROR_RESPONSES = {
+    403: {"model": ApiErrorResponse},
+    404: {"model": ApiErrorResponse},
+    409: {"model": ApiErrorResponse},
+    422: {"model": ApiErrorResponse},
+}
+
 router = APIRouter(
-    prefix="/api/admin", tags=["Admin"], dependencies=[Depends(require_admin_role)]
+    prefix="/api/admin",
+    tags=["Admin"],
+    dependencies=[Depends(require_admin_role)],
+    responses=ERROR_RESPONSES,
 )
 
 
-@router.get("/bills", response_model=ApiResponse[list])
+@router.get("/bills", response_model=ApiResponse[list[AdminBillOut]])
 async def list_bills(
     month_year: str | None = Query(None),
     status_filter: str | None = Query(None, alias="status"),
@@ -75,7 +94,7 @@ async def list_audit_logs(
     return ApiResponse(data=data)
 
 
-@router.get("/rooms", response_model=ApiResponse[list])
+@router.get("/rooms", response_model=ApiResponse[list[RoomOut]])
 async def list_rooms(
     building_id: str | None = Query(None),
     status_filter: str | None = Query(None, alias="status"),
@@ -86,13 +105,13 @@ async def list_rooms(
     return ApiResponse(data=data)
 
 
-@router.get("/students", response_model=ApiResponse[list])
+@router.get("/students", response_model=ApiResponse[list[AdminStudentOut]])
 async def list_students():
     data = await admin_service.get_students_list()
     return ApiResponse(data=data)
 
 
-@router.get("/assignments", response_model=ApiResponse[list])
+@router.get("/assignments", response_model=ApiResponse[list[AdminAssignmentOut]])
 async def list_assignments():
     data = await admin_service.get_assignments_list()
     return ApiResponse(data=data)
@@ -108,7 +127,7 @@ async def create_assignment(payload: AssignmentIn):
     return ApiResponse(message="Xếp chỗ lưu trú thành công", data=data)
 
 
-@router.post("/demo/reset", response_model=ApiResponse[dict])
+@router.post("/demo/reset", response_model=ApiResponse[DemoResetOut])
 async def reset_demo():
     if not settings.demo_reset_enabled:
         raise ApiError(
@@ -123,7 +142,9 @@ async def reset_demo():
     )
 
 
-@router.delete("/assignments/{assignment_id}", response_model=ApiResponse[dict])
+@router.delete(
+    "/assignments/{assignment_id}", response_model=ApiResponse[CheckoutOut]
+)
 async def checkout_assignment(assignment_id: int):
     data = await room_service.unassign_student(assignment_id)
     return ApiResponse(message="Thanh lý hợp đồng lưu trú thành công", data=data)
@@ -135,7 +156,7 @@ async def get_dashboard():
     return ApiResponse(data=data)
 
 
-@router.get("/access-logs", response_model=ApiResponse[dict])
+@router.get("/access-logs", response_model=ApiResponse[AdminAccessLogsOut])
 async def search_access_logs(
     student_id: str | None = Query(None),
     gate_name: str | None = Query(None),
@@ -171,7 +192,7 @@ async def benchmark_index(
     return ApiResponse(data=data)
 
 
-@router.post("/ai/reindex", response_model=ApiResponse[dict])
+@router.post("/ai/reindex", response_model=ApiResponse[ReindexOut])
 async def reindex_room_embeddings():
     from app.ai.semantic_search import reindex_all_rooms
 

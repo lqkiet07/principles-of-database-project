@@ -1,9 +1,17 @@
 from fastapi import APIRouter
 
-from app.schemas import ApiResponse, PaymentIn, PaymentOut
+from app.schemas import ApiErrorResponse, ApiResponse, PaymentIn, PaymentOut
 from app.services import billing as billing_service
 
-router = APIRouter(prefix="/api/payments", tags=["Payments"])
+router = APIRouter(
+    prefix="/api/payments",
+    tags=["Payments"],
+    responses={
+        404: {"model": ApiErrorResponse},
+        409: {"model": ApiErrorResponse},
+        422: {"model": ApiErrorResponse},
+    },
+)
 
 
 @router.post("", response_model=ApiResponse[PaymentOut])
