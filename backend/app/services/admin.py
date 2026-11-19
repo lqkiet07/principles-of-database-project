@@ -4,6 +4,7 @@ import psycopg.errors
 
 from app.db import fetch_all, fetch_one, get_connection
 from app.errors import ApiError
+from app.services.tariff import calculate_utility_total
 
 
 async def get_dashboard_summary() -> dict[str, Any]:
@@ -61,18 +62,6 @@ async def get_dashboard_summary() -> dict[str, Any]:
     }
 
 
-def _calculate_progressive_bill_total(delta_elec: int, delta_water: int) -> float:
-    # Apply the 3-tier progressive electricity tariff matching SP1
-    if delta_elec <= 100:
-        elec_cost = delta_elec * 2000.0
-    elif delta_elec <= 200:
-        elec_cost = (100 * 2000.0) + ((delta_elec - 100) * 2500.0)
-    else:
-        elec_cost = (100 * 2000.0) + (100 * 2500.0) + ((delta_elec - 200) * 3000.0)
-    water_cost = delta_water * 10000.0
-    return round(elec_cost + water_cost, 2)
-
-
 async def update_bill_meters(
     bill_id: int,
     curr_electric: int,
@@ -88,7 +77,7 @@ async def update_bill_meters(
     delta_elec = curr_electric - int(existing["prev_electric"])
     delta_water = curr_water - int(existing["prev_water"])
     recalc_total = (
-        _calculate_progressive_bill_total(delta_elec, delta_water)
+        float(calculate_utility_total(delta_elec, delta_water))
         if delta_elec >= 0 and delta_water >= 0
         else None
     )

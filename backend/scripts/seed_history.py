@@ -9,6 +9,7 @@ if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
 from app.db import close_pool, get_connection
+from app.services.tariff import calculate_tiered_electric, calculate_water_cost
 
 ROOM_STUDENTS = {
     1: ["B2100001", "B2100002"],
@@ -21,19 +22,6 @@ ROOM_STUDENTS = {
 
 FINANCIAL_RISK_STUDENTS = {"B2100003", "B2100004", "B2100007", "B2100008"}
 SECURITY_RISK_STUDENTS = {"B2100009", "B2100010", "B2100011", "B2100012"}
-
-
-def calculate_tiered_elec(delta_kwh: int) -> Decimal:
-    if delta_kwh <= 100:
-        return Decimal(delta_kwh * 2000)
-    elif delta_kwh <= 200:
-        return Decimal((100 * 2000) + ((delta_kwh - 100) * 2500))
-    else:
-        return Decimal((100 * 2000) + (100 * 2500) + ((delta_kwh - 200) * 3000))
-
-
-def calculate_water(delta_m3: int) -> Decimal:
-    return Decimal(delta_m3 * 10000)
 
 
 def generate_month_sequence() -> list[str]:
@@ -85,9 +73,9 @@ async def seed_billing_history_and_skew_logs() -> None:
                 curr_elec_map[room_id] = curr_elec
                 curr_water_map[room_id] = curr_water
 
-                total_amount = calculate_tiered_elec(delta_elec) + calculate_water(
-                    delta_water
-                )
+                total_amount = calculate_tiered_electric(
+                    delta_elec
+                ) + calculate_water_cost(delta_water)
                 split_amount = total_amount / Decimal(2)
 
                 students = ROOM_STUDENTS[room_id]
