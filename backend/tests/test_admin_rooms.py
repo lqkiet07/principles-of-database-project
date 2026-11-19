@@ -166,3 +166,30 @@ async def test_demo_reset_disabled_returns_403(client, monkeypatch):
     body = res.json()
     assert body["success"] is False
     assert body["error_code"] == "DEMO_RESET_DISABLED"
+
+
+@pytest.mark.asyncio
+async def test_get_students_list_preserves_female_gender_after_checkout(client):
+    headers = {"X-Role": "admin"}
+    orig = await fetch_one(
+        "SELECT assignment_id, end_date FROM room_assignments WHERE student_id = 'B2100005' AND is_active = TRUE;"
+    )
+    assert orig is not None
+
+    try:
+        res_del = await client.delete(
+            f"/api/admin/assignments/{orig['assignment_id']}", headers=headers
+        )
+        assert res_del.status_code == 200
+
+        res_students = await client.get("/api/admin/students", headers=headers)
+        assert res_students.status_code == 200
+        by_id = {s["student_id"]: s for s in res_students.json()["data"]}
+        b5 = by_id["B2100005"]
+        assert b5["room_id"] is None
+        assert b5["gender"] == "FEMALE"
+    finally:
+        await execute(
+            "UPDATE room_assignments SET is_active = TRUE, end_date = %s WHERE assignment_id = %s;",
+            (orig["end_date"], orig["assignment_id"]),
+        )

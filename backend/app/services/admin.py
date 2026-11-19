@@ -108,7 +108,23 @@ async def update_bill_meters(
 
             delta_elec = curr_electric - int(existing["prev_electric"])
             delta_water = curr_water - int(existing["prev_water"])
-            can_recalc = delta_elec >= 0 and delta_water >= 0 and existing["bill_status"] == "UNPAID"
+            # Reject partially paid bills before UPDATE, letting PAID bills and negative deltas hit the DB fraud trigger
+            has_partial_payment = (
+                existing["bill_status"] == "PARTIALLY_PAID"
+                or (existing["bill_status"] != "PAID" and float(existing["paid_amount"]) > 0.0)
+            )
+            if delta_elec >= 0 and delta_water >= 0 and has_partial_payment:
+                raise ApiError(
+                    422,
+                    "FRAUD_PAID_BILL_TAMPER",
+                    f"Hóa đơn #{bill_id} đã phát sinh thanh toán một phần, không thể điều chỉnh chỉ số công tơ.",
+                )
+            can_recalc = (
+                delta_elec >= 0
+                and delta_water >= 0
+                and existing["bill_status"] == "UNPAID"
+                and float(existing["paid_amount"]) == 0.0
+            )
             new_total = calculate_utility_total(delta_elec, delta_water) if can_recalc else existing["total_amount"]
 
             await cur.execute(
@@ -121,7 +137,7 @@ async def update_bill_meters(
                 (curr_electric, curr_water, new_total, bill_id),
             )
             row = await cur.fetchone()
-            if can_recalc and float(row["paid_amount"]) == 0.0:
+            if can_recalc:
                 await _reallocate_unpaid_debts(cur, bill_id, new_total)
     except psycopg.errors.CheckViolation as ex:
         raise ApiError(422, "FRAUD_METER_REVERSAL", str(ex).split("\n")[0].strip()) from ex
@@ -197,35 +213,45 @@ def _derive_student_cohort(student_id: str) -> int:
     return 47
 
 
+# Preserve gender from latest building zone even after a student's active contract is terminated
+_ADMIN_STUDENTS_SQL = """
+    SELECT s.student_id, s.full_name, s.email, s.phone, s.major, s.status,
+           coalesce(w.balance, 0.00) AS wallet_balance,
+           ra.assignment_id, ra.room_id, r.room_number, r.building_id,
+           gz.gender_zone, ra.bed_number, ra.start_date, ra.end_date,
+           coalesce(d.unpaid_debt, 0.00) AS unpaid_debt,
+           coalesce(l.late_count, 0) AS late_count
+    FROM students s
+    LEFT JOIN student_wallets w ON w.student_id = s.student_id
+    LEFT JOIN room_assignments ra ON ra.student_id = s.student_id AND ra.is_active = TRUE
+    LEFT JOIN rooms r ON r.room_id = ra.room_id
+    LEFT JOIN LATERAL (
+        SELECT b2.gender_zone
+        FROM room_assignments ra2
+        JOIN rooms r2 ON r2.room_id = ra2.room_id
+        JOIN dorm_buildings b2 ON b2.building_id = r2.building_id
+        WHERE ra2.student_id = s.student_id
+        ORDER BY ra2.is_active DESC, ra2.assignment_id DESC
+        LIMIT 1
+    ) gz ON TRUE
+    LEFT JOIN (
+        SELECT student_id, sum(assigned_amount - paid_amount) AS unpaid_debt
+        FROM student_utility_debts
+        WHERE debt_status = 'UNPAID'
+        GROUP BY student_id
+    ) d ON d.student_id = s.student_id
+    LEFT JOIN (
+        SELECT student_id, count(*) AS late_count
+        FROM dorm_access_logs
+        WHERE is_late = TRUE
+        GROUP BY student_id
+    ) l ON l.student_id = s.student_id
+    ORDER BY s.student_id;
+"""
+
+
 async def get_students_list() -> list[dict[str, Any]]:
-    rows = await fetch_all(
-        """
-        SELECT s.student_id, s.full_name, s.email, s.phone, s.major, s.status,
-               coalesce(w.balance, 0.00) AS wallet_balance,
-               ra.assignment_id, ra.room_id, r.room_number, r.building_id,
-               b.gender_zone, ra.bed_number, ra.start_date, ra.end_date,
-               coalesce(d.unpaid_debt, 0.00) AS unpaid_debt,
-               coalesce(l.late_count, 0) AS late_count
-        FROM students s
-        LEFT JOIN student_wallets w ON w.student_id = s.student_id
-        LEFT JOIN room_assignments ra ON ra.student_id = s.student_id AND ra.is_active = TRUE
-        LEFT JOIN rooms r ON r.room_id = ra.room_id
-        LEFT JOIN dorm_buildings b ON b.building_id = r.building_id
-        LEFT JOIN (
-            SELECT student_id, sum(assigned_amount - paid_amount) AS unpaid_debt
-            FROM student_utility_debts
-            WHERE debt_status = 'UNPAID'
-            GROUP BY student_id
-        ) d ON d.student_id = s.student_id
-        LEFT JOIN (
-            SELECT student_id, count(*) AS late_count
-            FROM dorm_access_logs
-            WHERE is_late = TRUE
-            GROUP BY student_id
-        ) l ON l.student_id = s.student_id
-        ORDER BY s.student_id;
-        """
-    )
+    rows = await fetch_all(_ADMIN_STUDENTS_SQL)
     return [
         {
             "student_id": r["student_id"],
