@@ -133,11 +133,20 @@ async def test_get_admin_bills_students_assignments_and_demo_reset(client):
 
     res_bills = await client.get("/api/admin/bills", headers=headers)
     assert res_bills.status_code == 200
-    assert isinstance(res_bills.json()["data"], list)
+    bills = res_bills.json()["data"]
+    assert isinstance(bills, list)
+    assert len(bills) >= 1
+    assert bills[0]["bill_id"] >= 1
+    assert "created_at" in bills[0]
 
     res_students = await client.get("/api/admin/students", headers=headers)
     assert res_students.status_code == 200
-    assert len(res_students.json()["data"]) >= 12
+    students = res_students.json()["data"]
+    assert len(students) >= 12
+    by_id = {s["student_id"]: s for s in students}
+    assert by_id["B2100001"]["gender"] == "MALE"
+    assert by_id["B2100001"]["cohort"] == 47
+    assert by_id["B2100005"]["gender"] == "FEMALE"
 
     res_assign = await client.get("/api/admin/assignments", headers=headers)
     assert res_assign.status_code == 200

@@ -183,7 +183,7 @@ async def get_bills_list(
         SELECT ub.bill_id, ub.room_id, r.room_number, r.building_id, b.building_name,
                r.current_occupancy, ub.month_year, ub.prev_electric, ub.curr_electric,
                ub.prev_water, ub.curr_water, ub.total_amount, ub.paid_amount,
-               ub.bill_status, ub.created_at
+               ub.bill_status
         FROM utility_bills ub
         JOIN rooms r ON r.room_id = ub.room_id
         JOIN dorm_buildings b ON b.building_id = r.building_id
@@ -209,24 +209,33 @@ async def get_bills_list(
             "total_amount": float(r["total_amount"]),
             "paid_amount": float(r["paid_amount"]),
             "bill_status": r["bill_status"],
-            "created_at": r["created_at"].isoformat() if r["created_at"] else None,
+            "created_at": None,
         }
         for r in rows
     ]
 
 
+def _derive_student_cohort(student_id: str) -> int:
+    # Derive CTU cohort from enrollment year encoded in student ID (e.g., B21... -> 2021 -> K47)
+    if len(student_id) >= 3 and student_id[1:3].isdigit():
+        return 2000 + int(student_id[1:3]) - 1974
+    return 47
+
+
 async def get_students_list() -> list[dict[str, Any]]:
     rows = await fetch_all(
         """
-        SELECT s.student_id, s.full_name, s.gender, s.email, s.phone, s.major, s.cohort, s.status,
+        SELECT s.student_id, s.full_name, s.email, s.phone, s.major, s.status,
                coalesce(w.balance, 0.00) AS wallet_balance,
-               ra.assignment_id, ra.room_id, r.room_number, r.building_id, ra.bed_number, ra.start_date, ra.end_date,
+               ra.assignment_id, ra.room_id, r.room_number, r.building_id,
+               b.gender_zone, ra.bed_number, ra.start_date, ra.end_date,
                coalesce(d.unpaid_debt, 0.00) AS unpaid_debt,
                coalesce(l.late_count, 0) AS late_count
         FROM students s
         LEFT JOIN student_wallets w ON w.student_id = s.student_id
         LEFT JOIN room_assignments ra ON ra.student_id = s.student_id AND ra.is_active = TRUE
         LEFT JOIN rooms r ON r.room_id = ra.room_id
+        LEFT JOIN dorm_buildings b ON b.building_id = r.building_id
         LEFT JOIN (
             SELECT student_id, sum(assigned_amount - paid_amount) AS unpaid_debt
             FROM student_utility_debts
@@ -246,11 +255,11 @@ async def get_students_list() -> list[dict[str, Any]]:
         {
             "student_id": r["student_id"],
             "full_name": r["full_name"],
-            "gender": r["gender"],
+            "gender": "FEMALE" if r["gender_zone"] == "FEMALE" else "MALE",
             "email": r["email"],
             "phone": r["phone"],
             "major": r["major"],
-            "cohort": r["cohort"],
+            "cohort": _derive_student_cohort(r["student_id"]),
             "status": r["status"],
             "wallet_balance": float(r["wallet_balance"]),
             "assignment_id": r["assignment_id"],
