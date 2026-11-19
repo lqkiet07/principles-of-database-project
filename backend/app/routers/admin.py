@@ -163,7 +163,7 @@ async def benchmark_index(
 
 @router.post("/ai/reindex", response_model=ApiResponse[dict])
 async def reindex_room_embeddings():
-    from scripts.embed_rooms import reindex_all_rooms
+    from app.ai.semantic_search import reindex_all_rooms
 
     count = await reindex_all_rooms()
     return ApiResponse(

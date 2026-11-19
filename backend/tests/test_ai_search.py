@@ -56,3 +56,24 @@ async def test_admin_ai_reindex_endpoint(client):
     body = response.json()
     assert body["success"] is True
     assert body["data"]["reindexed_count"] == 6
+
+
+@pytest.mark.asyncio
+async def test_ai_endpoints_return_503_when_ai_disabled(client, monkeypatch):
+    monkeypatch.setattr("app.config.settings.ai_enabled", False)
+
+    r_search = await client.get("/api/ai/semantic-search?q=phòng+nam")
+    assert r_search.status_code == 503
+    assert r_search.json()["error_code"] == "AI_DISABLED"
+
+    r_forecast = await client.get("/api/ai/forecast?building_id=B1")
+    assert r_forecast.status_code == 503
+    assert r_forecast.json()["error_code"] == "AI_DISABLED"
+
+    r_clusters = await client.get("/api/ai/clusters")
+    assert r_clusters.status_code == 503
+    assert r_clusters.json()["error_code"] == "AI_DISABLED"
+
+    r_reindex = await client.post("/api/admin/ai/reindex", headers={"X-Role": "admin"})
+    assert r_reindex.status_code == 503
+    assert r_reindex.json()["error_code"] == "AI_DISABLED"

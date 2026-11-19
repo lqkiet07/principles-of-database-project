@@ -1,15 +1,38 @@
+import asyncio
 from typing import Any
 
-from app.ai.embeddings import embed_texts
-from app.db import fetch_all
+from app.ai.embeddings import embed_texts, ensure_ai_enabled
+from app.db import fetch_all, get_connection
+
+
+async def reindex_all_rooms() -> int:
+    ensure_ai_enabled()
+    rooms = await fetch_all("SELECT room_id, description FROM rooms ORDER BY room_id;")
+    if not rooms:
+        return 0
+
+    texts = [r["description"] or "" for r in rooms]
+    # Offload CPU-bound embedding inference so the asyncio event loop stays responsive
+    vectors = await asyncio.to_thread(embed_texts, texts)
+
+    async with get_connection() as conn, conn.transaction(), conn.cursor() as cur:
+        for room, vec in zip(rooms, vectors, strict=True):
+            vec_str = "[" + ",".join(f"{x:.6f}" for x in vec) + "]"
+            await cur.execute(
+                "UPDATE rooms SET embedding = %s::vector WHERE room_id = %s;",
+                (vec_str, room["room_id"]),
+            )
+
+    return len(rooms)
 
 
 async def search_available_rooms(query: str, limit: int = 5) -> list[dict[str, Any]]:
+    ensure_ai_enabled()
     if not query.strip():
         return []
 
-    vec = embed_texts([query])[0]
-    vec_str = "[" + ",".join(f"{x:.6f}" for x in vec) + "]"
+    vectors = await asyncio.to_thread(embed_texts, [query])
+    vec_str = "[" + ",".join(f"{x:.6f}" for x in vectors[0]) + "]"
 
     rows = await fetch_all(
         """
