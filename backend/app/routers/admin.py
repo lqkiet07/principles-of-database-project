@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
 
+from app.config import settings
+from app.errors import ApiError
 from app.schemas import (
     ApiResponse,
     AssignmentIn,
@@ -108,6 +110,12 @@ async def create_assignment(payload: AssignmentIn):
 
 @router.post("/demo/reset", response_model=ApiResponse[dict])
 async def reset_demo():
+    if not settings.demo_reset_enabled:
+        raise ApiError(
+            http_status=403,
+            error_code="DEMO_RESET_DISABLED",
+            message="Tính năng reset dữ liệu demo đang bị tắt theo cấu hình.",
+        )
     data = await admin_service.reset_demo_checkpoints()
     return ApiResponse(
         message="Đã khởi tạo lại dữ liệu kịch bản Demo (kỳ 2026-11) thành công",
@@ -152,11 +160,13 @@ async def search_access_logs(
 @router.get("/benchmark", response_model=ApiResponse[BenchmarkOut])
 async def benchmark_index(
     mode: str = Query("natural", pattern=r"^(seq|index|natural)$"),
-    from_time: str = Query("2026-09-01 00:00:00"),
-    to_time: str = Query("2026-10-01 23:59:59"),
+    from_time: str | None = Query(None),
+    to_time: str | None = Query(None),
 ):
     data = await benchmark_service.run_index_benchmark(
-        mode=mode, from_time=from_time, to_time=to_time
+        mode=mode,
+        from_time=from_time or settings.benchmark_from_time,
+        to_time=to_time or settings.benchmark_to_time,
     )
     return ApiResponse(data=data)
 

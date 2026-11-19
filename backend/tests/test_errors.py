@@ -7,6 +7,7 @@ from app.errors import (
     raise_sp1_error,
     raise_sp2_error,
 )
+from app.main import app
 
 
 @pytest.mark.parametrize(
@@ -61,11 +62,33 @@ def test_raise_sp2_error():
 
 @pytest.mark.asyncio
 async def test_api_error_response_envelope(client):
-    response = await client.get("/api/test-error")
-    assert response.status_code == 409
+    assert "/api/test-error" not in app.openapi()["paths"]
+
+    # 1. Trigger 404 STUDENT_NOT_FOUND
+    response = await client.get("/api/students/UNKNOWN_ID")
+    assert response.status_code == 404
     body = response.json()
     assert body["success"] is False
-    assert body["status_code"] == 2
-    assert body["error_code"] == "BILL_EXISTS"
-    assert body["message"] == "Hóa đơn đã tồn tại"
+    assert body["status_code"] is None
+    assert body["error_code"] == "STUDENT_NOT_FOUND"
     assert body["data"] is None
+
+    # 2. Trigger SP1 status_code=3 (INVALID_METERS)
+    sp_res = await client.post(
+        "/api/admin/bills",
+        json={
+            "room_id": 1,
+            "month_year": "2026-11",
+            "prev_electric": 300,
+            "curr_electric": 100,
+            "prev_water": 10,
+            "curr_water": 20,
+        },
+        headers={"X-Role": "admin"},
+    )
+    assert sp_res.status_code == 422
+    sp_body = sp_res.json()
+    assert sp_body["success"] is False
+    assert sp_body["status_code"] == 3
+    assert sp_body["error_code"] == "INVALID_METERS"
+    assert sp_body["data"] is None

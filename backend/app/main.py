@@ -1,9 +1,3 @@
-import asyncio
-import sys
-
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -11,8 +5,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.config import settings
 from app.db import close_pool, fetch_all, fetch_one, get_pool
-from app.errors import ApiError, raise_sp1_error
+from app.errors import ApiError
 from app.routers import admin, ai, payments, students
 
 
@@ -32,7 +27,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -70,11 +65,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "data": exc.errors(),
         },
     )
-
-
-@app.get("/api/test-error", tags=["System"])
-async def trigger_test_error():
-    raise_sp1_error(2, "Hóa đơn đã tồn tại")
 
 
 @app.get("/health", tags=["System"])

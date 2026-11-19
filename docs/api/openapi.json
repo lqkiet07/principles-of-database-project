@@ -989,8 +989,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "default": "2026-09-01 00:00:00",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "From Time"
             }
           },
@@ -999,8 +1005,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "default": "2026-10-01 23:59:59",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "To Time"
             }
           }
@@ -1207,25 +1219,6 @@
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponse_ClusterAnalysisOut_"
                 }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/test-error": {
-      "get": {
-        "tags": [
-          "System"
-        ],
-        "summary": "Trigger Test Error",
-        "operationId": "trigger_test_error_api_test_error_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
               }
             }
           }

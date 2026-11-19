@@ -156,3 +156,13 @@ async def test_get_admin_bills_students_assignments_and_demo_reset(client):
     assert res_reset.status_code == 200
     assert res_reset.json()["data"]["cp4_debt_id"] is not None
     await execute("DELETE FROM utility_bills WHERE month_year = '2026-11';")
+
+
+@pytest.mark.asyncio
+async def test_demo_reset_disabled_returns_403(client, monkeypatch):
+    monkeypatch.setattr("app.config.settings.demo_reset_enabled", False)
+    res = await client.post("/api/admin/demo/reset", headers={"X-Role": "admin"})
+    assert res.status_code == 403
+    body = res.json()
+    assert body["success"] is False
+    assert body["error_code"] == "DEMO_RESET_DISABLED"
