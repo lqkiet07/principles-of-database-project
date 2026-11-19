@@ -44,19 +44,30 @@ async def get_connection():
         yield conn
 
 
-async def fetch_all(sql: str, params: Sequence[Any] = ()) -> list[dict[str, Any]]:
+@asynccontextmanager
+async def transaction():
+    """
+    Giao dịch ACID mức cô lập READ COMMITTED kết hợp khóa dòng (SELECT ... FOR UPDATE)
+    trong các thủ tục lưu trữ để chống tranh chấp ghi đồng thời và tự động ROLLBACK khi lỗi.
+    """
+    async with get_connection() as conn:
+        async with conn.transaction():
+            yield conn
+
+
+async def fetch_all(sql: str, params: Sequence[Any] | None = None) -> list[dict[str, Any]]:
     async with get_connection() as conn, conn.cursor() as cur:
-        await cur.execute(sql, params)
+        await (cur.execute(sql, params) if params else cur.execute(sql))
         return await cur.fetchall()
 
 
-async def fetch_one(sql: str, params: Sequence[Any] = ()) -> dict[str, Any] | None:
+async def fetch_one(sql: str, params: Sequence[Any] | None = None) -> dict[str, Any] | None:
     async with get_connection() as conn, conn.cursor() as cur:
-        await cur.execute(sql, params)
+        await (cur.execute(sql, params) if params else cur.execute(sql))
         return await cur.fetchone()
 
 
-async def execute(sql: str, params: Sequence[Any] = ()) -> int:
+async def execute(sql: str, params: Sequence[Any] | None = None) -> int:
     async with get_connection() as conn, conn.cursor() as cur:
-        await cur.execute(sql, params)
+        await (cur.execute(sql, params) if params else cur.execute(sql))
         return cur.rowcount

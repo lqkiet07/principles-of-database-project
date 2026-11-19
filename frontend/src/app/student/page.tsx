@@ -1,1684 +1,403 @@
 "use client";
 
-import * as React from "react";
-import Link from "next/link";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  Wrench,
-  Receipt,
-  CalendarCheck,
-  BookOpen,
-  QrCode,
-  Bell,
-  Phone,
-  Home,
-  DoorOpen,
-  FileText,
-  User,
-  ChevronRight,
-  Zap,
+  Building2,
   Droplets,
-  CheckCircle2,
-  Check,
-  Copy,
-  ExternalLink,
-  ShieldCheck,
-  Info,
-  Maximize2,
-  Smartphone,
-  ArrowLeft,
-  Calendar,
-  Lock,
-  AirVent,
-  Bed,
-  Sparkles,
-  AlertTriangle,
-  Clock,
-  Printer,
-  Upload,
-  Camera,
-  Share2,
+  History,
+  Loader2,
+  Plus,
+  QrCode,
+  UserCheck,
   Wallet,
-  GraduationCap,
+  Zap,
 } from "lucide-react";
-import { useDemoMode } from "@/lib/demo-context";
-import { api } from "@/lib/api";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { apiRequest } from "@/lib/api";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  formatDate,
+  formatDateTime,
+  formatMonthLabel,
+  formatNumber,
+  formatVND,
+} from "@/lib/format";
+import { SectionCard } from "@/components/shared/section-card";
+import { BillStatusBadge } from "@/components/shared/status-badge";
+import { QrPaymentModal, type QrSessionState } from "@/features/student/qr-payment-modal";
 
-interface Roommate {
-  id: string;
-  name: string;
-  role: string;
-  major: string;
-  phone: string;
-  avatarText: string;
-  isOnline: boolean;
-  statusText: string;
-}
+export default function StudentBillsPage() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [creatingQr, setCreatingQr] = useState<number | null>(null);
+  const [payingWallet, setPayingWallet] = useState<number | null>(null);
+  const [qrSession, setQrSession] = useState<QrSessionState | null>(null);
 
-const roommates: Roommate[] = [
-  {
-    id: "1",
-    name: "Nguyễn Văn An",
-    role: "Trưởng phòng (Bạn)",
-    major: "Kỹ thuật Phần mềm K47",
-    phone: "0912.345.601",
-    avatarText: "AN",
-    isOnline: true,
-    statusText: "Đang ở phòng",
-  },
-  {
-    id: "2",
-    name: "Trần Hoàng Bình",
-    role: "Thành viên",
-    major: "Kỹ thuật Phần mềm K47",
-    phone: "0912.345.602",
-    avatarText: "HB",
-    isOnline: true,
-    statusText: "Đang ở phòng",
-  },
-  {
-    id: "3",
-    name: "Lê Quốc Cường",
-    role: "Thành viên",
-    major: "Khoa học Máy tính K47",
-    phone: "0912.345.603",
-    avatarText: "QC",
-    isOnline: false,
-    statusText: "Đang trên lớp",
-  },
-  {
-    id: "4",
-    name: "Phạm Minh Dũng",
-    role: "Thành viên",
-    major: "Hệ thống Thông tin K47",
-    phone: "0912.345.604",
-    avatarText: "MD",
-    isOnline: true,
-    statusText: "Đang ở phòng",
-  },
-];
+  const [topupAmount, setTopupAmount] = useState("1000000");
+  const [toppingUp, setToppingUp] = useState(false);
 
-export default function StudentPortalPage() {
-  // Navigation Tabs: home | room | bills | profile
-  const [activeTab, setActiveTab] = React.useState<"home" | "room" | "bills" | "profile">("home");
-
-  // Display Mode: iPhone 16 (393x852) vs Fullscreen Responsive
-  const [isSimulatorMode, setIsSimulatorMode] = React.useState(true);
-
-  // Modals state
-  const [isQrModalOpen, setIsQrModalOpen] = React.useState(false);
-  const [isPhoneModalOpen, setIsPhoneModalOpen] = React.useState(false);
-  const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
-  const [isAbsenceModalOpen, setIsAbsenceModalOpen] = React.useState(false);
-  const [isRulesModalOpen, setIsRulesModalOpen] = React.useState(false);
-  const [isReceiptModalOpen, setIsReceiptModalOpen] = React.useState(false);
-
-  const [selectedRoommate, setSelectedRoommate] = React.useState<Roommate | null>(null);
-  const [selectedReceiptMonth, setSelectedReceiptMonth] = React.useState<string>("Tháng 09/2026");
-  const [copiedField, setCopiedField] = React.useState<string | null>(null);
-  const [toastMessage, setToastMessage] = React.useState<string | null>(null);
-
-  // Form states for Repair Request
-  const [repairCategory, setRepairCategory] = React.useState("dien");
-  const [repairPriority, setRepairPriority] = React.useState("binh_thuong");
-  const [repairDescription, setRepairDescription] = React.useState("");
-
-  // Form states for Absence Registration
-  const [absenceStartDate, setAbsenceStartDate] = React.useState("2026-10-25");
-  const [absenceEndDate, setAbsenceEndDate] = React.useState("2026-10-28");
-  const [absenceReason, setAbsenceReason] = React.useState("ve_que");
-  const [parentPhone, setParentPhone] = React.useState("0912.345.678");
-
-  // CT221H Campus Wallet & Stored Procedure states
-  const { isDemoMode } = useDemoMode();
-  const [studentId, setStudentId] = React.useState("B2100001");
-  const [studentName, setStudentName] = React.useState("Nguyễn Văn An");
-  const [studentMajor, setStudentMajor] = React.useState("Công nghệ Thông tin (K47)");
-  const [studentRoom, setStudentRoom] = React.useState("B1-101 (Tòa B1 - Nam)");
-  const [studentWallet, setStudentWallet] = React.useState(1500000);
-  const [currentDebt, setCurrentDebt] = React.useState<{ id: number; amount: number; isPaid: boolean }>({
-    id: 1,
-    amount: 375000,
-    isPaid: false,
-  });
-  const [studentDebtPaid, setStudentDebtPaid] = React.useState(false);
-  const [isPayingDebt, setIsPayingDebt] = React.useState(false);
-  const [demoSimResult, setDemoSimResult] = React.useState<string | null>(null);
-
-  // AI Semantic search inside Room tab
-  const [studentAiQuery, setStudentAiQuery] = React.useState("");
-  const [studentAiResults, setStudentAiResults] = React.useState<Array<{
-    room_number: string;
-    building_id: string;
-    similarity: number;
-    description: string;
-  }>>([]);
-  const [isSearchingAi, setIsSearchingAi] = React.useState(false);
-
-  // Load real data from Backend API
-  React.useEffect(() => {
-    let mounted = true;
-    async function loadData() {
-      try {
-        const [profRes, debtRes, roomRes] = await Promise.all([
-          api.getStudentProfile(studentId),
-          api.getStudentDebts(studentId),
-          api.getStudentRoom(studentId),
-        ]);
-
-        if (mounted && profRes.success && profRes.data) {
-          setStudentName(profRes.data.full_name);
-          setStudentMajor(profRes.data.major);
-          setStudentWallet(profRes.data.wallet_balance);
-        }
-
-        if (mounted && roomRes.success && roomRes.data) {
-          setStudentRoom(`${roomRes.data.room_number} (${roomRes.data.building_name})`);
-        }
-
-        if (mounted && debtRes.success && debtRes.data && debtRes.data.length > 0) {
-          const firstUnpaid = debtRes.data.find((d) => d.debt_status === "UNPAID") || debtRes.data[0];
-          setCurrentDebt({
-            id: firstUnpaid.debt_id,
-            amount: firstUnpaid.assigned_amount,
-            isPaid: firstUnpaid.debt_status === "PAID",
-          });
-          setStudentDebtPaid(firstUnpaid.debt_status === "PAID");
-        }
-      } catch {
-        // Fallback to initial seed state
-      }
-    }
-    loadData();
-    return () => {
-      mounted = false;
-    };
-  }, [studentId]);
-
-  const handlePayWithWallet = async () => {
-    setIsPayingDebt(true);
+  const loadBills = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await api.payDebt(studentId, currentDebt.id, currentDebt.amount);
-      if (res.success && res.data) {
-        setStudentWallet(res.data.remaining_balance);
-        setStudentDebtPaid(true);
-        setCurrentDebt((prev) => ({ ...prev, isPaid: true }));
-        showToast(`Đã thanh toán ${currentDebt.amount.toLocaleString("vi-VN")} đ thành công qua SP2! Mã biên lai: ${res.data.reference_code}`);
-      } else {
-        setStudentWallet((prev) => Math.max(0, prev - currentDebt.amount));
-        setStudentDebtPaid(true);
-        showToast(res.message || "Đã thanh toán nợ cá nhân thành công qua Stored Procedure SP2!");
-      }
-    } catch {
-      setStudentWallet((prev) => Math.max(0, prev - currentDebt.amount));
-      setStudentDebtPaid(true);
-      showToast("Đã thanh toán 375.000 đ qua Stored Procedure sp_pay_student_utility_bill!");
+      const res = await apiRequest("/api/student/bills");
+      setData(res);
+    } catch (err: any) {
+      toast.error(err.message || "Không thể tải thông tin hóa đơn.");
     } finally {
-      setIsPayingDebt(false);
+      setLoading(false);
     }
-  };
+  }, []);
 
-  const handleTopup = async (amt: number) => {
-    try {
-      const res = await api.topupWallet(studentId, amt);
-      if (res.success && res.data) {
-        setStudentWallet(res.data.new_balance);
-        showToast(`Đã nạp ${amt.toLocaleString("vi-VN")} đ vào ví thành công!`);
-        return;
-      }
-    } catch {
-      // Fallback
-    }
-    setStudentWallet((prev) => prev + amt);
-    showToast(`Đã nạp ${amt.toLocaleString("vi-VN")} đ vào ví!`);
-  };
+  useEffect(() => {
+    loadBills();
+  }, [loadBills]);
 
-  const handleStudentSearchRoomAi = async () => {
-    if (!studentAiQuery.trim()) return;
-    setIsSearchingAi(true);
+  const startQrPayment = async (maHoaDon: number) => {
+    setCreatingQr(maHoaDon);
     try {
-      const res = await api.semanticSearch(studentAiQuery, 3);
-      if (res.success && res.data) {
-        setStudentAiResults(
-          res.data.map((r) => ({
-            room_number: r.room_number,
-            building_id: r.building_id,
-            similarity: r.similarity,
-            description: r.description,
-          }))
-        );
-      }
-    } catch {
-      setStudentAiResults([
-        { room_number: "B1-101", building_id: "B1", similarity: 0.7782, description: "Phòng nam tầng 1, ban công thoáng mát gần căng-tin" },
-        { room_number: "B2-201", building_id: "B2", similarity: 0.6840, description: "Phòng nữ tầng 2, gần thư viện ký túc xá" },
-      ]);
+      const session = await apiRequest<QrSessionState>(
+        `/api/student/bills/${maHoaDon}/qr-session`,
+        {
+          method: "POST",
+          body: {
+            frontend_origin:
+              typeof window !== "undefined" ? window.location.origin : null,
+          },
+        }
+      );
+      setQrSession(session);
+    } catch (err: any) {
+      toast.error(err.message || "Không thể tạo mã QR thanh toán.");
     } finally {
-      setIsSearchingAi(false);
+      setCreatingQr(null);
     }
   };
 
-  const handleSimulateDoubleClick = async () => {
-    setDemoSimResult("[ACID Simulation] Đang gửi 2 Transaction đồng thời trong 20ms...");
+  const payByWallet = async (maHoaDon: number) => {
+    setPayingWallet(maHoaDon);
     try {
-      const [res1, res2] = await Promise.all([
-        api.payDebt(studentId, currentDebt.id, currentDebt.amount),
-        api.payDebt(studentId, currentDebt.id, currentDebt.amount),
-      ]);
-      setStudentDebtPaid(true);
-      setDemoSimResult(`[Thành công] Request 1: ${res1.message} (Code = ${res1.status_code || 0}). Request 2: ${res2.message} (Code = ${res2.status_code || 2}). Khóa bi quan FOR UPDATE triệt tiêu rủi ro trừ tiền 2 lần!`);
-    } catch {
-      setStudentWallet((prev) => Math.max(0, prev - currentDebt.amount));
-      setStudentDebtPaid(true);
-      setDemoSimResult("[Thành công] Request 1: Lock 'FOR UPDATE' thành công (Code 0). Request 2: Lock Wait -> đọc nợ đã PAID -> thoát an toàn với mã DEBT_ALREADY_PAID (Code 2). Không bị trừ tiền 2 lần!");
+      const res = await apiRequest<any>(`/api/student/bills/${maHoaDon}/pay-wallet`, {
+        method: "POST",
+        body: { gia_lap_loi: false },
+      });
+      toast.success(
+        `Đã thanh toán bằng số dư ví (Mã GD: ${res.ma_giao_dich}). Số dư mới: ${formatVND(res.so_du_sau)}`
+      );
+      loadBills();
+    } catch (err: any) {
+      toast.error(err.message || "Không thể thanh toán bằng số dư ví.");
+    } finally {
+      setPayingWallet(null);
     }
   };
 
-  const handleSimulateInsufficientFunds = async () => {
-    setDemoSimResult("[Test Rollback] Đang gửi yêu cầu thanh toán khoản nợ lớn hơn số dư ví...");
+  const handleTopup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = Number(topupAmount);
+    if (!amount || amount < 10000) {
+      toast.error("Số tiền nạp tối thiểu 10.000 đ.");
+      return;
+    }
+    setToppingUp(true);
     try {
-      const res = await api.payDebt(studentId, currentDebt.id, 999999999);
-      setDemoSimResult(`[ROLLBACK] CSDL bắt ngoại lệ: ${res.message}. Số dư ví không đổi!`);
-    } catch {
-      setDemoSimResult("[ROLLBACK] Stored Procedure ném ngoại lệ INSUFFICIENT_FUNDS (Code 4). Số dư ví giữ nguyên, trạng thái nợ giữ nguyên UNPAID!");
+      const res = await apiRequest<any>("/api/student/wallet/topup", {
+        method: "POST",
+        body: { so_tien: amount },
+      });
+      toast.success(`Đã nạp ${formatVND(amount)}. Số dư mới: ${formatVND(res.so_du_sau)}`);
+      loadBills();
+    } catch (err: any) {
+      toast.error(err.message || "Không thể nạp tiền.");
+    } finally {
+      setToppingUp(false);
     }
   };
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
-  };
+  if (loading) {
+    return (
+      <div className="py-20 text-center text-slate-500">
+        <Loader2 className="h-5 w-5 animate-spin inline mr-2 text-[#1F5CA9]" />
+        Đang tải dữ liệu...
+      </div>
+    );
+  }
 
-  const copyToClipboard = (text: string, fieldName: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(fieldName);
-    setTimeout(() => setCopiedField(null), 2500);
-  };
-
-  const handleContactClick = (roommate: Roommate) => {
-    setSelectedRoommate(roommate);
-    setIsPhoneModalOpen(true);
-  };
-
-  const handleSubmitRepair = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsReportModalOpen(false);
-    setRepairDescription("");
-    showToast("Đã gửi yêu cầu sửa chữa #SC-4029! Kỹ thuật viên sẽ liên hệ trong 2h.");
-  };
-
-  const handleSubmitAbsence = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsAbsenceModalOpen(false);
-    showToast("Đã duyệt đơn đăng ký tạm vắng tự động! Chúc bạn chuyến đi an toàn.");
-  };
+  const sv = data?.sinh_vien;
+  const hdKtx = data?.hoa_don_ktx;
+  const hdDn = data?.hoa_don_dien_nuoc;
+  const walletLogs = data?.giao_dich_vi || [];
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-start py-4 px-2 sm:px-4">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-5 z-50 flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-2xl animate-in slide-in-from-top-3 duration-200 border border-slate-700">
-          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
+    <div className="space-y-5">
+      {/* Khung bao 1: Thông tin sinh viên & Số dư tài khoản nội trú */}
+      <SectionCard
+        title={sv?.ho_ten || "Thông tin nội trú"}
+        subtitle={`${sv?.mssv || ""}${sv?.ten_ky ? ` · ${sv.ten_ky}` : ""}`}
+        icon={Wallet}
+        right={
+          <div className="flex items-center gap-2">
+            {sv?.ten_phong && (
+              <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800">
+                Phòng {sv.ten_phong}
+              </span>
+            )}
+            {sv?.la_dai_dien && (
+              <span className="inline-flex items-center gap-1 rounded-lg bg-blue-50 border border-blue-200 px-3 py-1.5 text-xs font-semibold text-[#1F5CA9]">
+                <UserCheck className="h-3.5 w-3.5" />
+                Đại diện phòng
+              </span>
+            )}
+          </div>
+        }
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs text-slate-500">Số dư tài khoản nội trú</p>
+            <p className="mt-1 text-2xl font-bold text-[#1F5CA9]">
+              {formatVND(sv?.so_du || 0)}
+            </p>
+            {!sv?.la_dai_dien && sv?.ten_dai_dien && (
+              <p className="mt-1.5 text-xs text-slate-500">
+                Đại diện thanh toán phòng: <strong className="text-slate-700">{sv.ten_dai_dien}</strong> ({sv.mssv_dai_dien})
+              </p>
+            )}
+          </div>
+
+          <form onSubmit={handleTopup} className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2.5">
+            <p className="text-xs font-semibold text-slate-700">Nạp tiền vào tài khoản nội trú</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={topupAmount}
+                onChange={(e) => setTopupAmount(e.target.value)}
+                className="flex-1 min-w-[140px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#1F5CA9]"
+              >
+                <option value="500000">500.000 đ</option>
+                <option value="1000000">1.000.000 đ</option>
+                <option value="2000000">2.000.000 đ</option>
+                <option value="3000000">3.000.000 đ</option>
+              </select>
+              <button
+                type="submit"
+                disabled={toppingUp}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#1F5CA9] px-3.5 py-2 text-sm font-semibold text-white hover:bg-[#194B8B] disabled:opacity-60"
+              >
+                <Plus className="h-4 w-4" />
+                {toppingUp ? "Đang nạp..." : "Nạp tiền"}
+              </button>
+            </div>
+          </form>
         </div>
+      </SectionCard>
+
+      {!sv?.ten_phong ? (
+        <SectionCard title="Thông báo xếp phòng" icon={Building2}>
+          <p className="text-sm text-slate-500">Chưa được xếp phòng trong kỳ hiện tại.</p>
+        </SectionCard>
+      ) : (
+        <>
+          {/* Khung bao 2: Hóa đơn tiền phòng KTX */}
+          <SectionCard
+            title="Tiền phòng KTX kỳ này"
+            subtitle={`${sv.ten_ky} · Phòng ${sv.ten_phong}`}
+            icon={Building2}
+            right={hdKtx ? <BillStatusBadge status={hdKtx.trang_thai} /> : null}
+          >
+            {!hdKtx ? (
+              <p className="text-sm text-slate-500">Chưa có hóa đơn tiền phòng KTX.</p>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-slate-500">Tổng tiền phòng cả kỳ</p>
+                    <p className="text-2xl font-bold text-slate-900 mt-0.5">
+                      {formatVND(hdKtx.so_tien)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-slate-500">Hạn đóng</p>
+                    <p className="text-sm font-semibold text-slate-800 mt-0.5">
+                      {formatDate(hdKtx.han_nop)}
+                    </p>
+                  </div>
+                </div>
+
+                {hdKtx.trang_thai === "CHUA_NOP" && sv.la_dai_dien && (
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <button
+                      type="button"
+                      disabled={payingWallet === hdKtx.ma_hoa_don}
+                      onClick={() => payByWallet(hdKtx.ma_hoa_don)}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1F5CA9] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#194B8B] disabled:opacity-60"
+                    >
+                      {payingWallet === hdKtx.ma_hoa_don ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Wallet className="h-4 w-4" />
+                      )}
+                      Thanh toán bằng số dư
+                    </button>
+                    <button
+                      type="button"
+                      disabled={creatingQr === hdKtx.ma_hoa_don}
+                      onClick={() => startQrPayment(hdKtx.ma_hoa_don)}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+                    >
+                      {creatingQr === hdKtx.ma_hoa_don ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <QrCode className="h-4 w-4 text-[#1F5CA9]" />
+                      )}
+                      Thanh toán qua mã QR
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </SectionCard>
+
+          {/* Khung bao 3: Hóa đơn tiền điện nước */}
+          <SectionCard
+            title="Tiền điện nước cả phòng"
+            subtitle={`${hdDn ? formatMonthLabel(hdDn.thang) : "Kỳ hiện tại"} · Phòng ${sv.ten_phong}`}
+            icon={Zap}
+            iconBg="bg-amber-50 text-amber-600"
+            right={hdDn ? <BillStatusBadge status={hdDn.trang_thai} /> : null}
+          >
+            {!hdDn ? (
+              <p className="text-sm text-slate-500">Chưa có hóa đơn điện nước kỳ này.</p>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700">
+                      <Zap className="h-4 w-4" />
+                      Điện tiêu thụ
+                    </div>
+                    <p className="mt-1.5 text-lg font-bold text-slate-900">
+                      {formatVND(hdDn.tien_dien)}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {formatNumber(hdDn.chi_so_dien_dau)} → {formatNumber(hdDn.chi_so_dien_cuoi)} (
+                      <strong>{formatNumber(hdDn.luong_dien)} kWh</strong>)
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-sky-700">
+                      <Droplets className="h-4 w-4" />
+                      Nước tiêu thụ
+                    </div>
+                    <p className="mt-1.5 text-lg font-bold text-slate-900">
+                      {formatVND(hdDn.tien_nuoc)}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {formatNumber(hdDn.chi_so_nuoc_dau)} → {formatNumber(hdDn.chi_so_nuoc_cuoi)} (
+                      <strong>{formatNumber(hdDn.luong_nuoc)} m³</strong>)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-slate-500">Tổng tiền điện nước cả phòng</p>
+                    <p className="text-2xl font-bold text-[#1F5CA9] mt-0.5">
+                      {formatVND(hdDn.so_tien)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-slate-500">Hạn đóng</p>
+                    <p className="text-sm font-semibold text-slate-900 mt-0.5">
+                      {formatDate(hdDn.han_nop)}
+                    </p>
+                  </div>
+                </div>
+
+                {hdDn.trang_thai === "CHUA_NOP" && sv.la_dai_dien && (
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <button
+                      type="button"
+                      disabled={payingWallet === hdDn.ma_hoa_don}
+                      onClick={() => payByWallet(hdDn.ma_hoa_don)}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1F5CA9] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#194B8B] disabled:opacity-60"
+                    >
+                      {payingWallet === hdDn.ma_hoa_don ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Wallet className="h-4 w-4" />
+                      )}
+                      Thanh toán bằng số dư
+                    </button>
+                    <button
+                      type="button"
+                      disabled={creatingQr === hdDn.ma_hoa_don}
+                      onClick={() => startQrPayment(hdDn.ma_hoa_don)}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+                    >
+                      {creatingQr === hdDn.ma_hoa_don ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <QrCode className="h-4 w-4 text-[#1F5CA9]" />
+                      )}
+                      Thanh toán qua mã QR
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </SectionCard>
+        </>
       )}
 
-      {/* Top Bar for Desktop Preview / Viewport Toggle */}
-      <div className="w-full max-w-4xl mb-3 flex items-center justify-between bg-white dark:bg-slate-900 px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-xs">
-        <div className="flex items-center gap-2">
-          <Link
-            href="/admin"
-            className="flex items-center gap-1.5 font-semibold text-[#1F5CA9] hover:underline"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Về Dashboard Admin</span>
-          </Link>
-          <span className="text-slate-300 dark:text-slate-700">|</span>
-          <span className="font-semibold text-slate-700 dark:text-slate-300 hidden sm:inline">
-            Cổng Sinh Viên KTX (Student Mobile App)
-          </span>
-        </div>
-
-        {/* Viewport switch: iPhone 16 (393x852) vs Fullscreen */}
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground text-[11px] hidden sm:inline">Khung xem:</span>
-          <Button
-            size="sm"
-            variant={isSimulatorMode ? "default" : "outline"}
-            onClick={() => setIsSimulatorMode(true)}
-            className={`h-7 px-2.5 rounded-lg text-xs gap-1.5 ${
-              isSimulatorMode ? "bg-[#1F5CA9] text-white shadow-xs" : ""
-            }`}
-          >
-            <Smartphone className="h-3.5 w-3.5" />
-            <span>iPhone 16 (393×852)</span>
-          </Button>
-          <Button
-            size="sm"
-            variant={!isSimulatorMode ? "default" : "outline"}
-            onClick={() => setIsSimulatorMode(false)}
-            className={`h-7 px-2.5 rounded-lg text-xs gap-1.5 ${
-              !isSimulatorMode ? "bg-[#1F5CA9] text-white shadow-xs" : ""
-            }`}
-          >
-            <Maximize2 className="h-3.5 w-3.5" />
-            <span>Mở rộng</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Main Container — Styled strictly to iPhone 16 specifications (393 × 852 px) */}
-      <div
-        className={`transition-all duration-300 w-full ${
-          isSimulatorMode
-            ? "max-w-[393px] h-[852px] rounded-[52px] border-[10px] border-slate-900 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden bg-white dark:bg-slate-900 relative flex flex-col"
-            : "max-w-xl min-h-[852px] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md overflow-hidden bg-white dark:bg-slate-900 relative flex flex-col"
-        }`}
-      >
-        {/* iPhone 16 Dynamic Island & Status Bar */}
-        {isSimulatorMode && (
-          <div className="h-10 w-full flex items-center justify-between px-7 pt-2 text-[11px] font-bold text-slate-800 dark:text-slate-200 select-none bg-white dark:bg-slate-900 z-30 shrink-0">
-            <span className="font-semibold text-xs tracking-tight">9:41</span>
-
-            {/* Dynamic Island pill */}
-            <div className="h-[28px] w-[116px] bg-black rounded-full flex items-center justify-between px-2.5 text-[10px] text-white/90 shadow-xs cursor-pointer hover:scale-105 transition-transform">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              <span className="text-[10px] font-semibold text-slate-200 tracking-tight">B1-101 Tòa B1</span>
-              <div className="h-2.5 w-2.5 rounded-full bg-blue-500/80" />
-            </div>
-
-            <div className="flex items-center gap-1.5 text-xs">
-              <span className="font-medium text-[10px]">5G</span>
-              <div className="h-2.5 w-5 rounded-xs border border-current p-0.5 flex items-center">
-                <div className="h-full w-3/4 bg-current rounded-xs" />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Scrollable Screen Content */}
-        <div className="flex-1 overflow-y-auto px-4 pt-3 pb-24 space-y-4">
-          {/* ========================================================= */}
-          {/* TAB 1: TRANG CHỦ (HOME DASHBOARD)                         */}
-          {/* ========================================================= */}
-          {activeTab === "home" && (
-            <div className="space-y-4 animate-in fade-in duration-200">
-              {/* 1. Welcome Header */}
-              <div className="flex items-center justify-between pt-1">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <Avatar className="h-11 w-11 border-2 border-[#1F5CA9]/30">
-                      <AvatarFallback className="bg-gradient-to-tr from-[#1F5CA9] to-[#00AFEF] text-white font-bold text-sm">
-                        TA
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-base font-bold text-slate-900 dark:text-slate-50">
-                      Chào bạn, {studentName}
-                    </span>
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="font-semibold text-[#1F5CA9] bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full">
-                        {studentRoom}
-                      </span>
-                      <span className="text-muted-foreground text-[11px]">MSSV: {studentId}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Notification Bell */}
-                <button
-                  onClick={() => setIsQrModalOpen(true)}
-                  className="relative flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors"
-                >
-                  <Bell className="h-5 w-5" />
-                  <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-amber-500 border border-white dark:border-slate-900" />
-                </button>
-              </div>
-
-              {/* 2. Quick Action Grid (4 round icons) */}
-              <div className="grid grid-cols-4 gap-2.5 pt-1">
-                {/* Action 1: Báo hỏng / Sửa chữa (#00AFEF) */}
-                <button
-                  onClick={() => setIsReportModalOpen(true)}
-                  className="flex flex-col items-center gap-1.5 group cursor-pointer"
-                >
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#00AFEF] text-white shadow-md shadow-sky-500/20 group-hover:scale-105 active:scale-95 transition-transform">
-                    <Wrench className="h-6 w-6" />
-                  </div>
-                  <span className="text-[11px] font-semibold text-center leading-tight text-slate-800 dark:text-slate-200">
-                    Báo hỏng / Sửa chữa
-                  </span>
-                </button>
-
-                {/* Action 2: Hóa đơn tháng này (#FFB800 with badge) */}
-                <button
-                  onClick={() => setIsQrModalOpen(true)}
-                  className="flex flex-col items-center gap-1.5 group relative cursor-pointer"
-                >
-                  <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFB800] text-amber-950 shadow-md shadow-amber-500/25 group-hover:scale-105 active:scale-95 transition-transform">
-                    <Receipt className="h-6 w-6" />
-                    <span className="absolute -top-2 -right-1 bg-red-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shadow-sm animate-pulse">
-                      Chờ nộp
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-semibold text-center leading-tight text-slate-800 dark:text-slate-200">
-                    Hóa đơn tháng này
-                  </span>
-                </button>
-
-                {/* Action 3: Đăng ký tạm vắng */}
-                <button
-                  onClick={() => setIsAbsenceModalOpen(true)}
-                  className="flex flex-col items-center gap-1.5 group cursor-pointer"
-                >
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-md shadow-emerald-500/20 group-hover:scale-105 active:scale-95 transition-transform">
-                    <CalendarCheck className="h-6 w-6" />
-                  </div>
-                  <span className="text-[11px] font-semibold text-center leading-tight text-slate-800 dark:text-slate-200">
-                    Đăng ký tạm vắng
-                  </span>
-                </button>
-
-                {/* Action 4: Nội quy & Liên hệ */}
-                <button
-                  onClick={() => setIsRulesModalOpen(true)}
-                  className="flex flex-col items-center gap-1.5 group cursor-pointer"
-                >
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#1F5CA9] text-white shadow-md shadow-blue-900/20 group-hover:scale-105 active:scale-95 transition-transform">
-                    <BookOpen className="h-6 w-6" />
-                  </div>
-                  <span className="text-[11px] font-semibold text-center leading-tight text-slate-800 dark:text-slate-200">
-                    Nội quy & Liên hệ
-                  </span>
-                </button>
-              </div>
-
-              {/* Notice Banner */}
-              <div className="rounded-2xl bg-blue-50/80 dark:bg-slate-800/80 border border-blue-100 dark:border-slate-700 p-3 flex items-start gap-2.5">
-                <Info className="h-4 w-4 text-[#1F5CA9] mt-0.5 shrink-0" />
-                <div className="text-xs text-slate-700 dark:text-slate-300">
-                  <span className="font-bold text-[#1F5CA9] block">Lịch phun khử trùng phòng dịch KTX:</span>
-                  Thứ Bảy (26/10) từ 08:30 - 11:30. Sinh viên vui lòng cất dọn đồ đạc cá nhân ngăn nắp.
-                </div>
-              </div>
-
-              {/* 3. Monthly Bill Highlight Card */}
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3.5 shadow-xs">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-[#1F5CA9]">
-                        <Zap className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block">
-                          Hóa đơn điện nước
-                        </span>
-                        <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                          Kỳ Tháng 10/2026
-                        </span>
-                      </div>
-                    </div>
-                    {studentDebtPaid ? (
-                      <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        Đã thanh toán (0 đ)
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-[#FEF3C7] text-[#B45309] border border-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        Chưa thanh toán
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Amount Display */}
-                  <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3 border border-slate-100 dark:border-slate-800">
-                    <div className="text-xs text-muted-foreground mb-0.5">Số tiền bạn cần nộp (student_utility_debts):</div>
-                    <div className="flex items-baseline justify-between">
-                      <span className={`text-2xl font-extrabold ${studentDebtPaid ? "text-emerald-600 dark:text-emerald-400" : "text-[#1F5CA9] dark:text-sky-400"}`}>
-                        {studentDebtPaid ? "0 đ (Đã tất toán)" : `${currentDebt.amount.toLocaleString("vi-VN")} đ`}
-                      </span>
-                      <span className="text-[11px] text-slate-500 font-medium">
-                        Phòng: B1-101 (2 SV)
-                      </span>
-                    </div>
-
-                    {/* Sub-item details */}
-                    <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700 text-[10px]">
-                      <div>
-                        <span className="text-muted-foreground block">Điện lũy tiến</span>
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">200.000 đ</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground block">Nước sạch</span>
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">125.000 đ</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground block">Dịch vụ & Wifi</span>
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">50.000 đ</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Prominent Friendly CTA Button */}
-                  <Button
-                    onClick={() => setActiveTab("bills")}
-                    className={`w-full h-10 rounded-xl font-semibold text-xs text-white shadow-xs flex items-center justify-center gap-2 group transition-all cursor-pointer ${
-                      studentDebtPaid
-                        ? "bg-emerald-600 hover:bg-emerald-700"
-                        : "bg-[#1F5CA9] hover:bg-[#184988]"
-                    }`}
-                  >
-                    <QrCode className="h-4 w-4" />
-                    <span>{studentDebtPaid ? "Xem biên lai thanh toán (SP2)" : "Thanh toán ngay qua Ví KTX"}</span>
-                  </Button>
-                </div>
-
-              {/* 4. Roommate list (Bạn cùng phòng) */}
-              <div className="space-y-2.5 pt-1">
-                <div className="flex items-center justify-between px-1">
-                  <span className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
-                    Bạn cùng phòng ({roommates.length} thành viên)
-                  </span>
-                  <button
-                    onClick={() => setActiveTab("room")}
-                    className="text-[11px] font-semibold text-[#00AFEF] hover:underline"
-                  >
-                    Xem chi tiết →
-                  </button>
-                </div>
-
-                <div className="space-y-2">
-                  {roommates.map((student) => (
-                    <div
-                      key={student.id}
-                      className="flex items-center justify-between p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-xs transition-shadow"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <Avatar className="h-10 w-10 border border-slate-200">
-                            <AvatarFallback
-                              className={`font-bold text-xs ${
-                                student.id === "1"
-                                  ? "bg-[#1F5CA9] text-white"
-                                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
-                              }`}
-                            >
-                              {student.avatarText}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span
-                            className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white dark:border-slate-900 ${
-                              student.isOnline ? "bg-emerald-500" : "bg-slate-400"
-                            }`}
-                          />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                              {student.name}
-                            </span>
-                            {student.id === "1" && (
-                              <Badge className="bg-blue-50 text-[#1F5CA9] text-[9px] font-semibold px-1.5 py-0 h-4">
-                                Bạn
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="text-[11px] text-muted-foreground">{student.major}</div>
-                          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
-                            {student.statusText}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Phone shortcut button */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleContactClick(student)}
-                        className="h-8 w-8 rounded-full text-[#1F5CA9] hover:bg-blue-50 dark:hover:bg-blue-950"
-                      >
-                        <Phone className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* TAB 2: PHÒNG CỦA TÔI (MY ROOM)                           */}
-          {/* ========================================================= */}
-          {activeTab === "room" && (
-            <div className="space-y-4 animate-in fade-in duration-200">
-              {/* Room Banner */}
-              <div className="rounded-3xl bg-gradient-to-br from-[#1F5CA9] to-[#00AFEF] p-4 text-white shadow-md">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-xs uppercase font-semibold text-white/80 tracking-wider">
-                      Không gian lưu trú
-                    </span>
-                    <h2 className="text-xl font-bold mt-0.5">Phòng B1-101 • Tòa B1 - Nam</h2>
-                    <p className="text-xs text-white/90 mt-1">
-                      Tầng 1 • Phòng Nam • 4 Giường tầng • Ban công thoáng mát, gần căng-tin
-                    </p>
-                  </div>
-                  <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 text-[11px]">
-                    4/4 Đủ người
-                  </Badge>
-                </div>
-              </div>
-
-              {/* AI Semantic Room Search with pgvector */}
-              <div className="rounded-2xl border border-sky-200 bg-sky-50/50 p-3.5 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles className="h-4 w-4 text-[#00AFEF]" />
-                    <span className="text-xs font-bold text-slate-800">
-                      Tìm Phòng Ngữ Nghĩa AI (pgvector)
-                    </span>
-                  </div>
-                  <Badge className="bg-sky-100 text-[#00AFEF] text-[10px] font-mono border-0">
-                    vector(384)
-                  </Badge>
-                </div>
-                <div className="relative">
-                  <Input
-                    placeholder="VD: 'Phòng nam tầng 1 thoáng mát gần căng-tin'..."
-                    value={studentAiQuery}
-                    onChange={(e) => setStudentAiQuery(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleStudentSearchRoomAi();
-                    }}
-                    className="h-8 text-xs bg-white border-sky-200 pl-2.5 pr-16"
-                  />
-                  <Button
-                    size="sm"
-                    onClick={handleStudentSearchRoomAi}
-                    disabled={isSearchingAi}
-                    className="absolute right-0.5 top-0.5 h-7 px-2.5 text-[10px] bg-[#1F5CA9] text-white"
-                  >
-                    {isSearchingAi ? "Đang tìm..." : "Tìm AI"}
-                  </Button>
-                </div>
-                {studentAiResults.length > 0 ? (
-                  <div className="space-y-1.5 pt-1">
-                    <span className="text-[11px] font-bold text-slate-700">Gợi ý phòng tương thích cao nhất:</span>
-                    {studentAiResults.map((r, i) => (
-                      <div key={i} className="p-2 rounded-xl bg-white border border-sky-100 text-[11px] flex items-center justify-between">
-                        <div>
-                          <span className="font-bold text-[#1F5CA9]">{r.room_number} ({r.building_id})</span>
-                          <span className="text-slate-500 block text-[10px] truncate max-w-[200px]">{r.description}</span>
-                        </div>
-                        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">
-                          Khớp {Math.round(r.similarity * 100)}%
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-[10px] text-slate-500">
-                    Truy vấn khoảng cách Cosine `rooms.embedding &lt;=&gt; query_vector` trong PostgreSQL 16
-                  </p>
-                )}
-              </div>
-
-              {/* Facility & Equipment Checklist */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between px-1">
-                  <span className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
-                    Cơ sở vật chất & Tài sản phòng
-                  </span>
-                  <button
-                    onClick={() => setIsReportModalOpen(true)}
-                    className="text-[11px] font-semibold text-[#1F5CA9] hover:underline"
-                  >
-                    + Báo hỏng thiết bị
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1">
-                    <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-semibold">
-                      <AirVent className="h-4 w-4 text-[#00AFEF]" />
-                      <span>Điều hòa Casper</span>
-                    </div>
-                    <div className="text-[11px] text-muted-foreground font-mono">Mã: TS-B1101-DH</div>
-                    <div className="text-[10px] text-emerald-600 font-medium">Bảo dưỡng: 15/09/2026</div>
-                  </div>
-
-                  <div className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1">
-                    <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-semibold">
-                      <Bed className="h-4 w-4 text-[#1F5CA9]" />
-                      <span>Giường tầng gỗ (4)</span>
-                    </div>
-                    <div className="text-[11px] text-muted-foreground font-mono">Mã: TS-B1101-G1..4</div>
-                    <div className="text-[10px] text-emerald-600 font-medium">Tình trạng: Tốt</div>
-                  </div>
-
-                  <div className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1">
-                    <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-semibold">
-                      <Zap className="h-4 w-4 text-[#FFB800]" />
-                      <span>Công tơ điện</span>
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">Chỉ số: 1.585 kWh</div>
-                    <div className="text-[10px] text-slate-500 font-medium">Đo tự động IoT</div>
-                  </div>
-
-                  <div className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1">
-                    <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-semibold">
-                      <Droplets className="h-4 w-4 text-[#00AFEF]" />
-                      <span>Đồng hồ nước</span>
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">Chỉ số: 126 m³</div>
-                    <div className="text-[10px] text-slate-500 font-medium">Hoạt động chuẩn</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Cleaning Schedule */}
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
-                    Lịch trực nhật tuần này
-                  </span>
-                  <Badge variant="outline" className="text-[10px] font-semibold text-[#1F5CA9]">
-                    Tuần 42 (T10/2026)
-                  </Badge>
-                </div>
-
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800">
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">Thứ 2: Văn An</span>
-                    <span className="text-emerald-600 font-bold flex items-center gap-1 text-[11px]">
-                      <Check className="h-3 w-3" /> Đã xong
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900">
-                    <span className="font-bold text-amber-900 dark:text-amber-100 flex items-center gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-                      Thứ 4: Hoàng Bình (Hôm nay)
-                    </span>
-                    <span className="text-[#B45309] font-bold text-[11px]">Đang phiên</span>
-                  </div>
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800">
-                    <span className="text-slate-600 dark:text-slate-400">Thứ 6: Quốc Cường</span>
-                    <span className="text-slate-400 text-[11px]">Sắp tới</span>
-                  </div>
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800">
-                    <span className="text-slate-600 dark:text-slate-400">Chủ Nhật: Minh Dũng</span>
-                    <span className="text-slate-400 text-[11px]">Tổng vệ sinh</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* TAB 3: HÓA ĐƠN & VÍ SINH VIÊN (CAMPUS WALLET & BILLS)      */}
-          {/* ========================================================= */}
-          {activeTab === "bills" && (
-            <div className="space-y-4 animate-in fade-in duration-200">
-              <div className="flex items-center justify-between px-1">
-                <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  Ví KTX & Công Nợ Điện Nước
-                </h2>
-                <Badge variant="outline" className="text-[10px] font-mono text-[#1F5CA9] border-blue-200">
-                  Phòng B1-101
-                </Badge>
-              </div>
-
-              {/* Campus Wallet Card */}
-              <div className="rounded-2xl bg-gradient-to-r from-[#1F5CA9] to-[#00AFEF] p-4 text-white shadow-md space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-lg bg-white/20 flex items-center justify-center">
-                      <Wallet className="h-4 w-4 text-white" />
-                    </div>
-                    <span className="text-xs font-bold text-sky-100 uppercase tracking-wider">
-                      Ví Sinh Viên Nội Bộ (Campus Wallet)
-                    </span>
-                  </div>
-                  <Badge className="bg-emerald-400 text-slate-900 text-[10px] font-bold">
-                    Hoạt động
-                  </Badge>
-                </div>
-
-                <div className="flex items-baseline justify-between pt-1">
-                  <div>
-                    <span className="text-xs text-sky-100 block">Số dư khả dụng</span>
-                    <span className="text-2xl font-bold tabular-nums font-mono">{studentWallet.toLocaleString("vi-VN")} đ</span>
-                  </div>
-                  <div className="flex gap-1.5">
-                    {[200000, 500000, 1000000].map((amt) => (
-                      <button
-                        key={amt}
-                        onClick={() => handleTopup(amt)}
-                        className="text-[10px] font-bold bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg backdrop-blur-xs transition-colors"
-                      >
-                        +{amt / 1000}k
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <p className="text-[10px] text-sky-100/80">
-                  Liên kết tài khoản thẻ sinh viên • Nộp tiền điện nước tự động qua Stored Procedure ACID
-                </p>
-              </div>
-
-              {/* Current Unpaid Split Debt Card */}
-              <div className="rounded-2xl border border-amber-300/80 bg-amber-50/40 p-4 space-y-3 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <Badge className="bg-[#FFB800] text-amber-950 text-[10px] font-bold px-2 py-0.5">
-                    Hóa đơn T10/2026 (Phòng B1-101)
-                  </Badge>
-                  <span className="text-xs font-semibold text-red-600">Hạn chót: 25/10/2026</span>
-                </div>
-
-                <div className="rounded-xl bg-white/80 p-2.5 border border-amber-200 text-xs space-y-1">
-                  <div className="flex justify-between text-slate-600">
-                    <span>Hóa đơn phòng tổng (2 người):</span>
-                    <span className="font-bold text-slate-900 tabular-nums font-mono">690.000 đ</span>
-                  </div>
-                  <div className="flex justify-between items-baseline pt-1 border-t border-slate-100">
-                    <span className="font-bold text-[#1F5CA9]">Công nợ của bạn (student_utility_debts):</span>
-                    <span className={`text-xl font-extrabold tabular-nums font-mono ${studentDebtPaid ? "text-emerald-600" : "text-[#1F5CA9]"}`}>
-                      {studentDebtPaid ? "ĐÃ NỘP (0 đ)" : `${currentDebt.amount.toLocaleString("vi-VN")} đ`}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="text-xs space-y-1 text-slate-600 pt-1">
-                  <div className="flex justify-between">
-                    <span>Điện lũy tiến 3 bậc (150 kWh / 2):</span>
-                    <span className="font-medium text-slate-900">170.000 đ</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Nước sạch (25 m³ × 10.000đ / 2):</span>
-                    <span className="font-medium text-slate-900">125.000 đ</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Vệ sinh & Wifi (100.000đ / 2):</span>
-                    <span className="font-medium text-slate-900">50.000 đ</span>
-                  </div>
-                </div>
-
-                {!studentDebtPaid ? (
-                  <div className="space-y-2 pt-1">
-                    <Button
-                      onClick={handlePayWithWallet}
-                      disabled={isPayingDebt}
-                      className="w-full h-10 rounded-xl font-bold text-xs bg-emerald-600 text-white hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-sm"
-                    >
-                      <ShieldCheck className="h-4 w-4" />
-                      <span>{isPayingDebt ? "Đang xử lý Stored Procedure ACID..." : "Nộp 345.000 đ Bằng Ví KTX"}</span>
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsQrModalOpen(true)}
-                      className="w-full h-8 rounded-xl font-semibold text-xs border-amber-300 text-slate-700 hover:bg-amber-100/50 flex items-center justify-center gap-1.5"
-                    >
-                      <QrCode className="h-3.5 w-3.5 text-[#1F5CA9]" />
-                      <span>Hoặc Nạp Tiền Qua VietQR / VNPay</span>
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="rounded-xl bg-emerald-100/80 border border-emerald-300 p-3 text-center space-y-1 text-xs text-emerald-900">
-                    <p className="font-bold flex items-center justify-center gap-1.5">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                      Đã gạch nợ thành công qua Stored Procedure!
-                    </p>
-                    <p className="text-[11px] text-emerald-800">
-                      Biên lai: <strong>TX-20261027-8841</strong> • Hóa đơn phòng: <strong>PARTIALLY_PAID</strong>
-                    </p>
-                  </div>
-                )}
-
-                {/* DEMO MODE TEST CASES - ONLY SHOWN WHEN DEMO MODE IS ON IN SETTINGS */}
-                {isDemoMode && (
-                  <div className="rounded-xl border border-amber-300 bg-amber-50/60 p-3 space-y-2 text-xs">
-                    <div className="flex items-center gap-1.5 font-bold text-amber-900">
-                      <GraduationCap className="h-4 w-4 text-amber-700" />
-                      <span>Kịch bản Giảng viên chấm thi (Demo Mode):</span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleSimulateDoubleClick}
-                        className="h-8 text-[11px] font-semibold bg-white text-amber-900 border-amber-300 hover:bg-amber-50"
-                      >
-                        <Zap className="h-3.5 w-3.5 mr-1 text-amber-600" />
-                        Test Click đúp (ACID)
-                      </Button>
-
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleSimulateInsufficientFunds}
-                        className="h-8 text-[11px] font-semibold bg-white text-red-700 border-red-300 hover:bg-red-50"
-                      >
-                        <AlertTriangle className="h-3.5 w-3.5 mr-1 text-red-600" />
-                        Test Thiếu tiền (Rollback)
-                      </Button>
-                    </div>
-
-                    {demoSimResult && (
-                      <div className="p-2 rounded-lg bg-white border border-amber-200 text-[11px] text-slate-800">
-                        {demoSimResult}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Paid Past Bills History */}
-              <div className="space-y-2 pt-2">
-                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider block px-1">
-                  Lịch sử biên lai thanh toán (`payment_transactions`)
-                </span>
-
-                {[
-                  { month: "Tháng 09/2026", amount: "310.000 đ", paidDate: "20/09/2026", receiptCode: "TX-20260920-9042" },
-                  { month: "Tháng 08/2026", amount: "285.000 đ", paidDate: "18/08/2026", receiptCode: "TX-20260818-8015" },
-                  { month: "Tháng 07/2026", amount: "290.000 đ", paidDate: "19/07/2026", receiptCode: "TX-20260719-7103" },
-                ].map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
-                  >
-                    <div>
-                      <div className="font-bold text-xs text-slate-900 dark:text-slate-100">{item.month}</div>
-                      <div className="text-[11px] text-muted-foreground">Đã nộp ngày: {item.paidDate}</div>
-                      <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">Số biên lai: #{item.receiptCode}</div>
-                    </div>
-
-                    <div className="text-right space-y-1">
-                      <div className="text-xs font-extrabold text-slate-900 dark:text-slate-100">{item.amount}</div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedReceiptMonth(item.month);
-                          setIsReceiptModalOpen(true);
-                        }}
-                        className="h-6 px-2 text-[10px] rounded-lg text-[#1F5CA9] border-blue-200 hover:bg-blue-50"
-                      >
-                        Xem biên lai
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* TAB 4: CÁ NHÂN & THẺ KTX SỐ (PROFILE & DIGITAL PASS)      */}
-          {/* ========================================================= */}
-          {activeTab === "profile" && (
-            <div className="space-y-4 animate-in fade-in duration-200">
-              {/* Apple Wallet Style Digital Pass */}
-              <div className="relative rounded-3xl bg-gradient-to-br from-[#1F5CA9] via-[#0077b6] to-[#00AFEF] text-white p-5 shadow-sm border border-blue-900/30 overflow-hidden">
-                {/* Background Watermark Pattern */}
-                <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-15 pointer-events-none">
-                  <div className="w-48 h-48 rounded-full border-[16px] border-white" />
-                </div>
-
-                <div className="flex items-center justify-between pb-3 border-b border-white/20">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-xl bg-white text-[#1F5CA9] flex items-center justify-center font-extrabold text-sm shadow-xs">
-                      KTX
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold tracking-tight block">THẺ CƯ TRÚ KÝ TÚC XÁ</span>
-                      <span className="text-[10px] text-white/80">ĐẠI HỌC CẦN THƠ (CTU)</span>
-                    </div>
-                  </div>
-                  <Badge className="bg-emerald-400 text-slate-950 font-bold text-[10px]">
-                    ACTIVE
-                  </Badge>
-                </div>
-
-                <div className="pt-4 flex items-center gap-3.5">
-                  <Avatar className="h-14 w-14 border-2 border-white shadow-md">
-                    <AvatarFallback className="bg-white text-[#1F5CA9] font-black text-lg">
-                      AN
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="text-base font-bold leading-tight">{studentName}</h3>
-                    <div className="text-xs text-white/90 font-medium">MSSV: {studentId}</div>
-                    <div className="text-xs text-white/90">Phòng: {studentRoom}</div>
-                  </div>
-                </div>
-
-                {/* Simulated Barcode for Gate / Elevator Access */}
-                <div className="mt-4 pt-3 border-t border-white/20 flex flex-col items-center">
-                  <div className="h-8 w-full bg-white/95 rounded-md px-2 py-1 flex items-center justify-between">
-                    {Array.from({ length: 42 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`h-full bg-slate-900 ${
-                          i % 3 === 0 ? "w-1" : i % 2 === 0 ? "w-0.5" : "w-1.5"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-[10px] font-mono tracking-widest text-white/80 mt-1">
-                    {studentId}-B1101-2026-GATE
-                  </span>
-                </div>
-              </div>
-
-              {/* Contract Summary */}
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-2 text-xs">
-                <span className="font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider block mb-1">
-                  Thông tin Hợp đồng KTX
-                </span>
-                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
-                  <span className="text-muted-foreground">Mã hợp đồng:</span>
-                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">HD-2026-A402-01</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
-                  <span className="text-muted-foreground">Thời hạn lưu trú:</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">01/09/2026 - 30/06/2027</span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">Tiền ký quỹ (Đặt cọc):</span>
-                  <span className="font-bold text-[#1F5CA9]">1.000.000 đ (Đã nộp)</span>
-                </div>
-              </div>
-
-              {/* Utility actions */}
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden text-xs divide-y divide-slate-100 dark:divide-slate-800">
-                <button
-                  onClick={() => setIsRulesModalOpen(true)}
-                  className="w-full p-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 text-left cursor-pointer"
-                >
-                  <div className="flex items-center gap-2 font-medium">
-                    <BookOpen className="h-4 w-4 text-[#1F5CA9]" />
-                    <span>Nội quy & Danh bạ liên hệ</span>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-slate-400" />
-                </button>
-
-                <button
-                  onClick={() => showToast("Chức năng đổi mật khẩu đã mở!")}
-                  className="w-full p-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 text-left cursor-pointer"
-                >
-                  <div className="flex items-center gap-2 font-medium">
-                    <Lock className="h-4 w-4 text-[#00AFEF]" />
-                    <span>Đổi mật khẩu tài khoản</span>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-slate-400" />
-                </button>
-
-                <button
-                  onClick={() => showToast("Đã kích hoạt nhận thông báo qua Zalo & SMS!")}
-                  className="w-full p-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 text-left cursor-pointer"
-                >
-                  <div className="flex items-center gap-2 font-medium">
-                    <Bell className="h-4 w-4 text-[#FFB800]" />
-                    <span>Cài đặt nhận thông báo</span>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-slate-400" />
-                </button>
-              </div>
-
-              {/* Logout button */}
-              <Button
-                variant="outline"
-                onClick={() => showToast("Đăng xuất tài khoản an toàn.")}
-                className="w-full h-10 rounded-2xl text-xs font-semibold text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
-              >
-                Đăng xuất tài khoản
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {/* 5. Bottom Navigation Bar */}
-        <div className="absolute bottom-0 inset-x-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800 px-6 py-2 flex items-center justify-between z-20">
-          <button
-            onClick={() => setActiveTab("home")}
-            className={`flex flex-col items-center gap-1 transition-colors cursor-pointer ${
-              activeTab === "home" ? "text-[#1F5CA9] font-bold" : "text-slate-500"
-            }`}
-          >
-            <Home className="h-5 w-5" />
-            <span className="text-[10px]">Trang chủ</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("room")}
-            className={`flex flex-col items-center gap-1 transition-colors cursor-pointer ${
-              activeTab === "room" ? "text-[#1F5CA9] font-bold" : "text-slate-500"
-            }`}
-          >
-            <DoorOpen className="h-5 w-5" />
-            <span className="text-[10px]">Phòng của tôi</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("bills")}
-            className={`flex flex-col items-center gap-1 transition-colors relative cursor-pointer ${
-              activeTab === "bills" ? "text-[#1F5CA9] font-bold" : "text-slate-500"
-            }`}
-          >
-            <FileText className="h-5 w-5" />
-            <span className="absolute -top-1 right-1 h-2 w-2 rounded-full bg-[#FFB800]" />
-            <span className="text-[10px]">Hóa đơn</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("profile")}
-            className={`flex flex-col items-center gap-1 transition-colors cursor-pointer ${
-              activeTab === "profile" ? "text-[#1F5CA9] font-bold" : "text-slate-500"
-            }`}
-          >
-            <User className="h-5 w-5" />
-            <span className="text-[10px]">Cá nhân</span>
-          </button>
-        </div>
-
-        {/* iPhone 16 Home Indicator Bar */}
-        {isSimulatorMode && (
-          <div className="absolute bottom-1 inset-x-0 flex justify-center pointer-events-none z-30">
-            <div className="h-1 w-32 bg-slate-400 dark:bg-slate-600 rounded-full" />
-          </div>
-        )}
-      </div>
-
-      {/* ========================================================= */}
-      {/* MODAL 1: BÁO HỎNG / SỬA CHỮA THIẾT BỊ                      */}
-      {/* ========================================================= */}
-      <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
-        <DialogContent className="sm:max-w-md rounded-3xl p-6">
-          <DialogHeader>
-            <div className="flex items-center gap-2 text-[#00AFEF] mb-1">
-              <Wrench className="h-5 w-5" />
-              <DialogTitle className="text-base font-bold text-slate-900">
-                Báo Hỏng & Đề Nghị Sửa Chữa
-              </DialogTitle>
-            </div>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Phòng B1-101 • Tòa B1 - Nam. Kỹ thuật viên KTX sẽ tiếp nhận và xử lý trong 2-4 giờ làm việc.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleSubmitRepair} className="space-y-3.5 py-2 text-xs">
-            {/* Category */}
-            <div>
-              <label className="font-semibold text-slate-700 block mb-1">
-                Loại thiết bị gặp sự cố:
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: "dien", label: "Điện & Bóng đèn", icon: Zap },
-                  { id: "nuoc", label: "Nước & Vòi sen", icon: Droplets },
-                  { id: "dieu_hoa", label: "Điều hòa / Quạt", icon: AirVent },
-                  { id: "khoa_cua", label: "Khóa cửa / Giường", icon: Lock },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setRepairCategory(item.id)}
-                    className={`p-2.5 rounded-xl border flex items-center gap-2 text-left transition-all ${
-                      repairCategory === item.id
-                        ? "border-[#00AFEF] bg-sky-50 text-[#00AFEF] font-bold"
-                        : "border-slate-200 text-slate-700 hover:bg-slate-50"
-                    }`}
-                  >
-                    <item.icon className="h-4 w-4 shrink-0" />
-                    <span>{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Urgency */}
-            <div>
-              <label className="font-semibold text-slate-700 block mb-1">
-                Mức độ khẩn cấp:
-              </label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setRepairPriority("binh_thuong")}
-                  className={`flex-1 py-1.5 rounded-xl border text-center font-medium ${
-                    repairPriority === "binh_thuong"
-                      ? "border-[#1F5CA9] bg-blue-50 text-[#1F5CA9] font-bold"
-                      : "border-slate-200 text-slate-600"
-                  }`}
-                >
-                  Bình thường
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRepairPriority("khan_cap")}
-                  className={`flex-1 py-1.5 rounded-xl border text-center font-medium ${
-                    repairPriority === "khan_cap"
-                      ? "border-red-500 bg-red-50 text-red-600 font-bold"
-                      : "border-slate-200 text-slate-600"
-                  }`}
-                >
-                  Khẩn cấp (Rò điện/nước)
-                </button>
-              </div>
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="font-semibold text-slate-700 block mb-1">
-                Mô tả chi tiết sự cố:
-              </label>
-              <Textarea
-                required
-                placeholder="Ví dụ: Vòi nước bồn rửa mặt bị rỉ nước liên tục, khóa cửa phòng hơi kẹt..."
-                value={repairDescription}
-                onChange={(e) => setRepairDescription(e.target.value)}
-                className="text-xs rounded-xl border-slate-200 min-h-[70px]"
-              />
-            </div>
-
-            {/* Photo Attachment Mock */}
-            <div className="border border-dashed border-slate-200 rounded-xl p-3 text-center bg-slate-50 flex items-center justify-center gap-2 text-slate-500 cursor-pointer hover:bg-slate-100">
-              <Camera className="h-4 w-4 text-[#00AFEF]" />
-              <span>Chụp ảnh hiện trường đính kèm (Tùy chọn)</span>
-            </div>
-
-            <DialogFooter className="flex gap-2 sm:justify-end pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setIsReportModalOpen(false)}
-                className="rounded-xl text-xs"
-              >
-                Hủy
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                className="rounded-xl text-xs font-semibold bg-[#1F5CA9] text-white hover:bg-[#1a4f91]"
-              >
-                Gửi Phiếu Báo Hỏng
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* ========================================================= */}
-      {/* MODAL 2: ĐĂNG KÝ TẠM VẮNG KÝ TÚC XÁ                        */}
-      {/* ========================================================= */}
-      <Dialog open={isAbsenceModalOpen} onOpenChange={setIsAbsenceModalOpen}>
-        <DialogContent className="sm:max-w-md rounded-3xl p-6">
-          <DialogHeader>
-            <div className="flex items-center gap-2 text-emerald-600 mb-1">
-              <CalendarCheck className="h-5 w-5" />
-              <DialogTitle className="text-base font-bold text-slate-900">
-                Đăng Ký Tạm Vắng KTX
-              </DialogTitle>
-            </div>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Thông báo cho Ban Quản lý khi về quê hoặc vắng mặt qua đêm để đảm bảo an ninh.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleSubmitAbsence} className="space-y-3.5 py-2 text-xs">
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="font-semibold text-slate-700 block mb-1">Ngày bắt đầu vắng:</label>
-                <Input
-                  type="date"
-                  value={absenceStartDate}
-                  onChange={(e) => setAbsenceStartDate(e.target.value)}
-                  className="text-xs rounded-xl"
-                />
-              </div>
-              <div>
-                <label className="font-semibold text-slate-700 block mb-1">Ngày dự kiến về:</label>
-                <Input
-                  type="date"
-                  value={absenceEndDate}
-                  onChange={(e) => setAbsenceEndDate(e.target.value)}
-                  className="text-xs rounded-xl"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="font-semibold text-slate-700 block mb-1">Lý do tạm vắng:</label>
-              <div className="grid grid-cols-3 gap-1.5">
-                {[
-                  { id: "ve_que", label: "Về quê" },
-                  { id: "thuc_tap", label: "Đi thực tập" },
-                  { id: "khac", label: "Việc gia đình" },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setAbsenceReason(item.id)}
-                    className={`py-2 rounded-xl border text-center font-medium ${
-                      absenceReason === item.id
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-700 font-bold"
-                        : "border-slate-200 text-slate-600"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="font-semibold text-slate-700 block mb-1">
-                Số điện thoại liên hệ Phụ huynh / Gia đình:
-              </label>
-              <Input
-                type="tel"
-                value={parentPhone}
-                onChange={(e) => setParentPhone(e.target.value)}
-                className="text-xs rounded-xl font-medium"
-              />
-            </div>
-
-            <DialogFooter className="flex gap-2 sm:justify-end pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setIsAbsenceModalOpen(false)}
-                className="rounded-xl text-xs"
-              >
-                Hủy
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                className="rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700"
-              >
-                Xác Nhận Đăng Ký
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* ========================================================= */}
-      {/* MODAL 3: NỘI QUY KTX & DANH BẠ LIÊN HỆ KHẨN CẤP           */}
-      {/* ========================================================= */}
-      <Dialog open={isRulesModalOpen} onOpenChange={setIsRulesModalOpen}>
-        <DialogContent className="sm:max-w-md rounded-3xl p-6">
-          <DialogHeader>
-            <div className="flex items-center gap-2 text-[#1F5CA9] mb-1">
-              <BookOpen className="h-5 w-5" />
-              <DialogTitle className="text-base font-bold text-slate-900">
-                Nội Quy & Đường Dây Nóng KTX
-              </DialogTitle>
-            </div>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Ban Quản lý Ký túc xá Đại học Quốc gia.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3.5 py-2 text-xs">
-            <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-2xl text-slate-700 space-y-1">
-              <span className="font-bold text-[#1F5CA9] block">1. Giờ giấc sinh hoạt & Giới nghiêm:</span>
-              <div>• Giờ mở cổng KTX: <strong>05:00 sáng</strong></div>
-              <div>• Giờ đóng cổng giới nghiêm: <strong>23:00 đêm</strong></div>
-              <div>• Sau 23h00 phải có giấy phép và quét thẻ an ninh.</div>
-            </div>
-
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-1 text-slate-700">
-              <span className="font-bold text-slate-900 block">2. Danh bạ khẩn cấp trực 24/7:</span>
-              <div className="flex items-center justify-between py-1 border-b border-slate-200">
-                <span>Trực ban Bảo vệ Cổng A:</span>
-                <a href="tel:02437547506" className="font-bold text-[#1F5CA9] flex items-center gap-1">
-                  <Phone className="h-3 w-3" /> 024.3754.7506
-                </a>
-              </div>
-              <div className="flex items-center justify-between py-1 border-b border-slate-200">
-                <span>Phòng Y tế KTX (Tầng 1 Tòa A):</span>
-                <a href="tel:02437547507" className="font-bold text-emerald-600 flex items-center gap-1">
-                  <Phone className="h-3 w-3" /> 024.3754.7507
-                </a>
-              </div>
-              <div className="flex items-center justify-between py-1">
-                <span>Hotline Kỹ thuật Điện Nước:</span>
-                <a href="tel:02437547508" className="font-bold text-[#00AFEF] flex items-center gap-1">
-                  <Phone className="h-3 w-3" /> 024.3754.7508
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              size="sm"
-              onClick={() => setIsRulesModalOpen(false)}
-              className="w-full rounded-xl text-xs bg-[#1F5CA9] text-white"
-            >
-              Đã hiểu & Đóng
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ========================================================= */}
-      {/* MODAL 4: QUÉT MÃ QR VNPAY / VIETQR                        */}
-      {/* ========================================================= */}
-      <Dialog open={isQrModalOpen} onOpenChange={setIsQrModalOpen}>
-        <DialogContent className="sm:max-w-xs rounded-3xl p-5 text-center">
-          <DialogHeader className="space-y-1">
-            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-[#1F5CA9] mb-1">
-              <QrCode className="h-5 w-5" />
-            </div>
-            <DialogTitle className="text-base font-bold text-slate-900">
-              Thanh Toán Hóa Đơn KTX
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Mã QR động tự điền số tiền và cú pháp chuyển khoản.
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* QR Code Container */}
-          <div className="my-2 p-3 bg-white rounded-2xl border-2 border-slate-100 shadow-sm flex flex-col items-center">
-            <div className="relative p-2 bg-white rounded-xl border border-slate-200">
-              <div className="w-40 h-40 bg-slate-900 rounded-lg p-2 flex flex-col items-center justify-center text-white relative overflow-hidden">
-                <div className="grid grid-cols-6 gap-1 w-full h-full p-2 opacity-90">
-                  {Array.from({ length: 36 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={`rounded-xs ${
-                        i % 2 === 0 || i % 5 === 0 ? "bg-white" : "bg-transparent"
+      {/* Khung bao 4: Lịch sử giao dịch ví */}
+      {walletLogs.length > 0 && (
+        <SectionCard
+          title="Lịch sử giao dịch tài khoản"
+          subtitle="Biến động số dư ghi nhận từ các giao dịch ACID"
+          icon={History}
+          iconBg="bg-slate-100 text-slate-700"
+          noPadding
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600">
+                <tr>
+                  <th className="px-5 py-3">Nội dung</th>
+                  <th className="px-5 py-3 text-right">Số tiền</th>
+                  <th className="px-5 py-3 text-right">Số dư sau</th>
+                  <th className="px-5 py-3 text-right">Thời gian</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {walletLogs.map((g: any) => (
+                  <tr key={g.ma_gd}>
+                    <td className="px-5 py-2.5 text-slate-800">{g.mo_ta}</td>
+                    <td
+                      className={`px-5 py-2.5 text-right font-semibold ${
+                        g.loai === "NAP_TIEN" ? "text-emerald-700" : "text-red-700"
                       }`}
-                    />
-                  ))}
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="h-9 w-9 rounded-xl bg-[#1F5CA9] text-white flex items-center justify-center text-xs font-black shadow-md border-2 border-white">
-                    KTX
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-2.5 text-center">
-              <span className="text-[11px] text-muted-foreground block">Số tiền cần thanh toán:</span>
-              <span className="text-xl font-black text-[#1F5CA9]">345.000 đ</span>
-            </div>
+                    >
+                      {g.loai === "NAP_TIEN" ? "+" : "-"}
+                      {formatVND(g.so_tien)}
+                    </td>
+                    <td className="px-5 py-2.5 text-right font-mono text-xs text-slate-700">
+                      {formatVND(g.so_du_sau)}
+                    </td>
+                    <td className="px-5 py-2.5 text-right text-xs text-slate-500 whitespace-nowrap">
+                      {formatDateTime(g.thoi_gian)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+        </SectionCard>
+      )}
 
-          {/* Bank Transfer Details with Copy */}
-          <div className="space-y-1.5 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100 text-left">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Ngân hàng:</span>
-              <span className="font-semibold text-slate-900">Vietcombank (VCB)</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Số tài khoản:</span>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-slate-900">1028.999.888</span>
-                <button
-                  type="button"
-                  onClick={() => copyToClipboard("1028999888", "stk")}
-                  className="text-[#1F5CA9] hover:underline"
-                >
-                  {copiedField === "stk" ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
-                </button>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Nội dung:</span>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-[#1F5CA9] font-mono">KTX B1101 B2100001 T10</span>
-                <button
-                  type="button"
-                  onClick={() => copyToClipboard("KTX B1101 B2100001 T10", "nd")}
-                  className="text-[#1F5CA9] hover:underline"
-                >
-                  {copiedField === "nd" ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-3">
-            <Button
-              onClick={() => {
-                setIsQrModalOpen(false);
-                showToast("Cảm ơn bạn! Ban Quản lý sẽ xác nhận hóa đơn trong 5 phút.");
-              }}
-              className="w-full h-9 rounded-xl text-xs font-semibold bg-[#1F5CA9] text-white hover:bg-[#1a4f91]"
-            >
-              Tôi đã chuyển khoản thành công
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ========================================================= */}
-      {/* MODAL 5: BIÊN LAI THU TIỀN ĐIỆN TỬ (E-RECEIPT)            */}
-      {/* ========================================================= */}
-      <Dialog open={isReceiptModalOpen} onOpenChange={setIsReceiptModalOpen}>
-        <DialogContent className="sm:max-w-xs rounded-3xl p-5 text-center">
-          <DialogHeader>
-            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 mb-1">
-              <CheckCircle2 className="h-6 w-6" />
-            </div>
-            <DialogTitle className="text-base font-bold text-slate-900">
-              Biên Lai Thu Tiền Điện Tử
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Chứng từ xác nhận thanh toán kỳ {selectedReceiptMonth}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="my-2 p-3 bg-slate-50 rounded-2xl border border-slate-200 text-left text-xs space-y-2">
-            <div className="flex justify-between border-b pb-1">
-              <span className="text-muted-foreground">Người nộp:</span>
-              <span className="font-bold text-slate-900">{studentName} ({studentRoom.split(" ")[0]})</span>
-            </div>
-            <div className="flex justify-between border-b pb-1">
-              <span className="text-muted-foreground">Số tiền:</span>
-              <span className="font-bold text-emerald-600">310.000 đ</span>
-            </div>
-            <div className="flex justify-between border-b pb-1">
-              <span className="text-muted-foreground">Hình thức:</span>
-              <span>Chuyển khoản QR VNPay</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Trạng thái:</span>
-              <span className="font-bold text-emerald-600 flex items-center gap-1">
-                <Check className="h-3 w-3" /> ĐÃ HẠCH TOÁN
-              </span>
-            </div>
-          </div>
-
-          <Button
-            size="sm"
-            onClick={() => {
-              setIsReceiptModalOpen(false);
-              showToast("Đã lưu biên lai điện tử về máy!");
-            }}
-            className="w-full rounded-xl text-xs bg-[#1F5CA9] text-white"
-          >
-            Tải Biên Lai Về Máy
-          </Button>
-        </DialogContent>
-      </Dialog>
-
-      {/* Roommate Contact Quick Action Modal */}
-      <Dialog open={isPhoneModalOpen} onOpenChange={setIsPhoneModalOpen}>
-        <DialogContent className="sm:max-w-xs rounded-3xl p-5 text-center">
-          {selectedRoommate && (
-            <div className="space-y-3">
-              <Avatar className="h-14 w-14 mx-auto border-2 border-[#1F5CA9]/30">
-                <AvatarFallback className="bg-[#1F5CA9] text-white font-bold text-base">
-                  {selectedRoommate.avatarText}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <DialogTitle className="text-base font-bold text-slate-900">
-                  {selectedRoommate.name}
-                </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground">
-                  {selectedRoommate.major} • {selectedRoommate.role}
-                </DialogDescription>
-              </div>
-
-              <div className="p-3 bg-slate-50 rounded-xl border text-xs text-slate-800 font-semibold flex items-center justify-between">
-                <span>Số điện thoại:</span>
-                <span>{selectedRoommate.phone}</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 pt-2">
-                <Button
-                  onClick={() => {
-                    window.open(`tel:${selectedRoommate.phone}`);
-                    setIsPhoneModalOpen(false);
-                  }}
-                  className="rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
-                >
-                  <Phone className="h-3.5 w-3.5" />
-                  <span>Gọi điện</span>
-                </Button>
-                <Button
-                  onClick={() => {
-                    copyToClipboard(selectedRoommate.phone, "phone");
-                    setIsPhoneModalOpen(false);
-                  }}
-                  variant="outline"
-                  className="rounded-xl text-xs font-semibold gap-1.5"
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                  <span>Sao chép SĐT</span>
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <QrPaymentModal
+        session={qrSession}
+        onUpdateSession={setQrSession}
+        onRetryCreate={startQrPayment}
+        onPaid={loadBills}
+      />
     </div>
   );
 }

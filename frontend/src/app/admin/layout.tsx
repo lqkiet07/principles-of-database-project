@@ -1,32 +1,32 @@
 "use client";
 
-import { useState } from "react";
-import { cn } from "@/lib/utils";
-import { SidebarNav } from "@/components/layout/sidebar-nav";
-import { Header } from "@/components/layout/header";
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { AdminShell } from "@/components/layout/admin-shell";
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
-  return (
-    <div className="flex min-h-screen">
-      <SidebarNav
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-      />
-      <div
-        className={cn(
-          "flex flex-1 flex-col transition-all duration-200",
-          sidebarCollapsed ? "ml-[72px]" : "ml-[240px]"
-        )}
-      >
-        <Header />
-        <main className="flex-1 p-6">{children}</main>
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      router.replace("/login");
+    } else if (user.vai_tro !== "QUAN_LY") {
+      router.replace("/student");
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user || user.vai_tro !== "QUAN_LY") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8FAFC] gap-3 text-slate-600">
+        <Loader2 className="h-7 w-7 animate-spin text-[#1F5CA9]" />
+        <p className="text-sm font-medium">Đang kiểm tra quyền truy cập...</p>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return <AdminShell>{children}</AdminShell>;
 }

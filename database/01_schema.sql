@@ -1,243 +1,264 @@
--- ============================================================================
--- SCRIPT 01: SCHEMA DEFINITION & SEED DATA
--- Project: Smart Dormitory Management & Campus Utility Billing System
--- Subject: Principles of Database Management Systems (CT221H) - CTU
--- Target DBMS: PostgreSQL 16+ with pgvector extension
--- Standards: 3NF Relational Integrity, Foreign Keys, Check Constraints, Vector
--- ============================================================================
+-- =============================================================================
+-- HỆ THỐNG QUẢN LÝ KÝ TÚC XÁ TRƯỜNG ĐẠI HỌC CẦN THƠ (CTU)
+-- File 01: Lược đồ cơ sở dữ liệu chuẩn hóa 3NF & Ràng buộc toàn vẹn (Mục 6 & 7.1)
+-- =============================================================================
 
--- ----------------------------------------------------------------------------
--- 1. EXTENSIONS
--- ----------------------------------------------------------------------------
-CREATE EXTENSION IF NOT EXISTS vector;
+DROP SCHEMA IF EXISTS public CASCADE;
+CREATE SCHEMA public;
+GRANT ALL ON SCHEMA public TO postgres;
 
--- ----------------------------------------------------------------------------
--- 2. DROP TABLES IN REVERSE FOREIGN KEY DEPENDENCY ORDER
--- ----------------------------------------------------------------------------
-DROP TABLE IF EXISTS payment_transactions CASCADE;
-DROP TABLE IF EXISTS student_utility_debts CASCADE;
-DROP TABLE IF EXISTS utility_bills CASCADE;
-DROP TABLE IF EXISTS room_assignments CASCADE;
-DROP TABLE IF EXISTS student_wallets CASCADE;
-DROP TABLE IF EXISTS dorm_access_logs CASCADE;
-DROP TABLE IF EXISTS audit_logs CASCADE;
-DROP TABLE IF EXISTS students CASCADE;
-DROP TABLE IF EXISTS rooms CASCADE;
-DROP TABLE IF EXISTS dorm_buildings CASCADE;
-
--- ----------------------------------------------------------------------------
--- 3. CORE TABLE DEFINITIONS (10 TABLES)
--- ----------------------------------------------------------------------------
-
--- Table 1: dorm_buildings (Dormitory Buildings Directory)
-CREATE TABLE dorm_buildings (
-    building_id     VARCHAR(10)     PRIMARY KEY,
-    building_name   VARCHAR(100)    NOT NULL,
-    gender_zone     VARCHAR(10)     NOT NULL CHECK (gender_zone IN ('MALE', 'FEMALE', 'MIXED')),
-    total_floors    INT             NOT NULL CHECK (total_floors > 0)
+-- 1. KHU: Khu ký túc xá (A, B, mở rộng được)
+CREATE TABLE khu (
+    ma_khu  VARCHAR(10) PRIMARY KEY,
+    ten_khu VARCHAR(100) NOT NULL UNIQUE
 );
 
--- Table 2: rooms (Room Directory with pgvector for Semantic Search)
-CREATE TABLE rooms (
-    room_id             SERIAL          PRIMARY KEY,
-    building_id         VARCHAR(10)     NOT NULL REFERENCES dorm_buildings(building_id) ON DELETE CASCADE,
-    room_number         VARCHAR(20)     NOT NULL UNIQUE,
-    capacity            INT             NOT NULL DEFAULT 4 CHECK (capacity > 0),
-    current_occupancy   INT             NOT NULL DEFAULT 0 CHECK (current_occupancy >= 0 AND current_occupancy <= capacity),
-    base_price          NUMERIC(12, 2)  NOT NULL CHECK (base_price >= 0),
-    description         TEXT,
-    embedding           vector(384),
-    status              VARCHAR(20)     NOT NULL DEFAULT 'AVAILABLE' CHECK (status IN ('AVAILABLE', 'FULL', 'MAINTENANCE'))
+-- 2. PHONG: Phòng ở (quản lý theo phòng, KHÔNG lưu số người ở để tránh dư thừa 3NF)
+CREATE TABLE phong (
+    ma_phong   SERIAL PRIMARY KEY,
+    ten_phong  VARCHAR(20) NOT NULL UNIQUE,
+    ma_khu     VARCHAR(10) NOT NULL REFERENCES khu(ma_khu) ON UPDATE CASCADE ON DELETE RESTRICT,
+    suc_chua   INTEGER NOT NULL CHECK (suc_chua IN (4, 6, 8)),
+    co_nau_an  BOOLEAN NOT NULL DEFAULT FALSE,
+    gioi_tinh  VARCHAR(10) NOT NULL CHECK (gioi_tinh IN ('NAM', 'NU')),
+    gia_phong  NUMERIC(12, 0) NOT NULL CHECK (gia_phong >= 0),
+    tinh_trang VARCHAR(20) NOT NULL DEFAULT 'TRONG'
+               CHECK (tinh_trang IN ('TRONG', 'CON_CHO', 'DAY', 'BAO_TRI')),
+    mo_ta      TEXT NULL,
+    embedding  DOUBLE PRECISION[] NULL
 );
 
--- Table 3: students (Student Profile Directory)
-CREATE TABLE students (
-    student_id  VARCHAR(20)     PRIMARY KEY,
-    full_name   VARCHAR(100)    NOT NULL,
-    email       VARCHAR(100)    NOT NULL UNIQUE,
-    phone       VARCHAR(15),
-    major       VARCHAR(50),
-    status      VARCHAR(20)     NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'GRADUATED', 'SUSPENDED'))
+-- 3. SINH_VIEN: Hồ sơ sinh viên CTU
+CREATE TABLE sinh_vien (
+    mssv       VARCHAR(8) PRIMARY KEY CHECK (mssv ~ '^[A-Z][0-9]{7}$'),
+    ho_ten     VARCHAR(120) NOT NULL CHECK (length(trim(ho_ten)) >= 2),
+    gioi_tinh  VARCHAR(10) NOT NULL CHECK (gioi_tinh IN ('NAM', 'NU')),
+    nganh      VARCHAR(120) NOT NULL CHECK (length(trim(nganh)) >= 2),
+    sdt        VARCHAR(15) NOT NULL CHECK (sdt ~ '^0[0-9]{9,10}$'),
+    email      VARCHAR(120) NOT NULL UNIQUE
+               CHECK (email ~* '^[A-Z][0-9]{7}@student\.ctu\.edu\.vn$'),
+    so_du      NUMERIC(12, 0) NOT NULL DEFAULT 0 CHECK (so_du >= 0)
 );
 
--- Table 4: student_wallets (Student Campus Wallet for Internal Payments)
-CREATE TABLE student_wallets (
-    wallet_id   SERIAL          PRIMARY KEY,
-    student_id  VARCHAR(20)     NOT NULL UNIQUE REFERENCES students(student_id) ON DELETE CASCADE,
-    balance     NUMERIC(12, 2)  NOT NULL DEFAULT 0.00 CHECK (balance >= 0),
-    updated_at  TIMESTAMPTZ     NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- 4. TAI_KHOAN: Tài khoản đăng nhập gắn trực tiếp với hồ sơ sinh viên/cán bộ
+CREATE TABLE tai_khoan (
+    ma_tk              SERIAL PRIMARY KEY,
+    ten_dang_nhap      VARCHAR(50) NOT NULL UNIQUE,
+    mat_khau_bam       TEXT NOT NULL,
+    vai_tro            VARCHAR(20) NOT NULL CHECK (vai_tro IN ('QUAN_LY', 'SINH_VIEN')),
+    mssv               VARCHAR(8) UNIQUE REFERENCES sinh_vien(mssv) ON UPDATE CASCADE ON DELETE SET NULL,
+    ho_ten_hien_thi    VARCHAR(120) NOT NULL,
+    trang_thai         VARCHAR(20) NOT NULL DEFAULT 'HOAT_DONG'
+                       CHECK (trang_thai IN ('HOAT_DONG', 'KHOA')),
+    phai_doi_mat_khau  BOOLEAN NOT NULL DEFAULT FALSE,
+    ngay_tao           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Table 5: room_assignments (Room Residency Contracts & Bed Occupancy)
-CREATE TABLE room_assignments (
-    assignment_id   SERIAL          PRIMARY KEY,
-    room_id         INT             NOT NULL REFERENCES rooms(room_id) ON DELETE CASCADE,
-    student_id      VARCHAR(20)     NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
-    bed_number      INT             NOT NULL CHECK (bed_number > 0),
-    start_date      DATE            NOT NULL,
-    end_date        DATE,
-    is_active       BOOLEAN         NOT NULL DEFAULT TRUE
+-- 5. KY_HOC: Kỳ học nội trú
+CREATE TABLE ky_hoc (
+    ma_ky          VARCHAR(20) PRIMARY KEY,
+    ten_ky         VARCHAR(100) NOT NULL,
+    ngay_bat_dau   DATE NOT NULL,
+    ngay_ket_thuc  DATE NOT NULL,
+    dang_hien_hanh BOOLEAN NOT NULL DEFAULT FALSE,
+    CHECK (ngay_ket_thuc > ngay_bat_dau)
 );
 
--- Conditional Unique Index: A bed in a room can only have ONE active resident at a time
-CREATE UNIQUE INDEX idx_unique_active_bed 
-ON room_assignments (room_id, bed_number) 
-WHERE is_active = TRUE;
+-- Chỉ cho phép tối đa 1 kỳ học đang hiện hành
+CREATE UNIQUE INDEX uq_ky_hoc_hien_hanh ON ky_hoc (dang_hien_hanh) WHERE dang_hien_hanh = TRUE;
 
--- Conditional Unique Index: A student can only have ONE active bed assignment at a time
-CREATE UNIQUE INDEX idx_unique_active_student
-ON room_assignments (student_id)
-WHERE is_active = TRUE;
-
--- Table 6: utility_bills (Monthly Room Utility Bills: Water & Electricity)
-CREATE TABLE utility_bills (
-    bill_id         SERIAL          PRIMARY KEY,
-    room_id         INT             NOT NULL REFERENCES rooms(room_id) ON DELETE CASCADE,
-    month_year      VARCHAR(7)      NOT NULL, -- Format: YYYY-MM
-    prev_electric   INT             NOT NULL CHECK (prev_electric >= 0),
-    curr_electric   INT             NOT NULL CHECK (curr_electric >= 0),
-    prev_water      INT             NOT NULL CHECK (prev_water >= 0),
-    curr_water      INT             NOT NULL CHECK (curr_water >= 0),
-    total_amount    NUMERIC(12, 2)  NOT NULL DEFAULT 0.00 CHECK (total_amount >= 0),
-    paid_amount     NUMERIC(12, 2)  NOT NULL DEFAULT 0.00 CHECK (paid_amount >= 0),
-    bill_status     VARCHAR(20)     NOT NULL DEFAULT 'UNPAID' CHECK (bill_status IN ('UNPAID', 'PARTIALLY_PAID', 'PAID')),
-    CONSTRAINT uq_room_month_year UNIQUE (room_id, month_year)
+-- 6. LUU_TRU: Quan hệ lưu trú sinh viên - phòng theo kỳ
+-- Khóa chính (mssv, ma_ky) đảm bảo 1 sinh viên chỉ ở 1 phòng trong 1 kỳ
+CREATE TABLE luu_tru (
+    mssv      VARCHAR(8) NOT NULL REFERENCES sinh_vien(mssv) ON UPDATE CASCADE ON DELETE RESTRICT,
+    ma_phong  INTEGER NOT NULL REFERENCES phong(ma_phong) ON UPDATE CASCADE ON DELETE RESTRICT,
+    ma_ky     VARCHAR(20) NOT NULL REFERENCES ky_hoc(ma_ky) ON UPDATE CASCADE ON DELETE RESTRICT,
+    ngay_vao  DATE NOT NULL DEFAULT CURRENT_DATE,
+    ngay_ra   DATE NULL,
+    PRIMARY KEY (mssv, ma_ky),
+    CHECK (ngay_ra IS NULL OR ngay_ra >= ngay_vao)
 );
 
--- Table 7: student_utility_debts (Per-student Allocated Utility Debts)
-CREATE TABLE student_utility_debts (
-    debt_id         SERIAL          PRIMARY KEY,
-    bill_id         INT             NOT NULL REFERENCES utility_bills(bill_id) ON DELETE CASCADE,
-    student_id      VARCHAR(20)     NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
-    assigned_amount NUMERIC(12, 2)  NOT NULL CHECK (assigned_amount >= 0),
-    paid_amount     NUMERIC(12, 2)  NOT NULL DEFAULT 0.00 CHECK (paid_amount >= 0),
-    debt_status     VARCHAR(20)     NOT NULL DEFAULT 'UNPAID' CHECK (debt_status IN ('UNPAID', 'PAID')),
-    CONSTRAINT uq_bill_student UNIQUE (bill_id, student_id)
+-- 7. HOP_DONG: Hợp đồng nội trú theo phòng và kỳ (1 sinh viên đại diện đứng tên)
+CREATE TABLE hop_dong (
+    ma_hd          SERIAL PRIMARY KEY,
+    ma_phong       INTEGER NOT NULL REFERENCES phong(ma_phong) ON UPDATE CASCADE ON DELETE RESTRICT,
+    ma_ky          VARCHAR(20) NOT NULL REFERENCES ky_hoc(ma_ky) ON UPDATE CASCADE ON DELETE RESTRICT,
+    mssv_dai_dien  VARCHAR(8) NOT NULL REFERENCES sinh_vien(mssv) ON UPDATE CASCADE ON DELETE RESTRICT,
+    ngay_ky        DATE NOT NULL DEFAULT CURRENT_DATE,
+    trang_thai     VARCHAR(20) NOT NULL DEFAULT 'HIEU_LUC'
+                   CHECK (trang_thai IN ('HIEU_LUC', 'HET_HAN', 'CHAM_DUT'))
 );
 
--- Table 8: payment_transactions (Financial Payment Receipts / Ledger)
-CREATE TABLE payment_transactions (
-    tx_id           SERIAL          PRIMARY KEY,
-    debt_id         INT             REFERENCES student_utility_debts(debt_id) ON DELETE SET NULL,
-    bill_id         INT             REFERENCES utility_bills(bill_id) ON DELETE SET NULL,
-    student_id      VARCHAR(20)     NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
-    amount          NUMERIC(12, 2)  NOT NULL CHECK (amount > 0),
-    tx_time         TIMESTAMPTZ     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    reference_code  VARCHAR(50)     NOT NULL UNIQUE,
-    status          VARCHAR(20)     NOT NULL DEFAULT 'SUCCESS' CHECK (status IN ('SUCCESS', 'FAILED'))
+-- Mỗi phòng chỉ có tối đa 1 hợp đồng đang hiệu lực trong một kỳ
+CREATE UNIQUE INDEX uq_hop_dong_hieu_luc ON hop_dong (ma_phong, ma_ky) WHERE trang_thai = 'HIEU_LUC';
+
+-- 8. DON_GIA: Đơn giá điện/nước lưu theo thời điểm áp dụng (không làm đổi hóa đơn cũ)
+CREATE TABLE don_gia (
+    ma_dg       SERIAL PRIMARY KEY,
+    loai        VARCHAR(10) NOT NULL CHECK (loai IN ('DIEN', 'NUOC')),
+    don_gia     NUMERIC(12, 0) NOT NULL CHECK (don_gia >= 0),
+    ap_dung_tu  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Table 9: audit_logs (Security & Accounting Audit Trail Captured by Triggers)
-CREATE TABLE audit_logs (
-    log_id      BIGSERIAL       PRIMARY KEY,
-    table_name  VARCHAR(50)     NOT NULL,
-    action_type VARCHAR(10)     NOT NULL,
-    record_id   VARCHAR(50)     NOT NULL,
-    old_data    JSONB,
-    new_data    JSONB,
-    changed_by  VARCHAR(100)    NOT NULL DEFAULT SESSION_USER,
-    changed_at  TIMESTAMPTZ     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    reason      TEXT
+-- 9. CHI_SO: Chỉ số đồng hồ điện nước theo phòng và tháng
+CREATE TABLE chi_so (
+    ma_phong          INTEGER NOT NULL REFERENCES phong(ma_phong) ON UPDATE CASCADE ON DELETE RESTRICT,
+    thang             VARCHAR(7) NOT NULL CHECK (thang ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'),
+    chi_so_dien_dau   INTEGER NOT NULL CHECK (chi_so_dien_dau >= 0),
+    chi_so_dien_cuoi  INTEGER NOT NULL CHECK (chi_so_dien_cuoi >= chi_so_dien_dau),
+    chi_so_nuoc_dau   INTEGER NOT NULL CHECK (chi_so_nuoc_dau >= 0),
+    chi_so_nuoc_cuoi  INTEGER NOT NULL CHECK (chi_so_nuoc_cuoi >= chi_so_nuoc_dau),
+    ngay_ghi          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (ma_phong, thang)
 );
 
--- Table 10: dorm_access_logs (Security Turnstile Turn-gate Access Logs)
-CREATE TABLE dorm_access_logs (
-    log_id      BIGSERIAL                   PRIMARY KEY,
-    student_id  VARCHAR(20)                 NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
-    gate_name   VARCHAR(50)                 NOT NULL,
-    check_time  TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    is_late     BOOLEAN                     NOT NULL DEFAULT FALSE
+-- 10. HOA_DON: Hóa đơn tiền KTX (theo kỳ) và tiền điện nước (theo tháng) cho từng phòng
+CREATE TABLE hoa_don (
+    ma_hoa_don       SERIAL PRIMARY KEY,
+    ma_phong         INTEGER NOT NULL REFERENCES phong(ma_phong) ON UPDATE CASCADE ON DELETE RESTRICT,
+    ma_ky            VARCHAR(20) NOT NULL REFERENCES ky_hoc(ma_ky) ON UPDATE CASCADE ON DELETE RESTRICT,
+    thang            VARCHAR(7) NOT NULL DEFAULT 'KY',
+    loai             VARCHAR(15) NOT NULL CHECK (loai IN ('KTX', 'DIEN_NUOC')),
+    tien_dien        NUMERIC(12, 0) NOT NULL DEFAULT 0 CHECK (tien_dien >= 0),
+    tien_nuoc        NUMERIC(12, 0) NOT NULL DEFAULT 0 CHECK (tien_nuoc >= 0),
+    so_tien          NUMERIC(12, 0) NOT NULL CHECK (so_tien >= 0),
+    han_nop          DATE NOT NULL,
+    trang_thai       VARCHAR(20) NOT NULL DEFAULT 'CHUA_NOP'
+                     CHECK (trang_thai IN ('CHUA_NOP', 'DA_NOP')),
+    da_gui_thong_bao BOOLEAN NOT NULL DEFAULT FALSE,
+    ngay_tao         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_hoa_don_phong_ky_thang_loai UNIQUE (ma_phong, ma_ky, thang, loai),
+    CONSTRAINT chk_hoa_don_thang_format CHECK (
+        (loai = 'KTX' AND thang = 'KY')
+        OR (loai = 'DIEN_NUOC' AND thang ~ '^[0-9]{4}-(0[1-9]|1[0-2])$')
+    )
 );
 
--- ----------------------------------------------------------------------------
--- 4. INITIAL SEED DATA
--- ----------------------------------------------------------------------------
+-- 11. THANH_TOAN: Giao dịch thanh toán QR giả lập (UNIQUE ma_hoa_don chống thanh toán 2 lần)
+CREATE TABLE thanh_toan (
+    ma_tt           SERIAL PRIMARY KEY,
+    ma_hoa_don      INTEGER NOT NULL UNIQUE REFERENCES hoa_don(ma_hoa_don) ON UPDATE CASCADE ON DELETE RESTRICT,
+    mssv_nguoi_nop  VARCHAR(8) NOT NULL REFERENCES sinh_vien(mssv) ON UPDATE CASCADE ON DELETE RESTRICT,
+    so_tien         NUMERIC(12, 0) NOT NULL CHECK (so_tien >= 0),
+    thoi_gian       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    ma_giao_dich    VARCHAR(64) NOT NULL UNIQUE
+);
 
--- Seed 1: Buildings (3 buildings)
-INSERT INTO dorm_buildings (building_id, building_name, gender_zone, total_floors) VALUES
-('B1', 'Tòa B1 - Nam', 'MALE', 5),
-('B2', 'Tòa B2 - Nữ', 'FEMALE', 5),
-('B3', 'Tòa B3 - Hỗn hợp', 'MIXED', 4);
+-- 12. THONG_BAO: Thông báo đến sinh viên / phòng / khu
+CREATE TABLE thong_bao (
+    ma_tb      SERIAL PRIMARY KEY,
+    mssv       VARCHAR(8) NULL REFERENCES sinh_vien(mssv) ON UPDATE CASCADE ON DELETE CASCADE,
+    ma_phong   INTEGER NULL REFERENCES phong(ma_phong) ON UPDATE CASCADE ON DELETE SET NULL,
+    ma_khu     VARCHAR(10) NULL REFERENCES khu(ma_khu) ON UPDATE CASCADE ON DELETE SET NULL,
+    loai       VARCHAR(30) NOT NULL DEFAULT 'HE_THONG'
+               CHECK (loai IN ('HOA_DON', 'DOI_PHONG', 'BAO_TRI', 'HOP_DONG', 'HE_THONG')),
+    tieu_de    VARCHAR(200) NOT NULL,
+    noi_dung   TEXT NOT NULL,
+    thoi_gian  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    da_doc     BOOLEAN NOT NULL DEFAULT FALSE
+);
 
--- Seed 2: Rooms (6 rooms across 3 buildings with semantic descriptions and normalized dummy embeddings)
--- Note: Dummy 384-dimensional vectors initialized via pure SQL array generation
-INSERT INTO rooms (building_id, room_number, capacity, current_occupancy, base_price, description, embedding, status)
-SELECT 
-    b.building_id,
-    r.room_number,
-    4,
-    2,
-    r.base_price,
-    r.description,
-    (
-        SELECT ('[' || string_agg((round(((sin(i * r.seed_val) * 0.1))::numeric, 6))::text, ',') || ']')::vector
-        FROM generate_series(1, 384) AS i
-    ),
-    'AVAILABLE'
-FROM (
-    VALUES
-    ('B1', 'B1-101', 1200000.00, 'Phòng nam tầng 1, ban công thoáng mát, gần căng-tin và nhà xe', 1.1),
-    ('B1', 'B1-102', 1200000.00, 'Phòng nam tầng 1, yên tĩnh, view sân bóng rổ, có wifi tốc độ cao', 1.2),
-    ('B2', 'B2-201', 1300000.00, 'Phòng nữ tầng 2, thoáng mát đón gió tự nhiên, gần thư viện ký túc xá', 2.1),
-    ('B2', 'B2-202', 1300000.00, 'Phòng nữ tầng 2, phòng góc có cửa sổ lớn hướng đông, view vườn hoa', 2.2),
-    ('B3', 'B3-301', 1500000.00, 'Phòng dịch vụ tầng 3 chất lượng cao, có điều hòa và bình nóng lạnh', 3.1),
-    ('B3', 'B3-302', 1500000.00, 'Phòng dịch vụ tầng 3 khép kín, tiện nghi hiện đại, không gian yên tĩnh', 3.2)
-) AS r(b_id, room_number, base_price, description, seed_val)
-JOIN dorm_buildings b ON b.building_id = SUBSTRING(r.room_number, 1, 2)
-ORDER BY r.room_number;
+-- 13. YEU_CAU_BAO_TRI: Yêu cầu sửa chữa / bảo trì (theo phòng hoặc theo khu)
+CREATE TABLE yeu_cau_bao_tri (
+    ma_yc          SERIAL PRIMARY KEY,
+    ma_phong       INTEGER NULL REFERENCES phong(ma_phong) ON UPDATE CASCADE ON DELETE RESTRICT,
+    ma_khu         VARCHAR(10) NULL REFERENCES khu(ma_khu) ON UPDATE CASCADE ON DELETE RESTRICT,
+    mssv           VARCHAR(8) NULL REFERENCES sinh_vien(mssv) ON UPDATE CASCADE ON DELETE SET NULL,
+    nhom_su_co     VARCHAR(30) NOT NULL
+                   CHECK (nhom_su_co IN ('DIEN', 'NUOC', 'NOI_THAT', 'CONG_TRINH', 'KHAC')),
+    mo_ta          TEXT NOT NULL CHECK (length(trim(mo_ta)) >= 3),
+    anh_url        TEXT NULL,
+    trang_thai     VARCHAR(20) NOT NULL DEFAULT 'MOI'
+                   CHECK (trang_thai IN ('MOI', 'DA_TIEP_NHAN', 'DANG_XU_LY', 'HOAN_TAT')),
+    ghi_chu_xu_ly  TEXT NULL,
+    sdt_nguoi_sua  VARCHAR(15) NULL,
+    ngay_sua       DATE NULL,
+    thoi_gian      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    cap_nhat_luc   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CHECK (ma_phong IS NOT NULL OR ma_khu IS NOT NULL)
+);
 
--- Seed 3: Students (12 students)
-INSERT INTO students (student_id, full_name, email, phone, major, status) VALUES
-('B2100001', 'Nguyễn Văn An', 'an.b2100001@student.ctu.edu.vn', '0912345601', 'Kỹ thuật Phần mềm', 'ACTIVE'),
-('B2100002', 'Trần Hoàng Bình', 'binh.b2100002@student.ctu.edu.vn', '0912345602', 'Kỹ thuật Phần mềm', 'ACTIVE'),
-('B2100003', 'Lê Quốc Cường', 'cuong.b2100003@student.ctu.edu.vn', '0912345603', 'Khoa học Máy tính', 'ACTIVE'),
-('B2100004', 'Phạm Minh Dũng', 'dung.b2100004@student.ctu.edu.vn', '0912345604', 'Hệ thống Thông tin', 'ACTIVE'),
-('B2100005', 'Huỳnh Ngọc Dung', 'dung.b2100005@student.ctu.edu.vn', '0912345605', 'Mạng máy tính & TTTT', 'ACTIVE'),
-('B2100006', 'Đặng Thùy Dương', 'duong.b2100006@student.ctu.edu.vn', '0912345606', 'An toàn Thông tin', 'ACTIVE'),
-('B2100007', 'Võ Hoàng Giang', 'giang.b2100007@student.ctu.edu.vn', '0912345607', 'Công nghệ Thông tin', 'ACTIVE'),
-('B2100008', 'Bùi Ngọc Hạnh', 'hanh.b2100008@student.ctu.edu.vn', '0912345608', 'Kỹ thuật Dữ liệu', 'ACTIVE'),
-('B2100009', 'Ngô Minh Khoa', 'khoa.b2100009@student.ctu.edu.vn', '0912345609', 'Trí tuệ Nhân tạo', 'ACTIVE'),
-('B2100010', 'Trịnh Công Long', 'long.b2100010@student.ctu.edu.vn', '0912345610', 'Kỹ thuật Phần mềm', 'ACTIVE'),
-('B2100011', 'Lý Phương Mai', 'mai.b2100011@student.ctu.edu.vn', '0912345611', 'Hệ thống Thông tin', 'ACTIVE'),
-('B2100012', 'Đoàn Bảo Nam', 'nam.b2100012@student.ctu.edu.vn', '0912345612', 'Khoa học Máy tính', 'ACTIVE');
+-- 14. YEU_CAU_DOI_PHONG: Yêu cầu đổi phòng của sinh viên
+CREATE TABLE yeu_cau_doi_phong (
+    ma_yc            SERIAL PRIMARY KEY,
+    mssv             VARCHAR(8) NOT NULL REFERENCES sinh_vien(mssv) ON UPDATE CASCADE ON DELETE RESTRICT,
+    ma_ky            VARCHAR(20) NOT NULL REFERENCES ky_hoc(ma_ky) ON UPDATE CASCADE ON DELETE RESTRICT,
+    phong_hien_tai   INTEGER NOT NULL REFERENCES phong(ma_phong) ON UPDATE CASCADE ON DELETE RESTRICT,
+    phong_moi        INTEGER NULL REFERENCES phong(ma_phong) ON UPDATE CASCADE ON DELETE RESTRICT,
+    nguyen_vong_khu  VARCHAR(10) NULL REFERENCES khu(ma_khu) ON UPDATE CASCADE ON DELETE SET NULL,
+    nguyen_vong_loai INTEGER NULL CHECK (nguyen_vong_loai IS NULL OR nguyen_vong_loai IN (4, 6, 8)),
+    ly_do            TEXT NOT NULL CHECK (length(trim(ly_do)) >= 5),
+    trang_thai       VARCHAR(20) NOT NULL DEFAULT 'CHO_XU_LY'
+                     CHECK (trang_thai IN ('CHO_XU_LY', 'DA_DUYET', 'TU_CHOI')),
+    ghi_chu_duyet    TEXT NULL,
+    ly_do_tu_choi    TEXT NULL,
+    thoi_gian        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    ngay_xu_ly       TIMESTAMPTZ NULL,
+    CHECK (phong_moi IS NULL OR phong_moi <> phong_hien_tai),
+    CHECK (trang_thai <> 'TU_CHOI' OR (ly_do_tu_choi IS NOT NULL AND length(trim(ly_do_tu_choi)) >= 2))
+);
 
--- Seed 4: Student Wallets (12 wallets with initial funded balances between 500,000 and 2,000,000 VND)
-INSERT INTO student_wallets (student_id, balance) VALUES
-('B2100001', 1500000.00),
-('B2100002',  800000.00),
-('B2100003', 2000000.00),
-('B2100004',  500000.00),
-('B2100005', 1200000.00),
-('B2100006',  950000.00),
-('B2100007', 1800000.00),
-('B2100008',  750000.00),
-('B2100009', 1400000.00),
-('B2100010',  600000.00),
-('B2100011', 1100000.00),
-('B2100012', 1650000.00);
+-- 15. LUOT_RA_VAO: Nhật ký điểm danh vân tay tại cổng KTX
+CREATE TABLE luot_ra_vao (
+    ma_luot    BIGSERIAL PRIMARY KEY,
+    mssv       VARCHAR(8) NOT NULL REFERENCES sinh_vien(mssv) ON UPDATE CASCADE ON DELETE RESTRICT,
+    loai       VARCHAR(10) NOT NULL CHECK (loai IN ('RA', 'VAO')),
+    thoi_gian  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
--- Seed 5: Room Assignments (2 active students per room across 6 rooms)
-INSERT INTO room_assignments (room_id, student_id, bed_number, start_date, end_date, is_active)
-SELECT 
-    r.room_id,
-    s.student_id,
-    s.bed_number,
-    '2026-09-01'::DATE,
-    '2027-06-30'::DATE,
-    TRUE
-FROM (
-    VALUES
-    ('B1-101', 'B2100001', 1),
-    ('B1-101', 'B2100002', 2),
-    ('B1-102', 'B2100003', 1),
-    ('B1-102', 'B2100004', 2),
-    ('B2-201', 'B2100005', 1),
-    ('B2-201', 'B2100006', 2),
-    ('B2-202', 'B2100007', 1),
-    ('B2-202', 'B2100008', 2),
-    ('B3-301', 'B2100009', 1),
-    ('B3-301', 'B2100010', 2),
-    ('B3-302', 'B2100011', 1),
-    ('B3-302', 'B2100012', 2)
-) AS s(room_number, student_id, bed_number)
-JOIN rooms r ON r.room_number = s.room_number;
+-- 16. CAU_HINH: Cấu hình hệ thống động
+CREATE TABLE cau_hinh (
+    khoa     VARCHAR(100) PRIMARY KEY,
+    gia_tri  TEXT NOT NULL,
+    mo_ta    TEXT NULL
+);
+
+-- 17. LUOT_TRUY_CAP_WEB: Thống kê lượt người dùng truy cập hệ thống web (tách biệt ra vào cổng KTX)
+CREATE TABLE luot_truy_cap_web (
+    ma_truy_cap BIGSERIAL PRIMARY KEY,
+    ma_tk       INTEGER NULL REFERENCES tai_khoan(ma_tk) ON DELETE SET NULL,
+    vai_tro     VARCHAR(20) NULL,
+    duong_dan   VARCHAR(200) NOT NULL DEFAULT '/',
+    thoi_gian   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 18. PHIEN_THANH_TOAN_QR: Phiên thanh toán QR Sandbox có chữ ký HMAC & thời hạn 5 phút
+CREATE TABLE phien_thanh_toan_qr (
+    ma_phien        VARCHAR(64) PRIMARY KEY,
+    ma_hoa_don      INTEGER NOT NULL REFERENCES hoa_don(ma_hoa_don) ON DELETE CASCADE,
+    mssv_nguoi_tao  VARCHAR(8) NOT NULL REFERENCES sinh_vien(mssv) ON DELETE RESTRICT,
+    so_tien         NUMERIC(12, 0) NOT NULL CHECK (so_tien >= 0),
+    noi_dung_ck     VARCHAR(160) NOT NULL,
+    chu_ky_hmac     VARCHAR(128) NOT NULL,
+    trang_thai      VARCHAR(20) NOT NULL DEFAULT 'CHO_THANH_TOAN'
+                    CHECK (trang_thai IN ('CHO_THANH_TOAN', 'THANH_CONG', 'DA_HUY', 'HET_HAN')),
+    ma_giao_dich    VARCHAR(64) NULL,
+    ngay_tao        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    het_han_luc     TIMESTAMPTZ NOT NULL,
+    hoan_tat_luc    TIMESTAMPTZ NULL
+);
+
+-- 19. GIAO_DICH_VI: Biến động số dư tài khoản nội trú của sinh viên
+CREATE TABLE giao_dich_vi (
+    ma_gd        SERIAL PRIMARY KEY,
+    mssv         VARCHAR(8) NOT NULL REFERENCES sinh_vien(mssv) ON UPDATE CASCADE ON DELETE RESTRICT,
+    loai         VARCHAR(20) NOT NULL CHECK (loai IN ('NAP_TIEN', 'THANH_TOAN', 'HOAN_TIEN')),
+    so_tien      NUMERIC(12, 0) NOT NULL CHECK (so_tien > 0),
+    so_du_truoc  NUMERIC(12, 0) NOT NULL,
+    so_du_sau    NUMERIC(12, 0) NOT NULL,
+    ma_hoa_don   INTEGER NULL REFERENCES hoa_don(ma_hoa_don) ON UPDATE CASCADE ON DELETE SET NULL,
+    mo_ta        TEXT NOT NULL,
+    thoi_gian    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 20. NHAT_KY_DU_LIEU: Audit Log ghi giá trị cũ / mới từ Trigger khi INSERT, UPDATE, DELETE
+CREATE TABLE nhat_ky_du_lieu (
+    ma_log        BIGSERIAL PRIMARY KEY,
+    bang_tac_dong VARCHAR(50) NOT NULL,
+    hanh_dong     VARCHAR(10) NOT NULL CHECK (hanh_dong IN ('INSERT', 'UPDATE', 'DELETE')),
+    khoa_chinh    VARCHAR(80) NOT NULL,
+    gia_tri_cu    JSONB NULL,
+    gia_tri_moi   JSONB NULL,
+    thoi_gian     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

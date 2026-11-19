@@ -1,589 +1,548 @@
 "use client";
 
-import * as React from "react";
+import React, { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
-  DoorOpen,
+  ArrowLeftRight,
+  ArrowUpDown,
+  BedDouble,
+  Combine,
+  Loader2,
+  Pencil,
   Plus,
-  ArrowRightLeft,
-  Download,
   Search,
-  Filter,
-  CheckCircle2,
-  Clock,
-  Wrench,
-  User,
-  Bed,
-  Building2,
-  Layers,
   Sparkles,
-  Bot,
-  Database,
+  UserPlus,
+  Users,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useDemoMode } from "@/lib/demo-context";
-import { api } from "@/lib/api";
+import { toast } from "sonner";
+import { apiRequest } from "@/lib/api";
+import { formatVND } from "@/lib/format";
+import { PaginationBar } from "@/components/shared/pagination-bar";
+import { SectionCard } from "@/components/shared/section-card";
+import { RoomStatusBadge } from "@/components/shared/status-badge";
+import { AutoAssignModal } from "@/features/admin/rooms/auto-assign-modal";
+import { ManualAssignModal } from "@/features/admin/rooms/manual-assign-modal";
+import { MergeRoomsModal } from "@/features/admin/rooms/merge-rooms-modal";
+import { RoomFormModal } from "@/features/admin/rooms/room-form-modal";
+import { RoomResidentsModal } from "@/features/admin/rooms/room-residents-modal";
+import { RoomTransfersTab } from "@/features/admin/rooms/room-transfers-tab";
+import type { RoomItem, ZoneItem } from "@/features/admin/rooms/types";
 
-interface BedInfo {
-  bedNumber: string;
-  isOccupied: boolean;
-  status: "occupied" | "empty" | "maintenance";
-  studentName?: string;
-  studentId?: string;
-  checkInDate?: string;
-}
+function RoomsPageContent() {
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<"rooms" | "transfers">(
+    searchParams.get("tab") === "transfers" ? "transfers" : "rooms"
+  );
 
-interface RoomInfo {
-  id: string;
-  roomNumber: string;
-  type: string;
-  gender: "Nam" | "Nữ";
-  totalBeds: number;
-  occupiedBeds: number;
-  status: "Full" | "Available" | "Maintenance";
-  price: string;
-  beds: BedInfo[];
-}
+  const [rooms, setRooms] = useState<RoomItem[]>([]);
+  const [zones, setZones] = useState<ZoneItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pendingTransfers, setPendingTransfers] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [loading, setLoading] = useState(true);
 
-const mockRooms: RoomInfo[] = [
-  {
-    id: "a201",
-    roomNumber: "Phòng A.201",
-    type: "Phòng 4 giường",
-    gender: "Nam",
-    totalBeds: 4,
-    occupiedBeds: 4,
-    status: "Full",
-    price: "650.000 đ/tháng",
-    beds: [
-      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Nguyễn Văn An", studentId: "21020001", checkInDate: "01/09/2026" },
-      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Trần Minh Quân", studentId: "21020002", checkInDate: "01/09/2026" },
-      { bedNumber: "G03", isOccupied: true, status: "occupied", studentName: "Phạm Quốc Tuấn", studentId: "21020003", checkInDate: "05/09/2026" },
-      { bedNumber: "G04", isOccupied: true, status: "occupied", studentName: "Hoàng Minh Trí", studentId: "21020004", checkInDate: "01/09/2026" },
-    ],
-  },
-  {
-    id: "a202",
-    roomNumber: "Phòng A.202",
-    type: "Phòng 4 giường",
-    gender: "Nam",
-    totalBeds: 4,
-    occupiedBeds: 3,
-    status: "Available",
-    price: "650.000 đ/tháng",
-    beds: [
-      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Lê Văn Hùng", studentId: "22020015", checkInDate: "01/09/2026" },
-      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Đặng Tiến Dũng", studentId: "22020016", checkInDate: "02/09/2026" },
-      { bedNumber: "G03", isOccupied: true, status: "occupied", studentName: "Vũ Hải Đăng", studentId: "22020017", checkInDate: "03/09/2026" },
-      { bedNumber: "G04", isOccupied: false, status: "empty" },
-    ],
-  },
-  {
-    id: "a203",
-    roomNumber: "Phòng A.203",
-    type: "Phòng 6 giường",
-    gender: "Nam",
-    totalBeds: 6,
-    occupiedBeds: 4,
-    status: "Available",
-    price: "500.000 đ/tháng",
-    beds: [
-      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Trịnh Thăng Long", studentId: "23020041", checkInDate: "01/09/2026" },
-      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Đỗ Xuân Bách", studentId: "23020042", checkInDate: "01/09/2026" },
-      { bedNumber: "G03", isOccupied: false, status: "empty" },
-      { bedNumber: "G04", isOccupied: true, status: "occupied", studentName: "Bùi Anh Tuấn", studentId: "23020043", checkInDate: "04/09/2026" },
-      { bedNumber: "G05", isOccupied: true, status: "occupied", studentName: "Ngô Quang Huy", studentId: "23020044", checkInDate: "04/09/2026" },
-      { bedNumber: "G06", isOccupied: false, status: "empty" },
-    ],
-  },
-  {
-    id: "a204",
-    roomNumber: "Phòng A.204",
-    type: "Phòng 4 giường",
-    gender: "Nam",
-    totalBeds: 4,
-    occupiedBeds: 2,
-    status: "Maintenance",
-    price: "650.000 đ/tháng",
-    beds: [
-      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Cao Bá Quát", studentId: "21020088", checkInDate: "01/09/2026" },
-      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Lý Thường Kiệt", studentId: "21020089", checkInDate: "01/09/2026" },
-      { bedNumber: "G03", isOccupied: false, status: "maintenance" },
-      { bedNumber: "G04", isOccupied: false, status: "maintenance" },
-    ],
-  },
-  {
-    id: "a205",
-    roomNumber: "Phòng A.205",
-    type: "Phòng 4 giường",
-    gender: "Nam",
-    totalBeds: 4,
-    occupiedBeds: 4,
-    status: "Full",
-    price: "650.000 đ/tháng",
-    beds: [
-      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Nguyễn Du", studentId: "22020101", checkInDate: "01/09/2026" },
-      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Hồ Xuân Hương", studentId: "22020102", checkInDate: "01/09/2026" },
-      { bedNumber: "G03", isOccupied: true, status: "occupied", studentName: "Nguyễn Trãi", studentId: "22020103", checkInDate: "01/09/2026" },
-      { bedNumber: "G04", isOccupied: true, status: "occupied", studentName: "Chu Văn An", studentId: "22020104", checkInDate: "01/09/2026" },
-    ],
-  },
-  {
-    id: "a206",
-    roomNumber: "Phòng A.206",
-    type: "Phòng 4 giường",
-    gender: "Nam",
-    totalBeds: 4,
-    occupiedBeds: 1,
-    status: "Available",
-    price: "650.000 đ/tháng",
-    beds: [
-      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Phan Bội Châu", studentId: "24020050", checkInDate: "10/09/2026" },
-      { bedNumber: "G02", isOccupied: false, status: "empty" },
-      { bedNumber: "G03", isOccupied: false, status: "empty" },
-      { bedNumber: "G04", isOccupied: false, status: "empty" },
-    ],
-  },
-];
+  const [filterKhu, setFilterKhu] = useState("");
+  const [filterSucChua, setFilterSucChua] = useState("");
+  const [filterNauAn, setFilterNauAn] = useState("");
+  const [filterTrangThai, setFilterTrangThai] = useState("");
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"ten_phong" | "so_nguoi_o" | "gia_phong" | "trang_thai_phong">("ten_phong");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
-const roomVectorScores: Record<string, { similarity: number; distance: number; reason: string }> = {
-  a202: { similarity: 96, distance: 0.042, reason: "Phòng 4 giường, 3 sinh viên CNTT khóa 22, còn 1 giường trống" },
-  a203: { similarity: 88, distance: 0.125, reason: "Phòng 6 giường, còn 2 giường trống, không khí hòa đồng" },
-  a206: { similarity: 82, distance: 0.184, reason: "Phòng 4 giường, còn 3 giường trống yên tĩnh" },
-  a201: { similarity: 71, distance: 0.291, reason: "Phòng 4 giường đã kín chỗ (4/4)" },
-  a205: { similarity: 65, distance: 0.352, reason: "Phòng 4 giường đã kín chỗ (4/4)" },
-  a204: { similarity: 50, distance: 0.501, reason: "Phòng đang có 2 giường bảo trì" },
-};
+  // Tìm kiếm ngữ nghĩa
+  const [semanticMode, setSemanticMode] = useState(false);
+  const [semanticQuery, setSemanticQuery] = useState("");
+  const [semanticResults, setSemanticResults] = useState<any[] | null>(null);
+  const [searchingSemantic, setSearchingSemantic] = useState(false);
 
-export default function RoomsManagementPage() {
-  const { isDemoMode } = useDemoMode();
-  const [selectedBuilding, setSelectedBuilding] = React.useState("A");
-  const [selectedFloor, setSelectedFloor] = React.useState("2");
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [filterStatus, setFilterStatus] = React.useState("all");
-  const [aiSearchText, setAiSearchText] = React.useState("");
-  const [aiActiveQuery, setAiActiveQuery] = React.useState<string | null>(null);
-  const [vectorScores, setVectorScores] = React.useState(roomVectorScores);
-  const [isSearchingAi, setIsSearchingAi] = React.useState(false);
+  // Modal triggers
+  const [selectedRoom, setSelectedRoom] = useState<RoomItem | null>(null);
+  const [autoOpen, setAutoOpen] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [roomFormOpen, setRoomFormOpen] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<RoomItem | null>(null);
 
-  const handleRunAiSearch = async (queryText: string) => {
-    if (!queryText.trim()) return;
-    setAiActiveQuery(queryText.trim());
-    setIsSearchingAi(true);
+  const loadRooms = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await api.semanticSearch(queryText.trim(), 6);
-      if (res.success && res.data) {
-        const newScores: Record<string, { similarity: number; distance: number; reason: string }> = { ...roomVectorScores };
-        res.data.forEach((item, idx) => {
-          // Map to mock room keys a201..a206
-          const mockKey = `a20${(idx % 6) + 1}`;
-          newScores[mockKey] = {
-            similarity: Math.round(item.similarity * 100),
-            distance: item.cosine_distance,
-            reason: `Phòng ${item.room_number} (${item.building_name}): ${item.description}`,
-          };
-        });
-        setVectorScores(newScores);
-      }
-    } catch {
-      // Keep static scores
+      const qs = new URLSearchParams({
+        page: String(page),
+        page_size: String(pageSize),
+        sort_by: sortBy,
+        sort_dir: sortDir,
+      });
+      if (filterKhu) qs.set("ma_khu", filterKhu);
+      if (filterSucChua) qs.set("suc_chua", filterSucChua);
+      if (filterNauAn) qs.set("co_nau_an", filterNauAn);
+      if (filterTrangThai) qs.set("trang_thai", filterTrangThai);
+      if (search.trim()) qs.set("search", search.trim());
+
+      const res = await apiRequest<any>(`/api/admin/rooms?${qs.toString()}`);
+      setRooms(res.items || []);
+      setTotal(res.total || 0);
+    } catch (err: any) {
+      toast.error(err.message || "Không thể tải danh sách phòng.");
     } finally {
-      setIsSearchingAi(false);
+      setLoading(false);
+    }
+  }, [page, pageSize, filterKhu, filterSucChua, filterNauAn, filterTrangThai, search, sortBy, sortDir]);
+
+  useEffect(() => {
+    apiRequest<{ items: ZoneItem[] }>("/api/admin/rooms/zones")
+      .then((res) => setZones(res.items || []))
+      .catch(() => {});
+    apiRequest<any>("/api/admin/room-transfers?page=1&page_size=10&trang_thai=CHO_XU_LY")
+      .then((res) => setPendingTransfers(res.cho_xu_ly ?? 0))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    loadRooms();
+  }, [loadRooms]);
+
+  const runSemanticSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (semanticQuery.trim().length < 2) {
+      toast.error("Nhập mô tả cần tìm (ít nhất 2 ký tự).");
+      return;
+    }
+    setSearchingSemantic(true);
+    try {
+      const res = await apiRequest<{ items: any[] }>(
+        `/api/admin/rooms/semantic-search?q=${encodeURIComponent(semanticQuery.trim())}&limit=12`
+      );
+      setSemanticResults(res.items || []);
+    } catch (err: any) {
+      toast.error(err.message || "Không thể tìm kiếm ngữ nghĩa.");
+    } finally {
+      setSearchingSemantic(false);
     }
   };
 
-  const filteredRooms = [...mockRooms]
-    .filter((room) => {
-      if (filterStatus === "available" && room.status !== "Available") return false;
-      if (filterStatus === "full" && room.status !== "Full") return false;
-      if (filterStatus === "maintenance" && room.status !== "Maintenance") return false;
-      if (searchQuery && !room.roomNumber.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      if (aiActiveQuery) {
-        const scoreA = vectorScores[a.id]?.similarity || 0;
-        const scoreB = vectorScores[b.id]?.similarity || 0;
-        return scoreB - scoreA;
-      }
-      return 0;
-    });
+  const toggleSort = (col: typeof sortBy) => {
+    if (sortBy === col) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortBy(col);
+      setSortDir("asc");
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header section */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-            Quản trị Phòng & Giường ở
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Theo dõi danh mục phòng 4-6 chỗ, sức chứa thực tế và lịch sử cư trú của sinh viên.
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5">
-          <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl text-xs font-medium">
-            <Download className="h-3.5 w-3.5" />
-            <span>Xuất danh sách</span>
-          </Button>
-          <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl text-xs font-medium">
-            <ArrowRightLeft className="h-3.5 w-3.5 text-[#00AFEF]" />
-            <span>Chuyển phòng SV</span>
-          </Button>
-          <Button
-            size="sm"
-            className="h-9 gap-1.5 rounded-xl text-xs font-medium bg-[#1F5CA9] text-white hover:bg-[#1a4f91] shadow-sm"
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab("rooms")}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-semibold ${
+              activeTab === "rooms" ? "bg-[#1F5CA9] text-white" : "text-slate-600 hover:text-slate-900"
+            }`}
           >
-            <Plus className="h-4 w-4" />
-            <span>Thêm phòng mới</span>
-          </Button>
+            <BedDouble className="h-4 w-4" />
+            Danh sách phòng
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("transfers")}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-semibold ${
+              activeTab === "transfers" ? "bg-[#1F5CA9] text-white" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <ArrowLeftRight className="h-4 w-4" />
+            Yêu cầu đổi phòng
+            {pendingTransfers > 0 && (
+              <span
+                className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${
+                  activeTab === "transfers"
+                    ? "bg-white text-[#1F5CA9]"
+                    : "bg-amber-100 text-amber-800"
+                }`}
+              >
+                {pendingTransfers}
+              </span>
+            )}
+          </button>
         </div>
+
+        {activeTab === "rooms" && (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setAutoOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#1F5CA9] px-3.5 py-2 text-sm font-semibold text-white hover:bg-[#194B8B]"
+            >
+              <Sparkles className="h-4 w-4" />
+              Xếp tự động
+            </button>
+            <button
+              type="button"
+              onClick={() => setManualOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
+            >
+              <UserPlus className="h-4 w-4 text-[#1F5CA9]" />
+              Xếp thủ công
+            </button>
+            <button
+              type="button"
+              onClick={() => setMergeOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100"
+            >
+              <Combine className="h-4 w-4" />
+              Gộp phòng
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEditingRoom(null);
+                setRoomFormOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
+            >
+              <Plus className="h-4 w-4" />
+              Thêm phòng
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Selector & Filters Row */}
-      <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm p-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          {/* Building & Floor Selector */}
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Building tabs */}
-            <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
-              {["A", "B", "C"].map((building) => (
-                <button
-                  key={building}
-                  onClick={() => setSelectedBuilding(building)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    selectedBuilding === building
-                      ? "bg-[#1F5CA9] text-white shadow-sm"
-                      : "text-slate-600 dark:text-slate-300 hover:text-slate-900"
-                  }`}
-                >
-                  Tòa {building}
-                </button>
-              ))}
-            </div>
-
-            {/* Floor tabs */}
-            <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
-              {["1", "2", "3", "4", "5"].map((floor) => (
-                <button
-                  key={floor}
-                  onClick={() => setSelectedFloor(floor)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    selectedFloor === floor
-                      ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
-                  }`}
-                >
-                  Tầng {floor}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Search & Status Badges */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative w-48 sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Tìm phòng..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-8 pl-8 text-xs rounded-xl border-slate-200"
-              />
-            </div>
-
-            <div className="flex items-center gap-1.5">
+      {activeTab === "rooms" ? (
+        <>
+          <SectionCard
+            title="Tìm kiếm & Lọc phòng"
+            subtitle={semanticMode ? "Tìm theo ngữ nghĩa tiếng Việt (SentenceTransformer)" : "Lọc nhanh theo khu, sức chứa và trạng thái"}
+            icon={Search}
+            right={
               <button
-                onClick={() => setFilterStatus("all")}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  filterStatus === "all"
-                    ? "bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                }`}
-              >
-                Tất cả (6)
-              </button>
-              <button
-                onClick={() => setFilterStatus("available")}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  filterStatus === "available"
-                    ? "bg-[#00AFEF] text-white border-[#00AFEF]"
-                    : "bg-white text-sky-700 border-sky-200 hover:bg-sky-50"
-                }`}
-              >
-                Còn trống (3)
-              </button>
-              <button
-                onClick={() => setFilterStatus("full")}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  filterStatus === "full"
-                    ? "bg-[#1F5CA9] text-white border-[#1F5CA9]"
-                    : "bg-white text-blue-700 border-blue-200 hover:bg-blue-50"
-                }`}
-              >
-                Đầy (2)
-              </button>
-              <button
-                onClick={() => setFilterStatus("maintenance")}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  filterStatus === "maintenance"
-                    ? "bg-[#FFB800] text-amber-900 border-[#FFB800]"
-                    : "bg-white text-amber-700 border-amber-200 hover:bg-amber-50"
-                }`}
-              >
-                Bảo trì (1)
-              </button>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* AI Semantic Search Bar (Vector Search) */}
-      <Card className="rounded-2xl border-blue-200/80 bg-gradient-to-r from-blue-50/50 via-white to-sky-50/40 p-4 shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-xl bg-[#1F5CA9] text-white flex items-center justify-center shrink-0">
-              <Sparkles className="h-4 w-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-900">Tìm Kiếm Phòng Bằng AI (Semantic Search)</span>
-                {isDemoMode && (
-                  <Badge className="bg-sky-100 text-[#00AFEF] border-0 text-[10px] font-mono">
-                    pgvector Cosine Distance (&lt;=&gt;)
-                  </Badge>
-                )}
-              </div>
-              <p className="text-[11px] text-muted-foreground">
-                Nhập tiêu chí ngôn ngữ tự nhiên để tìm phòng có bạn cùng phòng và vị trí tối ưu nhất
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <div className="relative flex-1 md:w-80">
-              <Bot className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#1F5CA9]" />
-              <Input
-                placeholder="VD: phòng yên tĩnh cho sinh viên CNTT khóa 22..."
-                value={aiSearchText}
-                onChange={(e) => setAiSearchText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && aiSearchText.trim()) {
-                    handleRunAiSearch(aiSearchText);
-                  }
-                }}
-                className="h-8 pl-8 text-xs rounded-xl bg-white border-blue-200"
-              />
-            </div>
-            <Button
-              size="sm"
-              disabled={isSearchingAi}
-              onClick={() => {
-                if (aiSearchText.trim()) handleRunAiSearch(aiSearchText);
-              }}
-              className="h-8 bg-[#1F5CA9] text-white hover:bg-[#184988] text-xs font-semibold rounded-xl"
-            >
-              {isSearchingAi ? "Đang tìm..." : "Tìm AI"}
-            </Button>
-            {aiActiveQuery && (
-              <Button
-                variant="ghost"
-                size="sm"
+                type="button"
                 onClick={() => {
-                  setAiActiveQuery(null);
-                  setAiSearchText("");
+                  setSemanticMode((m) => !m);
+                  setSemanticResults(null);
                 }}
-                className="h-8 text-xs text-slate-500 rounded-xl"
+                className={`rounded-xl border px-3 py-1.5 text-xs font-semibold ${
+                  semanticMode
+                    ? "border-[#1F5CA9] bg-blue-50 text-[#1F5CA9]"
+                    : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                }`}
               >
-                Đặt lại
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Quick prompt suggestions */}
-        <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pt-2 border-t border-blue-100/80 text-[11px]">
-          <span className="text-muted-foreground">Gợi ý tìm kiếm:</span>
-          {[
-            "Phòng nam tầng 1 ban công thoáng mát",
-            "Phòng nữ tầng 2 yên tĩnh gần thư viện",
-            "Phòng nam gần căng-tin và nhà xe",
-          ].map((prompt) => (
-            <button
-              key={prompt}
-              onClick={() => {
-                setAiSearchText(prompt);
-                handleRunAiSearch(prompt);
-              }}
-              className="px-2 py-0.5 rounded-lg bg-white border border-blue-200 text-slate-700 hover:bg-blue-50 hover:text-[#1F5CA9] transition-colors"
-            >
-              &ldquo;{prompt}&rdquo;
-            </button>
-          ))}
-        </div>
-      </Card>
-
-      {/* Visual Room Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filteredRooms.map((room) => {
-          const occupancyRate = (room.occupiedBeds / room.totalBeds) * 100;
-          return (
-            <Card
-              key={room.id}
-              className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between"
-            >
-              <div>
-                {/* Room Header */}
-                <CardHeader className="p-4 pb-3 border-b border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-50">
-                        {room.roomNumber}
-                      </CardTitle>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-muted-foreground">{room.type}</span>
-                        <span className="text-[10px] text-muted-foreground">•</span>
-                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                          {room.gender}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Status Badge */}
-                    {room.status === "Full" && (
-                      <Badge className="bg-blue-50 text-[#1F5CA9] border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 text-[11px] font-semibold rounded-full px-2.5">
-                        Kín phòng
-                      </Badge>
-                    )}
-                    {room.status === "Available" && (
-                      <Badge className="bg-sky-50 text-[#00AFEF] border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 text-[11px] font-semibold rounded-full px-2.5">
-                        Còn {room.totalBeds - room.occupiedBeds} chỗ
-                      </Badge>
-                    )}
-                    {room.status === "Maintenance" && (
-                      <Badge className="bg-amber-50 text-[#B45309] border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 text-[11px] font-semibold rounded-full px-2.5">
-                        Đang sửa chữa
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* AI Vector Match Tag */}
-                  {aiActiveQuery && vectorScores[room.id] && (
-                    <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                      <div className="flex items-center gap-1.5 text-[#1F5CA9] font-semibold">
-                        <Sparkles className="h-3.5 w-3.5 text-[#00AFEF]" />
-                        <span>
-                          {isDemoMode
-                            ? `pgvector Cosine: ${vectorScores[room.id].distance} (Khớp ${vectorScores[room.id].similarity}%)`
-                            : `Độ tương thích AI: ${vectorScores[room.id].similarity}%`}
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-slate-500 italic max-w-[180px] truncate" title={vectorScores[room.id].reason}>
-                        {vectorScores[room.id].reason}
-                      </span>
-                    </div>
-                  )}
-                </CardHeader>
-
-                {/* Bed Slots Grid */}
-                <CardContent className="p-4">
-                  <div className="text-[11px] font-medium text-muted-foreground mb-2 flex items-center justify-between">
-                    <span>Sơ đồ giường:</span>
-                    <span className="text-[11px] text-slate-500">{room.price}</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2.5">
-                    {room.beds.map((bed, bIdx) => {
-                      if (bed.status === "occupied") {
-                        return (
-                          <TooltipProvider key={bIdx}>
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <div className="flex items-center gap-2 p-2 rounded-xl bg-blue-50/70 border border-blue-100 text-[#1F5CA9] dark:bg-blue-950/40 dark:border-blue-900 cursor-pointer hover:bg-blue-100/70 transition-colors">
-                                  <div className="h-6 w-6 rounded-lg bg-[#1F5CA9] text-white flex items-center justify-center text-[10px] font-bold">
-                                    {bed.bedNumber}
-                                  </div>
-                                  <div className="truncate text-left">
-                                    <div className="text-[11px] font-semibold truncate text-slate-900 dark:text-slate-100">
-                                      {bed.studentName}
-                                    </div>
-                                    <div className="text-[10px] text-muted-foreground truncate">
-                                      {bed.studentId}
-                                    </div>
-                                  </div>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent className="rounded-xl text-xs p-3">
-                                <div className="font-bold">{bed.studentName}</div>
-                                <div className="text-[11px] text-muted-foreground">MSSV: {bed.studentId}</div>
-                                <div className="text-[11px] text-muted-foreground">Ngày nhận phòng: {bed.checkInDate}</div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        );
-                      }
-
-                      if (bed.status === "empty") {
-                        return (
-                          <div
-                            key={bIdx}
-                            className="flex items-center gap-2 p-2 rounded-xl border border-dashed border-[#00AFEF]/50 bg-sky-50/30 text-[#00AFEF] hover:bg-sky-50 transition-colors cursor-pointer"
-                          >
-                            <div className="h-6 w-6 rounded-lg border border-[#00AFEF] text-[#00AFEF] flex items-center justify-center text-[10px] font-bold">
-                              {bed.bedNumber}
-                            </div>
-                            <div className="text-[11px] font-medium text-[#00AFEF]">
-                              + Trống (Xếp SV)
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div
-                          key={bIdx}
-                          className="flex items-center gap-2 p-2 rounded-xl border border-amber-200 bg-amber-50/50 text-amber-700"
-                        >
-                          <div className="h-6 w-6 rounded-lg bg-[#FFB800] text-amber-950 flex items-center justify-center text-[10px] font-bold">
-                            {bed.bedNumber}
-                          </div>
-                          <div className="text-[11px] font-medium">Bảo trì giường</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </div>
-
-              {/* Card Footer with Capacity Progress Bar */}
-              <div className="p-4 pt-0 border-t border-slate-100 dark:border-slate-800 mt-2">
-                <div className="flex items-center justify-between text-xs mt-3 mb-1.5">
-                  <span className="text-muted-foreground">Tỷ lệ lấp đầy:</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">
-                    {room.occupiedBeds}/{room.totalBeds} giường ({Math.round(occupancyRate)}%)
-                  </span>
-                </div>
-                <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      occupancyRate === 100
-                        ? "bg-[#1F5CA9]"
-                        : occupancyRate > 50
-                        ? "bg-[#00AFEF]"
-                        : "bg-[#FFB800]"
-                    }`}
-                    style={{ width: `${occupancyRate}%` }}
+                {semanticMode ? "Đang bật: Tìm ngữ nghĩa (AI)" : "Chuyển sang Tìm ngữ nghĩa (AI)"}
+              </button>
+            }
+          >
+            {semanticMode ? (
+              <form onSubmit={runSemanticSearch} className="flex flex-wrap gap-2.5">
+                <div className="relative flex-1 min-w-[240px]">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={semanticQuery}
+                    onChange={(e) => setSemanticQuery(e.target.value)}
+                    placeholder="Ví dụ: phòng nữ 4 người có nấu ăn yên tĩnh tầng cao khu B..."
+                    className="w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-[#1F5CA9]"
                   />
                 </div>
+                <button
+                  type="submit"
+                  disabled={searchingSemantic}
+                  className="rounded-xl bg-[#1F5CA9] px-4 py-2 text-sm font-semibold text-white hover:bg-[#194B8B] disabled:opacity-60"
+                >
+                  {searchingSemantic ? "Đang tìm..." : "Tìm ngữ nghĩa"}
+                </button>
+              </form>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+                <div className="relative lg:col-span-2">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setPage(1);
+                    }}
+                    placeholder="Tìm theo tên phòng..."
+                    className="w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-[#1F5CA9]"
+                  />
+                </div>
+
+                <select
+                  value={filterKhu}
+                  onChange={(e) => {
+                    setFilterKhu(e.target.value);
+                    setPage(1);
+                  }}
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+                >
+                  <option value="">Tất cả khu</option>
+                  {zones.map((z) => (
+                    <option key={z.ma_khu} value={z.ma_khu}>
+                      {z.ten_khu}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={filterSucChua}
+                  onChange={(e) => {
+                    setFilterSucChua(e.target.value);
+                    setPage(1);
+                  }}
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+                >
+                  <option value="">Mọi sức chứa</option>
+                  <option value="4">Phòng 4 người</option>
+                  <option value="6">Phòng 6 người</option>
+                  <option value="8">Phòng 8 người</option>
+                </select>
+
+                <select
+                  value={filterNauAn}
+                  onChange={(e) => {
+                    setFilterNauAn(e.target.value);
+                    setPage(1);
+                  }}
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+                >
+                  <option value="">Nấu ăn: Tất cả</option>
+                  <option value="true">Có nấu ăn</option>
+                  <option value="false">Không nấu ăn</option>
+                </select>
+
+                <select
+                  value={filterTrangThai}
+                  onChange={(e) => {
+                    setFilterTrangThai(e.target.value);
+                    setPage(1);
+                  }}
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+                >
+                  <option value="">Mọi trạng thái</option>
+                  <option value="TRONG">Trống</option>
+                  <option value="CON_CHO">Còn chỗ</option>
+                  <option value="DAY">Đầy</option>
+                  <option value="BAO_TRI">Đang bảo trì</option>
+                </select>
               </div>
-            </Card>
-          );
-        })}
-      </div>
+            )}
+          </SectionCard>
+
+          {semanticMode && semanticResults ? (
+            <SectionCard
+              title="Kết quả tìm kiếm ngữ nghĩa"
+              subtitle={`${semanticResults.length} phòng phù hợp nhất với mô tả`}
+              icon={BedDouble}
+              noPadding
+            >
+              <div className="divide-y divide-slate-100">
+                {semanticResults.map((r) => (
+                  <div
+                    key={r.ma_phong}
+                    onClick={() => setSelectedRoom(r)}
+                    className="p-4 sm:px-5 flex flex-wrap items-center justify-between gap-3 hover:bg-slate-50 cursor-pointer"
+                  >
+                    <div className="space-y-1 max-w-2xl">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900">Phòng {r.ten_phong}</span>
+                        <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-semibold text-[#1F5CA9]">
+                          Tương đồng {Math.round(r.similarity * 100)}%
+                        </span>
+                        <RoomStatusBadge status={r.trang_thai_phong} />
+                      </div>
+                      <p className="text-xs text-slate-600">{r.mo_ta}</p>
+                    </div>
+                    <div className="text-right text-sm">
+                      <p className="font-semibold text-slate-900">
+                        {r.so_nguoi_o} / {r.suc_chua} SV
+                      </p>
+                      <p className="text-xs text-slate-500">{formatVND(r.gia_phong)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          ) : (
+            <SectionCard
+              title="Danh sách phòng ở"
+              subtitle={`Tổng ${total} phòng`}
+              icon={BedDouble}
+              noPadding
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                      <th className="px-5 py-3">
+                        <button
+                          type="button"
+                          onClick={() => toggleSort("ten_phong")}
+                          className="inline-flex items-center gap-1 hover:text-slate-900"
+                        >
+                          Tên phòng <ArrowUpDown className="h-3.5 w-3.5" />
+                        </button>
+                      </th>
+                      <th className="px-5 py-3">
+                        <button
+                          type="button"
+                          onClick={() => toggleSort("so_nguoi_o")}
+                          className="inline-flex items-center gap-1 hover:text-slate-900"
+                        >
+                          Sĩ số / Sức chứa <ArrowUpDown className="h-3.5 w-3.5" />
+                        </button>
+                      </th>
+                      <th className="px-5 py-3">
+                        <button
+                          type="button"
+                          onClick={() => toggleSort("gia_phong")}
+                          className="inline-flex items-center gap-1 hover:text-slate-900"
+                        >
+                          Tiền phòng <ArrowUpDown className="h-3.5 w-3.5" />
+                        </button>
+                      </th>
+                      <th className="px-5 py-3">
+                        <button
+                          type="button"
+                          onClick={() => toggleSort("trang_thai_phong")}
+                          className="inline-flex items-center gap-1 hover:text-slate-900"
+                        >
+                          Trạng thái <ArrowUpDown className="h-3.5 w-3.5" />
+                        </button>
+                      </th>
+                      <th className="px-5 py-3 text-right">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-sm">
+                    {loading ? (
+                      <tr>
+                        <td colSpan={5} className="px-5 py-12 text-center text-slate-500">
+                          <Loader2 className="h-5 w-5 animate-spin inline mr-2 text-[#1F5CA9]" />
+                          Đang tải...
+                        </td>
+                      </tr>
+                    ) : rooms.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-5 py-12 text-center text-slate-500">
+                          Không có phòng phù hợp.
+                        </td>
+                      </tr>
+                    ) : (
+                      rooms.map((room) => (
+                        <tr
+                          key={room.ma_phong}
+                          onClick={() => setSelectedRoom(room)}
+                          className="hover:bg-slate-50/70 cursor-pointer transition-colors"
+                        >
+                          <td className="px-5 py-3">
+                            <div className="font-semibold text-slate-900">{room.ten_phong}</div>
+                            <div className="text-xs text-slate-500">
+                              {room.ten_khu} · {room.gioi_tinh === "NAM" ? "Nam" : "Nữ"} ·{" "}
+                              {room.co_nau_an ? "Có nấu ăn" : "Không nấu ăn"}
+                            </div>
+                          </td>
+                          <td className="px-5 py-3 font-semibold text-slate-800">
+                            {room.so_nguoi_o} / {room.suc_chua}
+                          </td>
+                          <td className="px-5 py-3 font-medium text-slate-800">
+                            {formatVND(room.gia_phong)}
+                          </td>
+                          <td className="px-5 py-3">
+                            <RoomStatusBadge status={room.trang_thai_phong} />
+                          </td>
+                          <td
+                            className="px-5 py-3 text-right"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="inline-flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedRoom(room)}
+                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                              >
+                                <Users className="h-3.5 w-3.5" />
+                                Sinh viên
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingRoom(room);
+                                  setRoomFormOpen(true);
+                                }}
+                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                                Sửa
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <PaginationBar
+                page={page}
+                pageSize={pageSize}
+                total={total}
+                unitLabel="phòng"
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </SectionCard>
+          )}
+        </>
+      ) : (
+        <RoomTransfersTab
+          onPendingCountChange={setPendingTransfers}
+          onRoomsChanged={loadRooms}
+        />
+      )}
+
+      <RoomResidentsModal
+        room={selectedRoom}
+        onClose={() => setSelectedRoom(null)}
+        onUpdated={loadRooms}
+      />
+      <AutoAssignModal
+        open={autoOpen}
+        zones={zones}
+        onClose={() => setAutoOpen(false)}
+        onSuccess={loadRooms}
+      />
+      <ManualAssignModal
+        open={manualOpen}
+        onClose={() => setManualOpen(false)}
+        onSuccess={loadRooms}
+      />
+      <MergeRoomsModal
+        open={mergeOpen}
+        onClose={() => setMergeOpen(false)}
+        onSuccess={loadRooms}
+      />
+      <RoomFormModal
+        open={roomFormOpen}
+        editingRoom={editingRoom}
+        zones={zones}
+        onClose={() => setRoomFormOpen(false)}
+        onSuccess={loadRooms}
+      />
     </div>
+  );
+}
+
+export default function AdminRoomsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="py-20 text-center text-slate-500">
+          <Loader2 className="h-5 w-5 animate-spin inline mr-2 text-[#1F5CA9]" />
+          Đang tải...
+        </div>
+      }
+    >
+      <RoomsPageContent />
+    </Suspense>
   );
 }
