@@ -14,7 +14,18 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-## 3. Chạy Server Development
+## 3. Nạp dữ liệu mẫu cho DB chạy thật (`smart_dormitory_db`)
+Chạy **1 lần** sau khi khởi tạo volume Docker mới để có đủ 1 triệu log benchmark, 24 tháng hóa đơn cho AI và vector nhúng `pgvector`:
+```powershell
+# Từ thư mục backend: nạp 1.000.000 dòng access logs + Composite B-Tree Index
+Get-Content ..\database\04_seed_1m_logs.sql -Raw | docker exec -i smart_dorm_postgres psql -U postgres -d smart_dormitory_db
+
+# Trong thư mục backend (đã kích hoạt .venv):
+python -m scripts.seed_history   # Nạp 144 hóa đơn lịch sử 24 tháng
+python -m scripts.embed_rooms    # Sinh vector(384) cho tìm kiếm ngữ nghĩa
+```
+
+## 4. Chạy Server Development
 ```powershell
 uvicorn app.main:app --reload --port 8000
 ```
@@ -22,10 +33,16 @@ uvicorn app.main:app --reload --port 8000
 - **ReDoc:** `http://localhost:8000/redoc`
 - **Health Check:** `http://localhost:8000/health`
 
-## 4. Chạy Automated Tests (Pytest)
+## 5. Chạy Automated Tests, Smoke Check & Linter
 ```powershell
-# Chạy toàn bộ 56 test cases trên DB test sạch (reset + seed + pytest)
-.\scripts\run_tests.ps1
+# Chạy toàn bộ 57 test cases trên DB test sạch (reset + seed + pytest)
+.\scripts\run_tests.ps1 -v
+
+# Smoke check nhanh toàn bộ endpoint chính và AI
+python -m scripts.smoke_check
+
+# Kiểm tra lint / code style
+ruff check .
 
 # Chạy riêng từng module sau khi DB test đã được seed
 pytest tests/test_billing.py -v       # SP1 test cases
@@ -38,7 +55,7 @@ pytest tests/test_ai_clusters.py -v   # KMeans Clustering
 ```
 `conftest.py` luôn trỏ pytest sang `smart_dormitory_test`; chạy `pytest` trực tiếp trên DB chưa seed sẽ fail sớm với hướng dẫn.
 
-## 5. Xuất Minh chứng Báo cáo (Evidence Artifacts)
+## 6. Xuất Minh chứng Báo cáo (Evidence Artifacts)
 Chạy script tự động thu thập và xuất 11 bộ dữ liệu kiểm chứng sang thư mục `docs/evidence/backend/`:
 ```powershell
 python -m scripts.capture_evidence

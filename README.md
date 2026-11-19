@@ -6,7 +6,7 @@
 [![pgvector](https://img.shields.io/badge/pgvector-0.8.7-blue)](https://github.com/pgvector/pgvector)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.162.0-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12.7-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/Tests-56%2F56%20Passed-brightgreen)](backend/tests/)
+[![Tests](https://img.shields.io/badge/Tests-57%20Cases-brightgreen)](backend/tests/)
 [![Ruff](https://img.shields.io/badge/Code%20Style-Ruff-000000?logo=ruff&logoColor=white)](https://astral.sh/ruff)
 [![License](https://img.shields.io/badge/License-MIT-gray)](LICENSE)
 
@@ -72,50 +72,91 @@ An end-to-end academic capstone project for **Principles of Database Management 
 ### Prerequisites
 - Docker & Docker Compose
 - Python 3.12+ (with virtual environment support)
+- Node.js 20+ & npm
 
 ### 1. Launch Database Infrastructure
-```bash
+```powershell
 docker compose up -d
 docker compose ps
 ```
-The database container automatically bootstraps all 10 normalized tables, Stored Procedures, Triggers, and pgvector extensions.
+Wait until `smart_dorm_postgres` reports `healthy` on port `5432`. The container automatically bootstraps `smart_dormitory_db` (user: `postgres`, password: `postgres123`) with all 10 normalized tables, Stored Procedures, Triggers, and `pgvector` via `database/01_schema.sql`, `02_procedures.sql`, and `03_triggers.sql`.
+
+- **pgAdmin 4 UI:** `http://localhost:5050` (`admin@dorm.ctu.edu.vn` / `admin123`)
 
 ### 2. Set Up Backend API
 ```powershell
 cd backend
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1        # Windows PowerShell
+# source .venv/bin/activate         # Linux / macOS
 pip install -r requirements.txt
 ```
+> Default settings in `backend/app/config.py` match `.env.example` and `docker-compose.yml` (`postgresql://postgres:postgres123@localhost:5432/smart_dormitory_db`), so the backend works out of the box without a custom `.env`.
 
-### 3. Start Development Server
+### 3. Seed Demo, Benchmark & AI Datasets (Run once on a fresh DB)
+`docker-compose.yml` only initializes the schema, SPs, triggers, and base room/student seed rows. Run the 3 scripts below **once** on a fresh Docker volume to populate the 1M access logs benchmark, 24-month billing history, and `pgvector` embeddings:
+
 ```powershell
+# 1) Load 1,000,000 access logs & Composite B-Tree index (from project root)
+Get-Content .\database\04_seed_1m_logs.sql -Raw | docker exec -i smart_dorm_postgres psql -U postgres -d smart_dormitory_db
+# Linux / macOS:
+# docker exec -i smart_dorm_postgres psql -U postgres -d smart_dormitory_db < database/04_seed_1m_logs.sql
+
+# 2) Seed 24 months of historical utility bills (144 bills for AI Forecast & K-Means)
+cd backend
+python -m scripts.seed_history
+
+# 3) Generate 384-dim pgvector room embeddings (first run downloads paraphrase-multilingual-MiniLM-L12-v2)
+python -m scripts.embed_rooms
+```
+
+### 4. Start Backend Development Server
+```powershell
+cd backend
 uvicorn app.main:app --reload --port 8000
 ```
 - **Interactive Swagger Docs:** `http://127.0.0.1:8000/docs`
 - **ReDoc Specification:** `http://127.0.0.1:8000/redoc`
 - **Health Check:** `http://127.0.0.1:8000/health`
 
-### 4. Run Frontend Client
+### 5. Run Frontend Client
 ```powershell
 cd frontend
 npm install
 npm run dev
 ```
-Open `http://localhost:3000` to interact with the Student Mobile Portal and Admin Dashboard.
+> `NEXT_PUBLIC_API_URL` defaults to `http://127.0.0.1:8000` in `frontend/src/lib/api.ts`.
 
-### 5. Run Isolated Verification Test Suite (56 Tests)
+### Application URLs & Demo Guide
+| Page / Service | URL | Notes |
+| :--- | :--- | :--- |
+| Role Switcher (Home) | `http://localhost:3000` | Switch between Admin and Student views |
+| Admin Dashboard & AI | `http://localhost:3000/admin` | Live DB metrics, RandomForest forecast, K-Means clusters |
+| CT221H Demo Checkpoints | `http://localhost:3000/admin/demo-checkpoints` | Includes **Khởi Tạo Lại Dữ Liệu Demo (2026-11)** (`POST /api/admin/demo/reset`) |
+| Rooms & `pgvector` Search | `http://localhost:3000/admin/rooms` | Bed occupancy, building/floor filters, semantic search |
+| Utility Bills & Audit Logs | `http://localhost:3000/admin/bills` | Tiered pricing, meter edits, JSONB `audit_logs` |
+| Access Logs & Benchmark | `http://localhost:3000/admin/access-logs` | 1M RFID logs + `EXPLAIN (ANALYZE, BUFFERS)` comparison |
+| Students & Contracts | `http://localhost:3000/admin/students`, `/admin/contracts` | 12 CTU students, contracts & checkout |
+| Student Mobile Portal | `http://localhost:3000/student` | Quick student selector (`B2100001`–`B2100009`), wallet & receipts |
+| Swagger API Docs | `http://127.0.0.1:8000/docs` | Test all 24 FastAPI endpoints |
+| pgAdmin 4 | `http://localhost:5050` | `admin@dorm.ctu.edu.vn` / `admin123` |
+
+### 6. Run Isolated Verification Test Suite (57 Tests)
 ```powershell
-# Executes full hermetic test harness on an isolated test database
+# Executes full hermetic test harness on an isolated test database (smart_dormitory_test)
 cd backend
 .\scripts\run_tests.ps1 -v
 ```
 
-### 6. Run Live Smoke Check
+### 7. Run Live Smoke Check
 ```powershell
 cd backend
 python -m scripts.smoke_check
 ```
+
+### Stopping the System
+- Press `Ctrl + C` in the Backend and Frontend terminals.
+- Run `docker compose down` from the project root to stop containers while preserving seeded data (use `docker compose down -v` only if you want to wipe the database volume).
 
 ---
 
@@ -133,10 +174,10 @@ principles-of-database/
 ├── backend/                        # FastAPI REST API & AI Engine
 │   ├── app/                        # Routers, schemas, DB pool, AI models
 │   ├── scripts/                    # Seeding, evidence capture, smoke check
-│   ├── tests/                      # 56 hermetic pytest cases
+│   ├── tests/                      # 57 hermetic pytest cases
 │   └── requirements.txt            # Python dependencies
 ├── docs/                           # Documentation & Evidence
-│   ├── api/openapi.json            # Frozen OpenAPI 3.1.0 contract (22 paths)
+│   ├── api/openapi.json            # OpenAPI 3.1.0 contract (24 paths)
 │   ├── evidence/backend/           # 11 empirical benchmark JSON artifacts
 │   └── specs/                      # System technical specifications
 └── frontend/                       # SaaS Web Client (Next.js 16 + React 19)
@@ -149,5 +190,5 @@ principles-of-database/
 Developed as a Course Capstone Project for **Principles of Database Management Systems (CT221H)** — Department of Information Technology, College of Information & Communication Technology (CICT), Can Tho University (CTU).
 
 - **Database Architect & Indexing:** Schema 3NF, Dual Stored Procedures, Triggers, 1M Access Log Benchmark.
-- **Backend & AI Lead:** FastAPI Async Connection Pool, 22 Endpoints, 3 ML/Vector Models, 56 Hermetic Tests.
+- **Backend & AI Lead:** FastAPI Async Connection Pool, 24 API Paths, 3 ML/Vector Models, 57 Hermetic Tests.
 - **Frontend SaaS & Reporting:** Next.js 16 App Router UI, Demo Checkpoints, Technical Report & Presentation.

@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Smart Dormitory Frontend Client
 
-## Getting Started
+Giao diện web quản trị KTX và Cổng sinh viên cho đề tài **Nguyên lý Hệ quản trị Cơ sở dữ liệu (CT221H)** — Đại học Cần Thơ (CTU), xây dựng bằng **Next.js 16**, **React 19**, **Tailwind CSS v4** và **Recharts**.
 
-First, run the development server:
+## 1. Yêu cầu môi trường
+- Node.js 20+ & npm
+- Backend FastAPI đang chạy tại `http://127.0.0.1:8000` (xem [`../backend/README.md`](../backend/README.md))
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 2. Biến môi trường
+- `NEXT_PUBLIC_API_URL`: URL của FastAPI Backend (mặc định là `http://127.0.0.1:8000` trong `src/lib/api.ts`, không cần tạo `.env.local` nếu chạy local mặc định).
+
+## 3. Cài đặt & Lệnh chạy
+```powershell
+cd frontend
+npm install
+
+npm run dev     # Chạy môi trường development tại http://localhost:3000
+npm run build   # Kiểm tra TypeScript và biên dịch bản production
+npm run start   # Chạy bản production sau khi build
+npm run lint    # Kiểm tra ESLint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 4. Các đường dẫn chính
+| Route | Chức năng |
+| :--- | :--- |
+| `/` | Trang chủ chọn vai trò Admin hoặc Sinh viên |
+| `/admin` | Dashboard tổng quan, biểu đồ AI Forecast (RandomForest) và phân cụm K-Means |
+| `/admin/demo-checkpoints` | Trung tâm 6 kịch bản chấm điểm CT221H (có nút **Khởi Tạo Lại Dữ Liệu Demo (2026-11)**) |
+| `/admin/rooms` | Danh mục phòng, sơ đồ giường, lọc Tòa/Tầng và tìm kiếm ngữ nghĩa AI (`pgvector`) |
+| `/admin/bills` | Hóa đơn điện nước bậc thang 3 bậc, cập nhật công tơ và nhật ký JSONB `audit_logs` |
+| `/admin/access-logs` | Tra cứu 1.000.000 log quẹt thẻ và đo kế hoạch thực thi `EXPLAIN (ANALYZE, BUFFERS)` |
+| `/admin/students` | Danh sách sinh viên KTX, số dư ví nội bộ và trạng thái công nợ |
+| `/admin/contracts` | Quản lý hợp đồng lưu trú và thanh lý trả phòng |
+| `/student` | Cổng sinh viên (khung di động), chọn nhanh `B2100001`–`B2100009`, nạp ví và nộp tiền qua SP2 |
