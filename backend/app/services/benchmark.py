@@ -27,7 +27,7 @@ async def run_index_benchmark(
             f"Chế độ '{mode}' không hợp lệ. Chọn 'seq', 'index' hoặc 'natural'.",
         )
 
-    async with get_connection() as conn, conn.cursor() as cur:
+    async with get_connection() as conn, conn.transaction(), conn.cursor() as cur:
         if norm_mode == "seq":
             await cur.execute("SET LOCAL enable_indexscan = off;")
             await cur.execute("SET LOCAL enable_bitmapscan = off;")

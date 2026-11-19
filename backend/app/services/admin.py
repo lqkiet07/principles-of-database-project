@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Any
 
 import psycopg.errors
@@ -62,91 +63,76 @@ async def get_dashboard_summary() -> dict[str, Any]:
     }
 
 
+async def _reallocate_unpaid_debts(
+    cur: Any,
+    bill_id: int,
+    total_amount: Decimal,
+) -> None:
+    await cur.execute(
+        "SELECT debt_id FROM student_utility_debts WHERE bill_id = %s AND paid_amount = 0 ORDER BY student_id FOR UPDATE;",
+        (bill_id,),
+    )
+    debt_rows = await cur.fetchall()
+    n_debts = len(debt_rows)
+    if n_debts == 0:
+        return
+
+    split_amt = (total_amount / n_debts).quantize(Decimal("0.01"))
+    for idx, d_row in enumerate(debt_rows):
+        assigned = (
+            (total_amount - split_amt * (n_debts - 1)).quantize(Decimal("0.01"))
+            if idx == n_debts - 1
+            else split_amt
+        )
+        await cur.execute(
+            "UPDATE student_utility_debts SET assigned_amount = %s WHERE debt_id = %s;",
+            (assigned, d_row["debt_id"]),
+        )
+
+
 async def update_bill_meters(
     bill_id: int,
     curr_electric: int,
     curr_water: int,
 ) -> dict[str, Any]:
-    existing = await fetch_one(
-        "SELECT bill_id, prev_electric, prev_water, paid_amount, bill_status FROM utility_bills WHERE bill_id = %s;",
-        (bill_id,),
-    )
-    if not existing:
-        raise ApiError(404, "BILL_NOT_FOUND", f"Hóa đơn #{bill_id} không tồn tại.")
-
-    delta_elec = curr_electric - int(existing["prev_electric"])
-    delta_water = curr_water - int(existing["prev_water"])
-    recalc_total = (
-        float(calculate_utility_total(delta_elec, delta_water))
-        if delta_elec >= 0 and delta_water >= 0
-        else None
-    )
-
     try:
         async with get_connection() as conn, conn.transaction(), conn.cursor() as cur:
-            if recalc_total is not None and existing["bill_status"] == "UNPAID":
-                await cur.execute(
-                    """
-                    UPDATE utility_bills 
-                    SET curr_electric = %s, curr_water = %s, total_amount = %s 
-                    WHERE bill_id = %s 
-                    RETURNING bill_id, room_id, month_year, prev_electric, curr_electric, prev_water, curr_water, total_amount, paid_amount, bill_status;
-                    """,
-                    (curr_electric, curr_water, recalc_total, bill_id),
-                )
-            else:
-                await cur.execute(
-                    """
-                    UPDATE utility_bills 
-                    SET curr_electric = %s, curr_water = %s 
-                    WHERE bill_id = %s 
-                    RETURNING bill_id, room_id, month_year, prev_electric, curr_electric, prev_water, curr_water, total_amount, paid_amount, bill_status;
-                    """,
-                    (curr_electric, curr_water, bill_id),
-                )
-            row = await cur.fetchone()
+            # Lock the parent bill row before checking status to prevent TOCTOU races with SP2 payments
+            await cur.execute(
+                "SELECT bill_id, prev_electric, prev_water, total_amount, paid_amount, bill_status FROM utility_bills WHERE bill_id = %s FOR UPDATE;",
+                (bill_id,),
+            )
+            existing = await cur.fetchone()
+            if not existing:
+                raise ApiError(404, "BILL_NOT_FOUND", f"Hóa đơn #{bill_id} không tồn tại.")
 
-            # Reallocate unpaid child debts when an unpaid bill's meters are legitimately adjusted
-            if (
-                recalc_total is not None
-                and row["bill_status"] == "UNPAID"
-                and float(row["paid_amount"]) == 0.0
-            ):
-                await cur.execute(
-                    "SELECT debt_id FROM student_utility_debts WHERE bill_id = %s AND paid_amount = 0 ORDER BY student_id;",
-                    (bill_id,),
-                )
-                debt_rows = await cur.fetchall()
-                n_debts = len(debt_rows)
-                if n_debts > 0:
-                    split_amt = round(recalc_total / n_debts, 2)
-                    for idx, d_row in enumerate(debt_rows):
-                        assigned = (
-                            round(recalc_total - split_amt * (n_debts - 1), 2)
-                            if idx == n_debts - 1
-                            else split_amt
-                        )
-                        await cur.execute(
-                            "UPDATE student_utility_debts SET assigned_amount = %s WHERE debt_id = %s;",
-                            (assigned, d_row["debt_id"]),
-                        )
+            delta_elec = curr_electric - int(existing["prev_electric"])
+            delta_water = curr_water - int(existing["prev_water"])
+            can_recalc = delta_elec >= 0 and delta_water >= 0 and existing["bill_status"] == "UNPAID"
+            new_total = calculate_utility_total(delta_elec, delta_water) if can_recalc else existing["total_amount"]
+
+            await cur.execute(
+                """
+                UPDATE utility_bills
+                SET curr_electric = %s, curr_water = %s, total_amount = %s
+                WHERE bill_id = %s
+                RETURNING bill_id, room_id, month_year, prev_electric, curr_electric, prev_water, curr_water, total_amount, paid_amount, bill_status;
+                """,
+                (curr_electric, curr_water, new_total, bill_id),
+            )
+            row = await cur.fetchone()
+            if can_recalc and float(row["paid_amount"]) == 0.0:
+                await _reallocate_unpaid_debts(cur, bill_id, new_total)
     except psycopg.errors.CheckViolation as ex:
-        msg = str(ex).split("\n")[0].strip()
-        raise ApiError(422, "FRAUD_METER_REVERSAL", msg) from ex
+        raise ApiError(422, "FRAUD_METER_REVERSAL", str(ex).split("\n")[0].strip()) from ex
     except psycopg.errors.IntegrityConstraintViolation as ex:
-        msg = str(ex).split("\n")[0].strip()
-        raise ApiError(422, "FRAUD_PAID_BILL_TAMPER", msg) from ex
+        raise ApiError(422, "FRAUD_PAID_BILL_TAMPER", str(ex).split("\n")[0].strip()) from ex
 
     return {
-        "bill_id": row["bill_id"],
-        "room_id": row["room_id"],
-        "month_year": row["month_year"],
-        "prev_electric": row["prev_electric"],
-        "curr_electric": row["curr_electric"],
-        "prev_water": row["prev_water"],
-        "curr_water": row["curr_water"],
-        "total_amount": float(row["total_amount"]),
-        "paid_amount": float(row["paid_amount"]),
+        "bill_id": row["bill_id"], "room_id": row["room_id"], "month_year": row["month_year"],
+        "prev_electric": row["prev_electric"], "curr_electric": row["curr_electric"],
+        "prev_water": row["prev_water"], "curr_water": row["curr_water"],
+        "total_amount": float(row["total_amount"]), "paid_amount": float(row["paid_amount"]),
         "bill_status": row["bill_status"],
     }
 

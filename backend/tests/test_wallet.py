@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 
@@ -39,3 +41,19 @@ async def test_topup_wallet_unknown_student_404(client):
     body = response.json()
     assert body["success"] is False
     assert body["error_code"] == "STUDENT_NOT_FOUND"
+
+
+@pytest.mark.asyncio
+async def test_topup_wallet_concurrent_updates_preserve_total(client):
+    res_before = await client.get("/api/students/B2100001")
+    bal_before = res_before.json()["data"]["wallet"]["balance"]
+
+    r1, r2 = await asyncio.gather(
+        client.post("/api/students/B2100001/wallet/topup", json={"amount": 100000.0}),
+        client.post("/api/students/B2100001/wallet/topup", json={"amount": 200000.0}),
+    )
+    assert r1.status_code == 200
+    assert r2.status_code == 200
+
+    res_after = await client.get("/api/students/B2100001")
+    assert res_after.json()["data"]["wallet"]["balance"] == bal_before + 300000.0

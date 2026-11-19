@@ -104,3 +104,33 @@ async def test_patch_meters_paid_bill_tamper_rejected(client):
     assert body["success"] is False
     assert body["error_code"] == "FRAUD_PAID_BILL_TAMPER"
     assert "tất toán" in body["message"].lower() or "paid" in body["message"].lower()
+
+
+@pytest.mark.asyncio
+async def test_patch_meters_partially_paid_bill_preserves_paid_debts(client):
+    headers = {"X-Role": "admin"}
+    bill_id = await setup_test_bill(room_id=2)
+    await execute(
+        "UPDATE utility_bills SET bill_status = 'PARTIALLY_PAID', paid_amount = 375000 WHERE bill_id = %s;",
+        (bill_id,),
+    )
+    await execute(
+        "UPDATE student_utility_debts SET paid_amount = 375000, debt_status = 'PAID' WHERE bill_id = %s AND student_id = 'B2100003';",
+        (bill_id,),
+    )
+
+    res = await client.patch(
+        f"/api/admin/bills/{bill_id}/meters",
+        json={"curr_electric": 360, "curr_water": 38},
+        headers=headers,
+    )
+    assert res.status_code == 200
+    data = res.json()["data"]
+    assert data["curr_electric"] == 360
+    assert data["curr_water"] == 38
+    debt_b3 = await fetch_one(
+        "SELECT assigned_amount, paid_amount FROM student_utility_debts WHERE bill_id = %s AND student_id = 'B2100003';",
+        (bill_id,),
+    )
+    assert float(debt_b3["assigned_amount"]) == 375000.0
+    assert float(debt_b3["paid_amount"]) == 375000.0
