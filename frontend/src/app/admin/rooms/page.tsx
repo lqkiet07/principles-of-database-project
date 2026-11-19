@@ -196,6 +196,8 @@ export default function RoomsManagementPage() {
   const [aiActiveQuery, setAiActiveQuery] = React.useState<string | null>(null);
   const [vectorScores, setVectorScores] = React.useState(roomVectorScores);
   const [isSearchingAi, setIsSearchingAi] = React.useState(false);
+  const [isReindexing, setIsReindexing] = React.useState(false);
+  const [reindexMessage, setReindexMessage] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let mounted = true;
@@ -285,6 +287,26 @@ export default function RoomsManagementPage() {
     }
   };
 
+  const handleReindexVectors = async () => {
+    setIsReindexing(true);
+    setReindexMessage(null);
+    try {
+      const res = await api.reindexAi();
+      if (res.success && res.data) {
+        setReindexMessage(`Đã đồng bộ vector(384) cho ${res.data.reindexed_count} phòng.`);
+        if (aiActiveQuery) {
+          await handleRunAiSearch(aiActiveQuery);
+        }
+      } else {
+        setReindexMessage(res.message || "Không thể đồng bộ vector AI.");
+      }
+    } catch {
+      setReindexMessage("Lỗi kết nối khi gọi đồng bộ vector AI.");
+    } finally {
+      setIsReindexing(false);
+    }
+  };
+
   const filteredRooms = [...rooms]
     .filter((room) => {
       if (selectedBuilding !== "ALL" && room.buildingId !== selectedBuilding) return false;
@@ -323,6 +345,16 @@ export default function RoomsManagementPage() {
           </p>
         </div>
         <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleReindexVectors}
+            disabled={isReindexing}
+            className="h-9 gap-1.5 rounded-xl text-xs font-medium border-blue-200 text-[#1F5CA9] hover:bg-blue-50"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-[#00AFEF]" />
+            <span>{isReindexing ? "Đang đồng bộ..." : "Đồng bộ Vector AI"}</span>
+          </Button>
           <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl text-xs font-medium">
             <Download className="h-3.5 w-3.5" />
             <span>Xuất danh sách</span>
@@ -340,6 +372,15 @@ export default function RoomsManagementPage() {
           </Button>
         </div>
       </div>
+
+      {reindexMessage && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-medium text-emerald-800 flex items-center justify-between">
+          <span>{reindexMessage}</span>
+          <button onClick={() => setReindexMessage(null)} className="text-emerald-700 hover:underline">
+            Đóng
+          </button>
+        </div>
+      )}
 
       {/* Selector & Filters Row */}
       <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm p-4">

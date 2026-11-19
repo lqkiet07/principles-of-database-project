@@ -57,6 +57,7 @@ export interface StudentDebt {
   paid_amount: number;
   debt_status: "UNPAID" | "PAID";
   total_room_bill: number;
+  bill_total_amount?: number;
   prev_electric: number;
   curr_electric: number;
   prev_water: number;
@@ -303,8 +304,7 @@ export const api = {
 
   getStudentAccessLogs: (studentId: string) =>
     request<{
-      student_id: string;
-      total_logs: number;
+      total: number;
       late_count: number;
       items: AccessLogEntry[];
     }>(`/api/students/${studentId}/access-logs`),

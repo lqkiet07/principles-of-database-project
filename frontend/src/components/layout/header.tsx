@@ -1,10 +1,12 @@
 "use client";
 
+import * as React from "react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
-import { Bell, Moon, Sun, Search, Sparkles, Smartphone } from "lucide-react";
+import { Bell, Moon, Sun, Search, Smartphone, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -16,11 +18,30 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { useDemoMode } from "@/lib/demo-context";
+import { api } from "@/lib/api";
 import { GraduationCap } from "lucide-react";
 
 export function Header() {
   const { theme, setTheme } = useTheme();
   const { isDemoMode } = useDemoMode();
+  const [dbOnline, setDbOnline] = React.useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    let mounted = true;
+    api
+      .health()
+      .then((res) => {
+        if (mounted) {
+          setDbOnline(Boolean((res as { status?: string })?.status === "ok" || res?.success));
+        }
+      })
+      .catch(() => {
+        if (mounted) setDbOnline(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-white/80 dark:bg-slate-900/80 px-6 backdrop-blur-md">
@@ -36,6 +57,20 @@ export function Header() {
 
       {/* Right Actions */}
       <div className="flex items-center gap-2.5">
+        {dbOnline !== null && (
+          <Badge
+            variant="outline"
+            className={`hidden md:inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+              dbOnline
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-amber-200 bg-amber-50 text-amber-700"
+            }`}
+          >
+            <Database className="h-3 w-3" />
+            <span>{dbOnline ? "DB Online" : "Offline"}</span>
+          </Badge>
+        )}
+
         {/* Evaluator Demo Mode Pill - Only visible when turned ON in Settings */}
         {isDemoMode && (
           <Link href="/admin/demo-checkpoints">

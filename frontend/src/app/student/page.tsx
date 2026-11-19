@@ -162,6 +162,11 @@ export default function StudentPortalPage() {
     { month: "Tháng 07/2026", amount: "290.000 đ", paidDate: "19/07/2026", receiptCode: "TX-20260719-7103" },
   ]);
   const [lastTxCode, setLastTxCode] = React.useState<string>("TX-20261027-8841");
+  const [accessSummary, setAccessSummary] = React.useState<{
+    total: number;
+    lateCount: number;
+    items: Array<{ log_id: number; gate_name: string; check_time: string; is_late: boolean }>;
+  }>({ total: 0, lateCount: 0, items: [] });
   const [currentDebt, setCurrentDebt] = React.useState<{
     id: number;
     amount: number;
@@ -196,11 +201,12 @@ export default function StudentPortalPage() {
   // Load real data from Backend API
   const reloadStudentPortal = React.useCallback(async (targetStudentId: string) => {
     try {
-      const [profRes, debtRes, roomRes, txRes] = await Promise.all([
+      const [profRes, debtRes, roomRes, txRes, accessRes] = await Promise.all([
         api.getStudentProfile(targetStudentId),
         api.getStudentDebts(targetStudentId),
         api.getStudentRoom(targetStudentId),
         api.getStudentTransactions(targetStudentId),
+        api.getStudentAccessLogs(targetStudentId),
       ]);
 
       let currentFullName = "Nguyễn Văn An";
@@ -295,13 +301,27 @@ export default function StudentPortalPage() {
           })
         );
       }
+
+      if (accessRes.success && accessRes.data) {
+        setAccessSummary({
+          total: accessRes.data.total,
+          lateCount: accessRes.data.late_count,
+          items: (accessRes.data.items || []).slice(0, 5),
+        });
+      }
     } catch {
       // Keep current state on offline preview
     }
   }, []);
 
   React.useEffect(() => {
-    reloadStudentPortal(studentId);
+    let active = true;
+    Promise.resolve().then(() => {
+      if (active) void reloadStudentPortal(studentId);
+    });
+    return () => {
+      active = false;
+    };
   }, [studentId, reloadStudentPortal]);
 
   const handlePayWithWallet = async () => {
@@ -1208,6 +1228,37 @@ export default function StudentPortalPage() {
                   <span className="text-muted-foreground">Tiền ký quỹ (Đặt cọc):</span>
                   <span className="font-bold text-[#1F5CA9]">1.000.000 đ (Đã nộp)</span>
                 </div>
+              </div>
+
+              {/* Real Dorm Access Logs Summary */}
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-2.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+                    Lịch sử quẹt thẻ cổng ({accessSummary.total.toLocaleString("vi-VN")} lượt)
+                  </span>
+                  <Badge className={accessSummary.lateCount > 0 ? "bg-amber-100 text-amber-800 text-[10px]" : "bg-emerald-100 text-emerald-800 text-[10px]"}>
+                    Về trễ &gt;23h: {accessSummary.lateCount.toLocaleString("vi-VN")} lần
+                  </Badge>
+                </div>
+                {accessSummary.items.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {accessSummary.items.map((log) => (
+                      <div key={log.log_id} className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800 last:border-0 text-[11px]">
+                        <div>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">{log.gate_name}</span>
+                          <span className="text-muted-foreground block text-[10px] font-mono">
+                            {new Date(log.check_time).toLocaleString("vi-VN")}
+                          </span>
+                        </div>
+                        <Badge variant="outline" className={log.is_late ? "text-red-600 border-red-200 bg-red-50 text-[10px]" : "text-emerald-600 border-emerald-200 bg-emerald-50 text-[10px]"}>
+                          {log.is_late ? "Sau 23:00" : "Đúng giờ"}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">Chưa có dữ liệu quẹt thẻ gần đây.</p>
+                )}
               </div>
 
               {/* Utility actions */}

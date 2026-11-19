@@ -31,6 +31,9 @@ import {
   Cell,
   LineChart,
   Line,
+  ScatterChart,
+  Scatter,
+  ZAxis,
 } from "recharts";
 import { useDemoMode } from "@/lib/demo-context";
 import { GraduationCap, Sparkles, TrendingUp } from "lucide-react";
@@ -607,6 +610,47 @@ export default function AdminDashboardPage() {
                   </p>
                 </div>
               </>
+            )}
+
+            {clusters && clusters.points && clusters.points.length > 0 && (
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    Bản đồ PCA 2D ({clusters.points.length} sinh viên)
+                  </span>
+                  <span>Trục: PC1 × PC2</span>
+                </div>
+                <div className="h-[130px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ScatterChart margin={{ top: 6, right: 8, bottom: 0, left: -24 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" opacity={0.6} />
+                      <XAxis type="number" dataKey="pca_x" name="PC1" tick={{ fontSize: 10 }} stroke="#94A3B8" />
+                      <YAxis type="number" dataKey="pca_y" name="PC2" tick={{ fontSize: 10 }} stroke="#94A3B8" />
+                      <ZAxis dataKey="full_name" name="Sinh viên" />
+                      <RechartsTooltip
+                        cursor={{ strokeDasharray: "3 3" }}
+                        contentStyle={{ fontSize: "11px", borderRadius: "10px", border: "1px solid #E2E8F0" }}
+                        formatter={(value, name) => [String(value), String(name)]}
+                      />
+                      <Scatter
+                        name="Gương mẫu"
+                        data={clusters.points.filter((p) => p.cluster_label === "STANDARD")}
+                        fill="#10B981"
+                      />
+                      <Scatter
+                        name="Nguy cơ tài chính"
+                        data={clusters.points.filter((p) => p.cluster_label === "FINANCIAL_RISK")}
+                        fill="#F59E0B"
+                      />
+                      <Scatter
+                        name="Cảnh báo an ninh"
+                        data={clusters.points.filter((p) => p.cluster_label === "SECURITY_RISK")}
+                        fill="#EF4444"
+                      />
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>

@@ -47,7 +47,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { api } from "@/lib/api";
+import { api, RoomItem } from "@/lib/api";
 
 interface Contract {
   id: string;
@@ -193,19 +193,25 @@ export default function ContractsPage() {
   const [previewContract, setPreviewContract] = React.useState<Contract | null>(null);
 
   const [isNewContractModalOpen, setIsNewContractModalOpen] = React.useState(false);
+  const [availableRooms, setAvailableRooms] = React.useState<RoomItem[]>([]);
+  const [contractFormError, setContractFormError] = React.useState<string | null>(null);
+  const [isCreatingContract, setIsCreatingContract] = React.useState(false);
   const [newContractForm, setNewContractForm] = React.useState({
-    studentName: "",
     studentCode: "",
-    room: "B1-101",
-    building: "Tòa B1",
-    durationMonths: "10",
+    roomId: 1,
+    bedNumber: 3,
+    startDate: "2026-10-01",
+    endDate: "2027-06-30",
     monthlyRent: 300000,
     depositAmount: 1000000,
   });
 
   const loadRealContracts = React.useCallback(async () => {
     try {
-      const res = await api.getAssignments();
+      const [res, roomsRes] = await Promise.all([api.getAssignments(), api.getRooms()]);
+      if (roomsRes.success && roomsRes.data && roomsRes.data.length > 0) {
+        setAvailableRooms(roomsRes.data);
+      }
       if (res.success && res.data && res.data.length > 0) {
         const mapped: Contract[] = res.data.map((a) => {
           const initials = a.full_name
@@ -241,7 +247,13 @@ export default function ContractsPage() {
   }, []);
 
   React.useEffect(() => {
-    loadRealContracts();
+    let active = true;
+    Promise.resolve().then(() => {
+      if (active) void loadRealContracts();
+    });
+    return () => {
+      active = false;
+    };
   }, [loadRealContracts]);
 
   // Filter
@@ -325,40 +337,35 @@ export default function ContractsPage() {
     setIsPreviewModalOpen(true);
   };
 
-  // Handle Create Contract
-  const handleCreateNewContract = (e: React.FormEvent) => {
+  // Handle Create Contract via POST /api/admin/assignments
+  const handleCreateNewContract = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newContractForm.studentName || !newContractForm.studentCode) return;
+    if (!newContractForm.studentCode.trim()) return;
 
-    const newEntry: Contract = {
-      id: `HD-${Date.now().toString().slice(-4)}`,
-      contractNumber: `HĐ-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-      studentName: newContractForm.studentName,
-      studentCode: newContractForm.studentCode,
-      avatarText: newContractForm.studentName.split(" ").slice(-2).map(w => w[0]).join("").toUpperCase(),
-      room: newContractForm.room,
-      building: newContractForm.building,
-      startDate: "24/10/2026",
-      endDate: "30/06/2027",
-      daysRemaining: 240,
-      monthlyRent: newContractForm.monthlyRent,
-      depositAmount: newContractForm.depositAmount,
-      depositStatus: "paid",
-      status: "active",
-      roomType: "Tiêu chuẩn 4 người",
-    };
+    setIsCreatingContract(true);
+    setContractFormError(null);
+    try {
+      const res = await api.createAssignment({
+        room_id: Number(newContractForm.roomId),
+        student_id: newContractForm.studentCode.trim().toUpperCase(),
+        bed_number: Number(newContractForm.bedNumber),
+        start_date: newContractForm.startDate,
+        end_date: newContractForm.endDate || null,
+      });
 
-    setContracts([newEntry, ...contracts]);
-    setIsNewContractModalOpen(false);
-    setNewContractForm({
-      studentName: "",
-      studentCode: "",
-      room: "A.302",
-      building: "Tòa A",
-      durationMonths: "10",
-      monthlyRent: 450000,
-      depositAmount: 1000000,
-    });
+      if (!res.success) {
+        setContractFormError(res.message || "Không thể xếp chỗ lưu trú.");
+        return;
+      }
+
+      await loadRealContracts();
+      setIsNewContractModalOpen(false);
+      setNewContractForm((prev) => ({ ...prev, studentCode: "" }));
+    } catch {
+      setContractFormError("Lỗi kết nối máy chủ khi lập hợp đồng.");
+    } finally {
+      setIsCreatingContract(false);
+    }
   };
 
   return (
@@ -919,18 +926,11 @@ export default function ContractsPage() {
           </DialogHeader>
 
           <form onSubmit={handleCreateNewContract} className="space-y-4 py-2">
-            <div>
-              <label className="text-xs font-semibold text-slate-700 block mb-1">
-                Họ và tên sinh viên <span className="text-red-500">*</span>
-              </label>
-              <Input
-                required
-                placeholder="VD: Nguyễn Thành Nam"
-                value={newContractForm.studentName}
-                onChange={(e) => setNewContractForm({ ...newContractForm, studentName: e.target.value })}
-                className="text-xs"
-              />
-            </div>
+            {contractFormError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+                {contractFormError}
+              </div>
+            )}
 
             <div>
               <label className="text-xs font-semibold text-slate-700 block mb-1">
@@ -938,7 +938,7 @@ export default function ContractsPage() {
               </label>
               <Input
                 required
-                placeholder="VD: 20241999"
+                placeholder="VD: B2100001"
                 value={newContractForm.studentCode}
                 onChange={(e) => setNewContractForm({ ...newContractForm, studentCode: e.target.value })}
                 className="text-xs font-mono"
@@ -948,26 +948,39 @@ export default function ContractsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  Tòa nhà
+                  Phòng ở
                 </label>
                 <select
-                  value={newContractForm.building}
-                  onChange={(e) => setNewContractForm({ ...newContractForm, building: e.target.value })}
+                  value={newContractForm.roomId}
+                  onChange={(e) => setNewContractForm({ ...newContractForm, roomId: Number(e.target.value) })}
                   className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800"
                 >
-                  <option value="Tòa A">Tòa A</option>
-                  <option value="Tòa B">Tòa B</option>
-                  <option value="Tòa C">Tòa C CLC</option>
+                  {availableRooms.length > 0 ? (
+                    availableRooms.map((r) => (
+                      <option key={r.room_id} value={r.room_id}>
+                        {r.room_number} ({r.building_id}) — {r.current_occupancy}/{r.capacity}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value={1}>B1-101 (B1)</option>
+                      <option value={2}>B1-102 (B1)</option>
+                      <option value={3}>B2-201 (B2)</option>
+                    </>
+                  )}
                 </select>
               </div>
 
               <div>
                 <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  Phòng ở
+                  Số giường (1–4)
                 </label>
                 <Input
-                  value={newContractForm.room}
-                  onChange={(e) => setNewContractForm({ ...newContractForm, room: e.target.value })}
+                  type="number"
+                  min={1}
+                  max={6}
+                  value={newContractForm.bedNumber}
+                  onChange={(e) => setNewContractForm({ ...newContractForm, bedNumber: Number(e.target.value) })}
                   className="text-xs"
                 />
               </div>
@@ -976,24 +989,25 @@ export default function ContractsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  Tiền phòng / tháng (VNĐ)
+                  Ngày bắt đầu
                 </label>
                 <Input
-                  type="number"
-                  value={newContractForm.monthlyRent}
-                  onChange={(e) => setNewContractForm({ ...newContractForm, monthlyRent: Number(e.target.value) })}
+                  type="date"
+                  required
+                  value={newContractForm.startDate}
+                  onChange={(e) => setNewContractForm({ ...newContractForm, startDate: e.target.value })}
                   className="text-xs"
                 />
               </div>
 
               <div>
                 <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  Tiền ký quỹ cọc (VNĐ)
+                  Ngày kết thúc
                 </label>
                 <Input
-                  type="number"
-                  value={newContractForm.depositAmount}
-                  onChange={(e) => setNewContractForm({ ...newContractForm, depositAmount: Number(e.target.value) })}
+                  type="date"
+                  value={newContractForm.endDate}
+                  onChange={(e) => setNewContractForm({ ...newContractForm, endDate: e.target.value })}
                   className="text-xs"
                 />
               </div>
@@ -1003,8 +1017,13 @@ export default function ContractsPage() {
               <Button type="button" variant="outline" size="sm" onClick={() => setIsNewContractModalOpen(false)}>
                 Hủy bỏ
               </Button>
-              <Button type="submit" size="sm" className="bg-[#1F5CA9] text-white hover:bg-[#184988]">
-                Ký & Lưu Hợp Đồng
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isCreatingContract}
+                className="bg-[#1F5CA9] text-white hover:bg-[#184988]"
+              >
+                {isCreatingContract ? "Đang lưu..." : "Ký & Lưu Hợp Đồng"}
               </Button>
             </DialogFooter>
           </form>
