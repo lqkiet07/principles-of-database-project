@@ -43,7 +43,8 @@ async def get_student_room(student_id: str) -> dict[str, Any]:
     assignment = await fetch_one(
         """
         SELECT a.assignment_id, a.bed_number, a.start_date, a.end_date,
-               r.room_id, r.room_number, r.capacity, r.current_occupancy, r.base_price, r.status AS room_status,
+               r.room_id, r.room_number, r.capacity, r.current_occupancy, r.base_price,
+               r.description, r.status AS room_status,
                b.building_id, b.building_name, b.gender_zone
         FROM room_assignments a
         JOIN rooms r ON r.room_id = a.room_id
@@ -62,7 +63,7 @@ async def get_student_room(student_id: str) -> dict[str, Any]:
     room_id = assignment["room_id"]
     roommate_rows = await fetch_all(
         """
-        SELECT s.student_id, s.full_name, a.bed_number, s.phone
+        SELECT s.student_id, s.full_name, s.major, a.bed_number, s.phone
         FROM room_assignments a
         JOIN students s ON s.student_id = a.student_id
         WHERE a.room_id = %s AND a.is_active = TRUE AND a.student_id <> %s
@@ -72,6 +73,7 @@ async def get_student_room(student_id: str) -> dict[str, Any]:
     )
 
     return {
+        "assignment_id": assignment["assignment_id"],
         "room_id": assignment["room_id"],
         "room_number": assignment["room_number"],
         "building_id": assignment["building_id"],
@@ -81,12 +83,14 @@ async def get_student_room(student_id: str) -> dict[str, Any]:
         "capacity": assignment["capacity"],
         "current_occupancy": assignment["current_occupancy"],
         "base_price": float(assignment["base_price"]),
+        "description": assignment["description"],
         "start_date": str(assignment["start_date"]),
         "end_date": str(assignment["end_date"]) if assignment["end_date"] else None,
         "roommates": [
             {
                 "student_id": r["student_id"],
                 "full_name": r["full_name"],
+                "major": r["major"],
                 "bed_number": r["bed_number"],
                 "phone": r["phone"],
             }
@@ -98,8 +102,9 @@ async def get_student_room(student_id: str) -> dict[str, Any]:
 async def get_student_debts(student_id: str) -> list[dict[str, Any]]:
     rows = await fetch_all(
         """
-        SELECT d.debt_id, d.bill_id, d.assigned_amount, d.paid_amount, d.debt_status,
-               b.month_year, b.total_amount AS bill_total_amount, b.bill_status,
+        SELECT d.debt_id, d.bill_id, d.student_id, d.assigned_amount, d.paid_amount, d.debt_status,
+               b.room_id, b.month_year, b.prev_electric, b.curr_electric, b.prev_water, b.curr_water,
+               b.total_amount AS bill_total_amount, b.bill_status,
                r.room_number
         FROM student_utility_debts d
         JOIN utility_bills b ON b.bill_id = d.bill_id
@@ -113,14 +118,21 @@ async def get_student_debts(student_id: str) -> list[dict[str, Any]]:
         {
             "debt_id": r["debt_id"],
             "bill_id": r["bill_id"],
+            "student_id": r["student_id"],
+            "room_id": r["room_id"],
             "month_year": r["month_year"],
             "room_number": r["room_number"],
             "bill_total_amount": float(r["bill_total_amount"]),
+            "total_room_bill": float(r["bill_total_amount"]),
             "assigned_amount": float(r["assigned_amount"]),
             "paid_amount": float(r["paid_amount"]),
             "remaining_amount": float(r["assigned_amount"] - r["paid_amount"]),
             "debt_status": r["debt_status"],
             "bill_status": r["bill_status"],
+            "prev_electric": r["prev_electric"],
+            "curr_electric": r["curr_electric"],
+            "prev_water": r["prev_water"],
+            "curr_water": r["curr_water"],
         }
         for r in rows
     ]

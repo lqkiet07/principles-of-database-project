@@ -29,12 +29,15 @@ async def test_get_student_room_and_roommates(client):
     assert data["building_id"] == "B1"
     assert "Tòa B1" in data["building_name"]
     assert data["bed_number"] == 1
+    assert "assignment_id" in data
+    assert "description" in data
 
     roommates = data["roommates"]
     assert len(roommates) == 1
     assert roommates[0]["student_id"] == "B2100002"
     assert roommates[0]["full_name"] == "Trần Hoàng Bình"
     assert roommates[0]["bed_number"] == 2
+    assert "major" in roommates[0]
 
 
 @pytest.mark.asyncio
@@ -43,13 +46,18 @@ async def test_get_student_debts(client):
     assert response.status_code == 200
     data = response.json()["data"]
     assert isinstance(data, list)
-    if len(data) > 0:
-        first = data[0]
-        assert "debt_id" in first
-        assert "month_year" in first
-        assert "assigned_amount" in first
-        assert "paid_amount" in first
-        assert "debt_status" in first
+    assert len(data) > 0
+    first = data[0]
+    assert "debt_id" in first
+    assert first["student_id"] == "B2100001"
+    assert isinstance(first["room_id"], int)
+    assert "month_year" in first
+    assert "assigned_amount" in first
+    assert "paid_amount" in first
+    assert "debt_status" in first
+    assert first["total_room_bill"] == first["bill_total_amount"]
+    assert first["curr_electric"] >= first["prev_electric"]
+    assert first["curr_water"] >= first["prev_water"]
 
 
 @pytest.mark.asyncio
