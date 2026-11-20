@@ -195,13 +195,27 @@ export default function StudentsPage() {
     cohort: "K47",
     building: "Tòa B1",
     room: "B1-101",
-    bed: "G1",
+    bed: "G01",
     phone: "",
     email: "",
     idCard: "",
     hometown: "",
     priorityCategory: "Bình thường" as "Bình thường" | "Hộ nghèo" | "Con thương binh" | "Dân tộc",
   });
+
+  // Sync initial search filter from header redirect without useSearchParams SSR bailout
+  React.useEffect(() => {
+    let active = true;
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) {
+      Promise.resolve().then(() => {
+        if (active) setSearchQuery(q);
+      });
+    }
+    return () => {
+      active = false;
+    };
+  }, []);
 
   React.useEffect(() => {
     let mounted = true;
@@ -365,7 +379,7 @@ export default function StudentsPage() {
       name: "",
       studentCode: "",
       gender: "Nam",
-      faculty: "Công nghệ thông tin",
+      faculty: "Kỹ thuật Phần mềm",
       cohort: "K47",
       building: "Tòa B1",
       room: "B1-101",
@@ -826,14 +840,14 @@ export default function StudentsPage() {
         {/* Table Footer Pagination */}
         <div className="flex items-center justify-between border-t border-slate-200/80 px-4 py-3 bg-slate-50/50 text-xs text-slate-500">
           <span>
-            Hiển thị <strong>{filteredStudents.length}</strong> trên tổng số <strong>1,840</strong> hồ sơ sinh viên
+            Hiển thị <strong>{filteredStudents.length}</strong> trên tổng số <strong>{students.length}</strong> hồ sơ sinh viên
           </span>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="h-7 text-xs" disabled>
               Trước
             </Button>
-            <span className="font-semibold text-slate-700">Trang 1 / 184</span>
-            <Button variant="outline" size="sm" className="h-7 text-xs">
+            <span className="font-semibold text-slate-700 tabular-nums">Trang 1 / 1</span>
+            <Button variant="outline" size="sm" className="h-7 text-xs" disabled>
               Sau
             </Button>
           </div>
@@ -1237,11 +1251,12 @@ export default function StudentsPage() {
                   onChange={(e) => setNewStudentForm({ ...newStudentForm, faculty: e.target.value })}
                   className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 cursor-pointer"
                 >
-                  <option value="Công nghệ thông tin">CNTT & TT</option>
-                  <option value="Điện tử viễn thông">Điện tử VT</option>
-                  <option value="Kinh tế & Quản lý">Kinh tế QL</option>
-                  <option value="Cơ khí">Cơ khí</option>
-                  <option value="Ngoại ngữ">Ngoại ngữ</option>
+                  <option value="Kỹ thuật Phần mềm">Kỹ thuật Phần mềm</option>
+                  <option value="Khoa học Máy tính">Khoa học Máy tính</option>
+                  <option value="Hệ thống Thông tin">Hệ thống Thông tin</option>
+                  <option value="Mạng máy tính & TTTT">Mạng máy tính &amp; TTTT</option>
+                  <option value="An toàn Thông tin">An toàn Thông tin</option>
+                  <option value="Trí tuệ Nhân tạo">Trí tuệ Nhân tạo</option>
                 </select>
               </div>
             </div>
@@ -1278,7 +1293,7 @@ export default function StudentsPage() {
                   Quê quán (Tỉnh / Thành phố)
                 </label>
                 <Input
-                  placeholder="VD: Hải Dương, Nam Định..."
+                  placeholder="VD: Cần Thơ, Vĩnh Long, An Giang..."
                   value={newStudentForm.hometown}
                   onChange={(e) => setNewStudentForm({ ...newStudentForm, hometown: e.target.value })}
                   className="text-xs"
@@ -1313,11 +1328,11 @@ export default function StudentsPage() {
                   <select
                     value={newStudentForm.building}
                     onChange={(e) => setNewStudentForm({ ...newStudentForm, building: e.target.value })}
-                    className="w-full h-8 rounded border border-slate-200 bg-white px-2 text-xs font-semibold"
+                    className="w-full h-9 rounded border border-slate-200 bg-white px-2 text-xs font-semibold cursor-pointer"
                   >
-                    <option value="Tòa A">Tòa A (Nam)</option>
-                    <option value="Tòa B">Tòa B (Nữ)</option>
-                    <option value="Tòa C">Tòa C (Chất lượng cao)</option>
+                    <option value="Tòa B1">Tòa B1 (Nam)</option>
+                    <option value="Tòa B2">Tòa B2 (Nữ)</option>
+                    <option value="Tòa B3">Tòa B3 (Nam CLC)</option>
                   </select>
                 </div>
 
@@ -1326,11 +1341,13 @@ export default function StudentsPage() {
                   <select
                     value={newStudentForm.room}
                     onChange={(e) => setNewStudentForm({ ...newStudentForm, room: e.target.value })}
-                    className="w-full h-8 rounded border border-slate-200 bg-white px-2 text-xs font-semibold"
+                    className="w-full h-9 rounded border border-slate-200 bg-white px-2 text-xs font-semibold cursor-pointer"
                   >
-                    <option value="A.301">P.301 (Còn 1 chỗ)</option>
-                    <option value="A.302">P.302 (Còn 2 chỗ)</option>
-                    <option value="A.405">P.405 (Còn 1 chỗ)</option>
+                    <option value="B1-101">B1-101</option>
+                    <option value="B1-102">B1-102</option>
+                    <option value="B2-201">B2-201</option>
+                    <option value="B2-202">B2-202</option>
+                    <option value="B3-301">B3-301</option>
                   </select>
                 </div>
 
@@ -1339,21 +1356,23 @@ export default function StudentsPage() {
                   <select
                     value={newStudentForm.bed}
                     onChange={(e) => setNewStudentForm({ ...newStudentForm, bed: e.target.value })}
-                    className="w-full h-8 rounded border border-slate-200 bg-white px-2 text-xs font-semibold"
+                    className="w-full h-9 rounded border border-slate-200 bg-white px-2 text-xs font-semibold cursor-pointer"
                   >
-                    <option value="A1">Giường A1</option>
-                    <option value="A2">Giường A2</option>
+                    <option value="G01">Giường G01</option>
+                    <option value="G02">Giường G02</option>
+                    <option value="G03">Giường G03</option>
+                    <option value="G04">Giường G04</option>
                   </select>
                 </div>
               </div>
             </div>
 
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setIsAddStudentModalOpen(false)}>
+              <Button type="button" variant="outline" size="sm" className="cursor-pointer" onClick={() => setIsAddStudentModalOpen(false)}>
                 Hủy bỏ
               </Button>
-              <Button type="submit" size="sm" className="bg-[#1F5CA9] text-white hover:bg-[#184988]">
-                Lưu hồ sơ & Xếp phòng
+              <Button type="submit" size="sm" className="bg-[#1F5CA9] text-white hover:bg-[#184988] cursor-pointer">
+                Lưu hồ sơ &amp; Xếp phòng
               </Button>
             </DialogFooter>
           </form>
