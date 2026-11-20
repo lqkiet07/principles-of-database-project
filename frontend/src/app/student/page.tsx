@@ -121,6 +121,7 @@ export default function StudentPortalPage() {
 
   const [selectedRoommate, setSelectedRoommate] = React.useState<Roommate | null>(null);
   const [selectedReceiptMonth, setSelectedReceiptMonth] = React.useState<string>("Tháng 09/2026");
+  const [selectedReceiptAmount, setSelectedReceiptAmount] = React.useState<string>("310.000 đ");
   const [copiedField, setCopiedField] = React.useState<string | null>(null);
   const [toastMessage, setToastMessage] = React.useState<string | null>(null);
 
@@ -199,6 +200,18 @@ export default function StudentPortalPage() {
       .map((w) => w[0])
       .join("")
       .toUpperCase() || "SV";
+  const compactRoomCode = shortRoomCode.replace("-", "");
+  const roomMemberCount = Math.max(1, roommateList.length);
+  const roomElecCost =
+    currentDebt.deltaElec <= 100
+      ? currentDebt.deltaElec * 2000
+      : currentDebt.deltaElec <= 200
+        ? 200000 + (currentDebt.deltaElec - 100) * 2500
+        : 450000 + (currentDebt.deltaElec - 200) * 3000;
+  const roomWaterCost = currentDebt.deltaWater * 10000;
+  const myElecShare = Math.round(roomElecCost / roomMemberCount);
+  const myWaterShare = Math.round(roomWaterCost / roomMemberCount);
+  const qrTransferSyntax = `KTX ${compactRoomCode} ${studentId} ${currentDebt.monthYear.replace("-", "")}`;
 
   // Load real data from Backend API (guard against stale responses on rapid student switch)
   const reloadStudentPortal = React.useCallback(
@@ -487,11 +500,11 @@ export default function StudentPortalPage() {
             className="h-7 rounded-lg border border-slate-200 bg-slate-50 px-2 text-[11px] font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#1F5CA9] cursor-pointer"
           >
             <option value="B2100001">B2100001 - Nguyễn Văn An (B1-101)</option>
-            <option value="B2100002">B2100002 - Trần Minh Bảo (B1-101)</option>
+            <option value="B2100002">B2100002 - Trần Hoàng Bình (B1-101)</option>
             <option value="B2100003">B2100003 - Lê Quốc Cường (B1-102)</option>
-            <option value="B2100004">B2100004 - Võ Hoàng Dung (B1-102)</option>
-            <option value="B2100005">B2100005 - Phạm Gia Huy (B2-201)</option>
-            <option value="B2100009">B2100009 - Huỳnh Ngọc Ánh (B3-301)</option>
+            <option value="B2100004">B2100004 - Phạm Minh Dũng (B1-102)</option>
+            <option value="B2100005">B2100005 - Huỳnh Ngọc Dung (B2-201)</option>
+            <option value="B2100009">B2100009 - Ngô Minh Khoa (B3-301)</option>
           </select>
           <span className="text-muted-foreground text-[11px] hidden sm:inline">Khung xem:</span>
           <Button
@@ -698,15 +711,15 @@ export default function StudentPortalPage() {
                   <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700 text-[10px]">
                     <div>
                       <span className="text-muted-foreground block">Điện lũy tiến</span>
-                      <span className="font-semibold text-slate-800 dark:text-slate-200">200.000 đ</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 tabular-nums">{myElecShare.toLocaleString("vi-VN")} đ</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground block">Nước sạch</span>
-                      <span className="font-semibold text-slate-800 dark:text-slate-200">125.000 đ</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 tabular-nums">{myWaterShare.toLocaleString("vi-VN")} đ</span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground block">Dịch vụ & Wifi</span>
-                      <span className="font-semibold text-slate-800 dark:text-slate-200">50.000 đ</span>
+                      <span className="text-muted-foreground block">Tổng HĐ phòng</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 tabular-nums">{currentDebt.totalRoomBill.toLocaleString("vi-VN")} đ</span>
                     </div>
                   </div>
                 </div>
@@ -1003,7 +1016,7 @@ export default function StudentPortalPage() {
                       <button
                         key={amt}
                         onClick={() => handleTopup(amt)}
-                        className="text-[10px] font-bold bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg backdrop-blur-xs transition-colors"
+                        className="text-[10px] font-bold bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg backdrop-blur-xs transition-colors cursor-pointer"
                       >
                         +{amt / 1000}k
                       </button>
@@ -1144,9 +1157,10 @@ export default function StudentPortalPage() {
                         size="sm"
                         onClick={() => {
                           setSelectedReceiptMonth(item.month);
+                          setSelectedReceiptAmount(item.amount);
                           setIsReceiptModalOpen(true);
                         }}
-                        className="h-6 px-2 text-[10px] rounded-lg text-[#1F5CA9] border-blue-200 hover:bg-blue-50"
+                        className="h-6 px-2 text-[10px] rounded-lg text-[#1F5CA9] border-blue-200 hover:bg-blue-50 cursor-pointer"
                       >
                         Xem biên lai
                       </Button>
@@ -1187,7 +1201,7 @@ export default function StudentPortalPage() {
                 <div className="pt-4 flex items-center gap-3.5">
                   <Avatar className="h-14 w-14 border-2 border-white shadow-md">
                     <AvatarFallback className="bg-white text-[#1F5CA9] font-black text-lg">
-                      AN
+                      {studentInitials}
                     </AvatarFallback>
                   </Avatar>
                   <div>
@@ -1209,7 +1223,7 @@ export default function StudentPortalPage() {
                     ))}
                   </div>
                   <span className="text-[10px] font-mono tracking-widest text-white/80 mt-1">
-                    {studentId}-B1101-2026-GATE
+                    {studentId}-{compactRoomCode}-2026-GATE
                   </span>
                 </div>
               </div>
@@ -1221,7 +1235,7 @@ export default function StudentPortalPage() {
                 </span>
                 <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
                   <span className="text-muted-foreground">Mã hợp đồng:</span>
-                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">HD-2026-A402-01</span>
+                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">HĐ-CTU-{studentId.slice(-4)}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
                   <span className="text-muted-foreground">Thời hạn lưu trú:</span>
@@ -1673,7 +1687,7 @@ export default function StudentPortalPage() {
 
             <div className="mt-2.5 text-center">
               <span className="text-[11px] text-muted-foreground block">Số tiền cần thanh toán:</span>
-              <span className="text-xl font-black text-[#1F5CA9]">345.000 đ</span>
+              <span className="text-xl font-black text-[#1F5CA9] tabular-nums">{currentDebt.amount.toLocaleString("vi-VN")} đ</span>
             </div>
           </div>
 
@@ -1690,7 +1704,7 @@ export default function StudentPortalPage() {
                 <button
                   type="button"
                   onClick={() => copyToClipboard("1028999888", "stk")}
-                  className="text-[#1F5CA9] hover:underline"
+                  className="text-[#1F5CA9] hover:underline cursor-pointer"
                 >
                   {copiedField === "stk" ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
                 </button>
@@ -1699,11 +1713,11 @@ export default function StudentPortalPage() {
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Nội dung:</span>
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-[#1F5CA9] font-mono">KTX B1101 B2100001 T10</span>
+                <span className="font-bold text-[#1F5CA9] font-mono">{qrTransferSyntax}</span>
                 <button
                   type="button"
-                  onClick={() => copyToClipboard("KTX B1101 B2100001 T10", "nd")}
-                  className="text-[#1F5CA9] hover:underline"
+                  onClick={() => copyToClipboard(qrTransferSyntax, "nd")}
+                  className="text-[#1F5CA9] hover:underline cursor-pointer"
                 >
                   {copiedField === "nd" ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
                 </button>
@@ -1749,7 +1763,7 @@ export default function StudentPortalPage() {
             </div>
             <div className="flex justify-between border-b pb-1">
               <span className="text-muted-foreground">Số tiền:</span>
-              <span className="font-bold text-emerald-600">310.000 đ</span>
+              <span className="font-bold text-emerald-600 tabular-nums">{selectedReceiptAmount}</span>
             </div>
             <div className="flex justify-between border-b pb-1">
               <span className="text-muted-foreground">Hình thức:</span>
@@ -1769,7 +1783,7 @@ export default function StudentPortalPage() {
               setIsReceiptModalOpen(false);
               showToast("Đã lưu biên lai điện tử về máy!");
             }}
-            className="w-full rounded-xl text-xs bg-[#1F5CA9] text-white"
+            className="w-full rounded-xl text-xs bg-[#1F5CA9] text-white cursor-pointer"
           >
             Tải Biên Lai Về Máy
           </Button>
@@ -1806,7 +1820,7 @@ export default function StudentPortalPage() {
                     window.open(`tel:${selectedRoommate.phone}`);
                     setIsPhoneModalOpen(false);
                   }}
-                  className="rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+                  className="rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 cursor-pointer"
                 >
                   <Phone className="h-3.5 w-3.5" />
                   <span>Gọi điện</span>
@@ -1817,7 +1831,7 @@ export default function StudentPortalPage() {
                     setIsPhoneModalOpen(false);
                   }}
                   variant="outline"
-                  className="rounded-xl text-xs font-semibold gap-1.5"
+                  className="rounded-xl text-xs font-semibold gap-1.5 cursor-pointer"
                 >
                   <Copy className="h-3.5 w-3.5" />
                   <span>Sao chép SĐT</span>
