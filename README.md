@@ -6,7 +6,7 @@
 [![pgvector](https://img.shields.io/badge/pgvector-0.8.7-blue)](https://github.com/pgvector/pgvector)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.162.0-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12.7-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/Tests-57%20Cases-brightgreen)](backend/tests/)
+[![Tests](https://img.shields.io/badge/Tests-66%20Cases-brightgreen)](backend/tests/)
 [![Ruff](https://img.shields.io/badge/Code%20Style-Ruff-000000?logo=ruff&logoColor=white)](https://astral.sh/ruff)
 [![License](https://img.shields.io/badge/License-MIT-gray)](LICENSE)
 
