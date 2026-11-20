@@ -586,7 +586,7 @@ export default function StudentsPage() {
                   <option value="all">Tất cả các tòa</option>
                   <option value="Tòa B1">Tòa B1 (Nam)</option>
                   <option value="Tòa B2">Tòa B2 (Nữ)</option>
-                  <option value="Tòa B3">Tòa B3 (Nam CLC)</option>
+                  <option value="Tòa B3">Tòa B3 (Hỗn hợp)</option>
                 </select>
               </div>
 
@@ -1112,7 +1112,7 @@ export default function StudentsPage() {
                     <option value="B1-101">Phòng B1-101 (Tòa B1 Nam)</option>
                     <option value="B1-102">Phòng B1-102 (Tòa B1 Nam)</option>
                     <option value="B2-201">Phòng B2-201 (Tòa B2 Nữ)</option>
-                    <option value="B3-301">Phòng B3-301 (Tòa B3 Nam CLC)</option>
+                    <option value="B3-301">Phòng B3-301 (Tòa B3 Hỗn hợp)</option>
                   </select>
                 </div>
 
@@ -1332,7 +1332,7 @@ export default function StudentsPage() {
                   >
                     <option value="Tòa B1">Tòa B1 (Nam)</option>
                     <option value="Tòa B2">Tòa B2 (Nữ)</option>
-                    <option value="Tòa B3">Tòa B3 (Nam CLC)</option>
+                    <option value="Tòa B3">Tòa B3 (Hỗn hợp)</option>
                   </select>
                 </div>
 

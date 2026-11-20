@@ -105,7 +105,7 @@ const mockContracts: Contract[] = [
     depositAmount: 1000000,
     depositStatus: "paid",
     status: "active",
-    roomType: "Chất lượng cao 4 người (Tòa B3 - Nam)",
+    roomType: "Chất lượng cao 4 người (Tòa B3 - Hỗn hợp)",
   },
 ];
 

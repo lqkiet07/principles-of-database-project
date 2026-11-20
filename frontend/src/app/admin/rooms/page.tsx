@@ -34,7 +34,7 @@ interface RoomInfo {
   floor: string;
   roomNumber: string;
   type: string;
-  gender: "Nam" | "Nữ";
+  gender: "Nam" | "Nữ" | "Hỗn hợp";
   totalBeds: number;
   occupiedBeds: number;
   status: "Full" | "Available" | "Maintenance";
@@ -131,12 +131,12 @@ const mockRooms: RoomInfo[] = [
     floor: "3",
     roomNumber: "Phòng B3-301",
     type: "Phòng 4 giường",
-    gender: "Nam",
+    gender: "Hỗn hợp",
     totalBeds: 4,
     occupiedBeds: 2,
     status: "Available",
-    price: "1.300.000 đ/tháng",
-    description: "Phòng nam chất lượng cao tầng 3, có máy lạnh và bàn học riêng",
+    price: "1.500.000 đ/tháng",
+    description: "Phòng dịch vụ tầng 3 chất lượng cao, có điều hòa và bình nóng lạnh",
     beds: [
       { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Ngô Minh Khoa", studentId: "B2100009", checkInDate: "01/09/2026" },
       { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Trịnh Công Long", studentId: "B2100010", checkInDate: "01/09/2026" },
@@ -151,17 +151,17 @@ const mockRooms: RoomInfo[] = [
     floor: "3",
     roomNumber: "Phòng B3-302",
     type: "Phòng 4 giường",
-    gender: "Nam",
+    gender: "Hỗn hợp",
     totalBeds: 4,
-    occupiedBeds: 0,
-    status: "Maintenance",
-    price: "1.300.000 đ/tháng",
-    description: "Phòng nam tầng 3 đang bảo trì nâng cấp hệ thống điều hòa",
+    occupiedBeds: 2,
+    status: "Available",
+    price: "1.500.000 đ/tháng",
+    description: "Phòng dịch vụ tầng 3 khép kín, tiện nghi hiện đại, không gian yên tĩnh",
     beds: [
-      { bedNumber: "G01", isOccupied: false, status: "maintenance" },
-      { bedNumber: "G02", isOccupied: false, status: "maintenance" },
-      { bedNumber: "G03", isOccupied: false, status: "maintenance" },
-      { bedNumber: "G04", isOccupied: false, status: "maintenance" },
+      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Lý Phương Mai", studentId: "B2100011", checkInDate: "01/09/2026" },
+      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Đoàn Bảo Nam", studentId: "B2100012", checkInDate: "01/09/2026" },
+      { bedNumber: "G03", isOccupied: false, status: "empty" },
+      { bedNumber: "G04", isOccupied: false, status: "empty" },
     ],
   },
 ];
@@ -242,7 +242,7 @@ export default function RoomsManagementPage() {
               floor: floorPart,
               roomNumber: `Phòng ${r.room_number}`,
               type: `Phòng ${r.capacity} giường (${r.building_name})`,
-              gender: r.gender_zone === "FEMALE" ? "Nữ" : "Nam",
+              gender: r.gender_zone === "FEMALE" ? "Nữ" : r.gender_zone === "MIXED" ? "Hỗn hợp" : "Nam",
               totalBeds: r.capacity,
               occupiedBeds: r.current_occupancy,
               status:
