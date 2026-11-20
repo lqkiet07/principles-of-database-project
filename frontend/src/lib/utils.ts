@@ -1,6 +1,5 @@
 import { cn as cnFunc } from "cn";
-import { type ClassValue } from "clsx";
 
-export function cn(...inputs: ClassValue[]): string {
+export function cn(...inputs: Parameters<typeof cnFunc>): string {
   return cnFunc(...inputs);
 }

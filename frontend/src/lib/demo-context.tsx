@@ -15,15 +15,22 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState<boolean>(false);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("smart_dorm_demo_mode");
-      if (stored !== null) {
-        setIsDemoMode(stored === "true");
+    let active = true;
+    Promise.resolve().then(() => {
+      if (!active) return;
+      try {
+        const stored = localStorage.getItem("smart_dorm_demo_mode");
+        if (stored !== null) {
+          setIsDemoMode(stored === "true");
+        }
+      } catch {
+        // Ignore local storage error in non-browser env
       }
-    } catch {
-      // Ignore local storage error in non-browser env
-    }
-    setMounted(true);
+      setMounted(true);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const setDemoMode = (val: boolean) => {

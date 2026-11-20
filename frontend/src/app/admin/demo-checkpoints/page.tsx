@@ -65,7 +65,13 @@ export default function DemoCheckpointsPage() {
   }, []);
 
   React.useEffect(() => {
-    handleResetDemo();
+    let active = true;
+    Promise.resolve().then(() => {
+      if (active) void handleResetDemo();
+    });
+    return () => {
+      active = false;
+    };
   }, [handleResetDemo]);
 
   // Checkpoint 2: Dual SP 2 (Wallet Pay)
@@ -716,7 +722,7 @@ export default function DemoCheckpointsPage() {
 
             {cp5Status === "audit_view" && (
               <div className="rounded-xl bg-slate-900 p-3 text-[11px] font-mono text-slate-200 space-y-2 overflow-x-auto max-h-56">
-                <p className="text-emerald-400 font-bold">// Nhật ký audit_logs thật từ PostgreSQL (Chụp ảnh JSONB):</p>
+                <p className="text-emerald-400 font-bold">{"// Nhật ký audit_logs thật từ PostgreSQL (Chụp ảnh JSONB):"}</p>
                 {auditLogsList.length > 0 ? (
                   auditLogsList.map((log) => (
                     <div key={log.log_id} className="border-b border-slate-800 pb-2 mb-2">

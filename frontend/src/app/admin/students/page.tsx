@@ -1359,7 +1359,7 @@ export default function StudentsPage() {
                 </label>
                 <select
                   value={newStudentForm.priorityCategory}
-                  onChange={(e) => setNewStudentForm({ ...newStudentForm, priorityCategory: e.target.value as any })}
+                  onChange={(e) => setNewStudentForm({ ...newStudentForm, priorityCategory: e.target.value as Student["priorityCategory"] })}
                   className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800"
                 >
                   <option value="Bình thường">Bình thường (Đại trà)</option>

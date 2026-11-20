@@ -253,7 +253,13 @@ export default function BillingPage() {
   }, []);
 
   React.useEffect(() => {
-    loadBillsAndAudit();
+    let active = true;
+    Promise.resolve().then(() => {
+      if (active) void loadBillsAndAudit();
+    });
+    return () => {
+      active = false;
+    };
   }, [loadBillsAndAudit]);
 
   const filteredBills = bills.filter((b) => {

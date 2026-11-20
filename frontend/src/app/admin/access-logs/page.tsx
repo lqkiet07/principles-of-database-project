@@ -163,7 +163,13 @@ export default function AccessLogsPage() {
   }, [onlyLate, queryFilter]);
 
   React.useEffect(() => {
-    loadRealAccessLogs();
+    let active = true;
+    Promise.resolve().then(() => {
+      if (active) void loadRealAccessLogs();
+    });
+    return () => {
+      active = false;
+    };
   }, [loadRealAccessLogs]);
 
   const handleRunQuery = async () => {
@@ -343,7 +349,7 @@ export default function AccessLogsPage() {
           </div>
 
           <div className="p-3 rounded-xl bg-slate-900 text-slate-200 font-mono text-[11px] space-y-1">
-            <span className="text-emerald-400 font-bold">// PostgreSQL Execution Plan Output:</span>
+            <span className="text-emerald-400 font-bold">{"// PostgreSQL Execution Plan Output:"}</span>
             <p className="text-slate-300 whitespace-pre-wrap">
               {rawPlanText
                 ? rawPlanText
