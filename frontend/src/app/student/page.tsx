@@ -190,6 +190,16 @@ export default function StudentPortalPage() {
   }>>([]);
   const [isSearchingAi, setIsSearchingAi] = React.useState(false);
 
+  const shortRoomCode = studentRoom.split(" (")[0] || "B1-101";
+  const studentInitials =
+    studentName
+      .trim()
+      .split(/\s+/)
+      .slice(-2)
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase() || "SV";
+
   // Load real data from Backend API (guard against stale responses on rapid student switch)
   const reloadStudentPortal = React.useCallback(
     async (targetStudentId: string, isStillActive?: () => boolean) => {
@@ -203,109 +213,109 @@ export default function StudentPortalPage() {
         ]);
         if (isStillActive && !isStillActive()) return;
 
-      let currentFullName = "Nguyễn Văn An";
-      let currentMajor = "Kỹ thuật Phần mềm";
-      let currentPhone = "0901000001";
+        let currentFullName = "Nguyễn Văn An";
+        let currentMajor = "Kỹ thuật Phần mềm";
+        let currentPhone = "0901000001";
 
-      if (profRes.success && profRes.data) {
-        currentFullName = profRes.data.full_name;
-        currentMajor = profRes.data.major;
-        currentPhone = profRes.data.phone;
-        setStudentName(profRes.data.full_name);
-        const rawBalance = profRes.data.wallet?.balance ?? profRes.data.wallet_balance ?? 0;
-        setStudentWallet(Number(rawBalance));
-      }
-
-      if (roomRes.success && roomRes.data) {
-        setStudentRoom(`${roomRes.data.room_number} (${roomRes.data.building_name})`);
-        if (roomRes.data.description) {
-          setStudentRoomDesc(roomRes.data.description);
+        if (profRes.success && profRes.data) {
+          currentFullName = profRes.data.full_name;
+          currentMajor = profRes.data.major;
+          currentPhone = profRes.data.phone;
+          setStudentName(profRes.data.full_name);
+          const rawBalance = profRes.data.wallet?.balance ?? profRes.data.wallet_balance ?? 0;
+          setStudentWallet(Number(rawBalance));
         }
-        const selfInitials = currentFullName
-          .split(" ")
-          .slice(-2)
-          .map((w) => w[0])
-          .join("")
-          .toUpperCase();
-        const mappedRoommates: Roommate[] = [
-          {
-            id: "1",
-            name: currentFullName,
-            role: `Giường ${roomRes.data.bed_number} (Bạn)`,
-            major: currentMajor,
-            phone: currentPhone,
-            avatarText: selfInitials || "SV",
-            isOnline: true,
-            statusText: `Giường số ${roomRes.data.bed_number} • Đang lưu trú`,
-          },
-          ...(roomRes.data.roommates || []).map((rm, idx) => {
-            const initials = rm.full_name
-              .split(" ")
-              .slice(-2)
-              .map((w) => w[0])
-              .join("")
-              .toUpperCase();
-            return {
-              id: String(idx + 2),
-              name: rm.full_name,
-              role: `Giường ${rm.bed_number}`,
-              major: rm.major || "Sinh viên CTU",
-              phone: rm.phone || `MSSV: ${rm.student_id}`,
-              avatarText: initials || "RM",
+
+        if (roomRes.success && roomRes.data) {
+          setStudentRoom(`${roomRes.data.room_number} (${roomRes.data.building_name})`);
+          if (roomRes.data.description) {
+            setStudentRoomDesc(roomRes.data.description);
+          }
+          const selfInitials = currentFullName
+            .split(" ")
+            .slice(-2)
+            .map((w) => w[0])
+            .join("")
+            .toUpperCase();
+          const mappedRoommates: Roommate[] = [
+            {
+              id: "1",
+              name: currentFullName,
+              role: `Giường ${roomRes.data.bed_number} (Bạn)`,
+              major: currentMajor,
+              phone: currentPhone,
+              avatarText: selfInitials || "SV",
               isOnline: true,
-              statusText: `Giường số ${rm.bed_number} • MSSV: ${rm.student_id}`,
-            };
-          }),
-        ];
-        setRoommateList(mappedRoommates);
-      }
+              statusText: `Giường số ${roomRes.data.bed_number} • Đang lưu trú`,
+            },
+            ...(roomRes.data.roommates || []).map((rm, idx) => {
+              const initials = rm.full_name
+                .split(" ")
+                .slice(-2)
+                .map((w) => w[0])
+                .join("")
+                .toUpperCase();
+              return {
+                id: String(idx + 2),
+                name: rm.full_name,
+                role: `Giường ${rm.bed_number}`,
+                major: rm.major || "Sinh viên CTU",
+                phone: rm.phone || `MSSV: ${rm.student_id}`,
+                avatarText: initials || "RM",
+                isOnline: true,
+                statusText: `Giường số ${rm.bed_number} • MSSV: ${rm.student_id}`,
+              };
+            }),
+          ];
+          setRoommateList(mappedRoommates);
+        }
 
-      if (debtRes.success && debtRes.data && debtRes.data.length > 0) {
-        const firstUnpaid = debtRes.data.find((d) => d.debt_status === "UNPAID") || debtRes.data[0];
-        const remainingAmt = firstUnpaid.debt_status === "PAID"
-          ? firstUnpaid.assigned_amount
-          : Math.max(0, firstUnpaid.assigned_amount - firstUnpaid.paid_amount);
-        setCurrentDebt({
-          id: firstUnpaid.debt_id,
-          amount: remainingAmt,
-          isPaid: firstUnpaid.debt_status === "PAID",
-          monthYear: firstUnpaid.month_year,
-          totalRoomBill: firstUnpaid.total_room_bill,
-          deltaElec: Math.max(0, firstUnpaid.curr_electric - firstUnpaid.prev_electric),
-          deltaWater: Math.max(0, firstUnpaid.curr_water - firstUnpaid.prev_water),
-        });
-        setStudentDebtPaid(firstUnpaid.debt_status === "PAID");
-      }
+        if (debtRes.success && debtRes.data && debtRes.data.length > 0) {
+          const firstUnpaid = debtRes.data.find((d) => d.debt_status === "UNPAID") || debtRes.data[0];
+          const remainingAmt = firstUnpaid.debt_status === "PAID"
+            ? firstUnpaid.assigned_amount
+            : Math.max(0, firstUnpaid.assigned_amount - firstUnpaid.paid_amount);
+          setCurrentDebt({
+            id: firstUnpaid.debt_id,
+            amount: remainingAmt,
+            isPaid: firstUnpaid.debt_status === "PAID",
+            monthYear: firstUnpaid.month_year,
+            totalRoomBill: firstUnpaid.total_room_bill,
+            deltaElec: Math.max(0, firstUnpaid.curr_electric - firstUnpaid.prev_electric),
+            deltaWater: Math.max(0, firstUnpaid.curr_water - firstUnpaid.prev_water),
+          });
+          setStudentDebtPaid(firstUnpaid.debt_status === "PAID");
+        }
 
-      if (txRes.success && txRes.data && txRes.data.length > 0) {
-        setLastTxCode(txRes.data[0].reference_code);
-        setTxHistory(
-          txRes.data.slice(0, 6).map((tx) => {
-            const d = new Date(tx.tx_time);
-            const dateStr = !isNaN(d.getTime())
-              ? d.toLocaleDateString("vi-VN")
-              : tx.tx_time.slice(0, 10);
-            return {
-              month: `Khoản nợ #${tx.debt_id} (HĐ #${tx.bill_id})`,
-              amount: `${Number(tx.amount).toLocaleString("vi-VN")} đ`,
-              paidDate: dateStr,
-              receiptCode: tx.reference_code,
-            };
-          })
-        );
-      }
+        if (txRes.success && txRes.data && txRes.data.length > 0) {
+          setLastTxCode(txRes.data[0].reference_code);
+          setTxHistory(
+            txRes.data.slice(0, 6).map((tx) => {
+              const d = new Date(tx.tx_time);
+              const dateStr = !isNaN(d.getTime())
+                ? d.toLocaleDateString("vi-VN")
+                : tx.tx_time.slice(0, 10);
+              return {
+                month: `Khoản nợ #${tx.debt_id} (HĐ #${tx.bill_id})`,
+                amount: `${Number(tx.amount).toLocaleString("vi-VN")} đ`,
+                paidDate: dateStr,
+                receiptCode: tx.reference_code,
+              };
+            })
+          );
+        }
 
-      if (accessRes.success && accessRes.data) {
-        setAccessSummary({
-          total: accessRes.data.total,
-          lateCount: accessRes.data.late_count,
-          items: (accessRes.data.items || []).slice(0, 5),
-        });
+        if (accessRes.success && accessRes.data) {
+          setAccessSummary({
+            total: accessRes.data.total,
+            lateCount: accessRes.data.late_count,
+            items: (accessRes.data.items || []).slice(0, 5),
+          });
+        }
+      } catch {
+        // Keep current state on offline preview
       }
-    } catch {
-      // Keep current state on offline preview
-    }
-  }, []);
+    }, []);
 
   React.useEffect(() => {
     let active = true;
@@ -474,7 +484,7 @@ export default function StudentPortalPage() {
             aria-label="Chọn sinh viên"
             value={studentId}
             onChange={(e) => setStudentId(e.target.value)}
-            className="h-7 rounded-lg border border-slate-200 bg-slate-50 px-2 text-[11px] font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#1F5CA9]"
+            className="h-7 rounded-lg border border-slate-200 bg-slate-50 px-2 text-[11px] font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#1F5CA9] cursor-pointer"
           >
             <option value="B2100001">B2100001 - Nguyễn Văn An (B1-101)</option>
             <option value="B2100002">B2100002 - Trần Minh Bảo (B1-101)</option>
@@ -522,7 +532,7 @@ export default function StudentPortalPage() {
             {/* Dynamic Island pill */}
             <div className="h-[28px] w-[116px] bg-black rounded-full flex items-center justify-between px-2.5 text-[10px] text-white/90 shadow-xs cursor-pointer hover:scale-105 transition-transform">
               <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              <span className="text-[10px] font-semibold text-slate-200 tracking-tight">B1-101 Tòa B1</span>
+              <span className="text-[10px] font-semibold text-slate-200 tracking-tight truncate">{shortRoomCode}</span>
               <div className="h-2.5 w-2.5 rounded-full bg-blue-500/80" />
             </div>
 
@@ -547,8 +557,8 @@ export default function StudentPortalPage() {
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <Avatar className="h-11 w-11 border-2 border-[#1F5CA9]/30">
-                      <AvatarFallback className="bg-gradient-to-tr from-[#1F5CA9] to-[#00AFEF] text-white font-bold text-sm">
-                        TA
+                      <AvatarFallback className="bg-[#1F5CA9] text-white font-bold text-sm">
+                        {studentInitials}
                       </AvatarFallback>
                     </Avatar>
                     <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
@@ -569,7 +579,7 @@ export default function StudentPortalPage() {
                 {/* Notification Bell */}
                 <button
                   onClick={() => setIsQrModalOpen(true)}
-                  className="relative flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors"
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
                 >
                   <Bell className="h-5 w-5" />
                   <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-amber-500 border border-white dark:border-slate-900" />
@@ -598,9 +608,11 @@ export default function StudentPortalPage() {
                 >
                   <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFB800] text-amber-950 shadow-md shadow-amber-500/25 group-hover:scale-105 active:scale-95 transition-transform">
                     <Receipt className="h-6 w-6" />
-                    <span className="absolute -top-2 -right-1 bg-red-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shadow-sm animate-pulse">
-                      Chờ nộp
-                    </span>
+                    {!studentDebtPaid && (
+                      <span className="absolute -top-2 -right-1 bg-red-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shadow-sm">
+                        Chờ nộp
+                      </span>
+                    )}
                   </div>
                   <span className="text-[11px] font-semibold text-center leading-tight text-slate-800 dark:text-slate-200">
                     Hóa đơn tháng này
@@ -678,7 +690,7 @@ export default function StudentPortalPage() {
                       {studentDebtPaid ? "0 đ (Đã tất toán)" : `${currentDebt.amount.toLocaleString("vi-VN")} đ`}
                     </span>
                     <span className="text-[11px] text-slate-500 font-medium">
-                      Phòng: B1-101 (2 SV)
+                      Phòng: {shortRoomCode} ({roommateList.length} SV)
                     </span>
                   </div>
 
@@ -720,7 +732,7 @@ export default function StudentPortalPage() {
                   </span>
                   <button
                     onClick={() => setActiveTab("room")}
-                    className="text-[11px] font-semibold text-[#00AFEF] hover:underline"
+                    className="text-[11px] font-semibold text-[#0369A1] hover:underline cursor-pointer"
                   >
                     Xem chi tiết →
                   </button>
@@ -789,7 +801,7 @@ export default function StudentPortalPage() {
           {activeTab === "room" && (
             <div className="space-y-4 animate-in fade-in duration-200">
               {/* Room Banner */}
-              <div className="rounded-3xl bg-gradient-to-br from-[#1F5CA9] to-[#00AFEF] p-4 text-white shadow-md">
+              <div className="rounded-3xl bg-[#1F5CA9] p-4 text-white shadow-md">
                 <div className="flex items-start justify-between">
                   <div>
                     <span className="text-xs uppercase font-semibold text-white/80 tracking-wider">
@@ -815,7 +827,7 @@ export default function StudentPortalPage() {
                       Tìm Phòng Ngữ Nghĩa AI (pgvector)
                     </span>
                   </div>
-                  <Badge className="bg-sky-100 text-[#00AFEF] text-[10px] font-mono border-0">
+                  <Badge className="bg-sky-100 text-[#0369A1] text-[10px] font-mono border-0">
                     vector(384)
                   </Badge>
                 </div>
@@ -961,7 +973,7 @@ export default function StudentPortalPage() {
                   Ví KTX & Công Nợ Điện Nước
                 </h2>
                 <Badge variant="outline" className="text-[10px] font-mono text-[#1F5CA9] border-blue-200">
-                  Phòng B1-101
+                  Phòng {shortRoomCode}
                 </Badge>
               </div>
 
@@ -1354,14 +1366,14 @@ export default function StudentPortalPage() {
       <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
         <DialogContent className="sm:max-w-md rounded-3xl p-6">
           <DialogHeader>
-            <div className="flex items-center gap-2 text-[#00AFEF] mb-1">
+            <div className="flex items-center gap-2 text-[#0369A1] mb-1">
               <Wrench className="h-5 w-5" />
               <DialogTitle className="text-base font-bold text-slate-900">
                 Báo Hỏng & Đề Nghị Sửa Chữa
               </DialogTitle>
             </div>
             <DialogDescription className="text-xs text-muted-foreground">
-              Phòng B1-101 • Tòa B1 - Nam. Kỹ thuật viên KTX sẽ tiếp nhận và xử lý trong 2-4 giờ làm việc.
+              Phòng {studentRoom}. Kỹ thuật viên KTX sẽ tiếp nhận và xử lý trong 2-4 giờ làm việc.
             </DialogDescription>
           </DialogHeader>
 
@@ -1382,8 +1394,8 @@ export default function StudentPortalPage() {
                     key={item.id}
                     type="button"
                     onClick={() => setRepairCategory(item.id)}
-                    className={`p-2.5 rounded-xl border flex items-center gap-2 text-left transition-all ${repairCategory === item.id
-                      ? "border-[#00AFEF] bg-sky-50 text-[#00AFEF] font-bold"
+                    className={`p-2.5 rounded-xl border flex items-center gap-2 text-left transition-all cursor-pointer ${repairCategory === item.id
+                      ? "border-[#0369A1] bg-sky-50 text-[#0369A1] font-bold"
                       : "border-slate-200 text-slate-700 hover:bg-slate-50"
                       }`}
                   >
@@ -1590,20 +1602,20 @@ export default function StudentPortalPage() {
               <span className="font-bold text-slate-900 block">2. Danh bạ khẩn cấp trực 24/7:</span>
               <div className="flex items-center justify-between py-1 border-b border-slate-200">
                 <span>Trực ban Bảo vệ Cổng A:</span>
-                <a href="tel:02437547506" className="font-bold text-[#1F5CA9] flex items-center gap-1">
-                  <Phone className="h-3 w-3" /> 024.3754.7506
+                <a href="tel:02923831530" className="font-bold text-[#1F5CA9] flex items-center gap-1">
+                  <Phone className="h-3 w-3" /> 0292.3831.530
                 </a>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-slate-200">
-                <span>Phòng Y tế KTX (Tầng 1 Tòa A):</span>
-                <a href="tel:02437547507" className="font-bold text-emerald-600 flex items-center gap-1">
-                  <Phone className="h-3 w-3" /> 024.3754.7507
+                <span>Phòng Y tế KTX (Tầng 1 Tòa B1):</span>
+                <a href="tel:02923831531" className="font-bold text-emerald-600 flex items-center gap-1">
+                  <Phone className="h-3 w-3" /> 0292.3831.531
                 </a>
               </div>
               <div className="flex items-center justify-between py-1">
                 <span>Hotline Kỹ thuật Điện Nước:</span>
-                <a href="tel:02437547508" className="font-bold text-[#00AFEF] flex items-center gap-1">
-                  <Phone className="h-3 w-3" /> 024.3754.7508
+                <a href="tel:02923831532" className="font-bold text-[#0369A1] flex items-center gap-1">
+                  <Phone className="h-3 w-3" /> 0292.3831.532
                 </a>
               </div>
             </div>
