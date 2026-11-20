@@ -403,15 +403,10 @@ export default function StudentsPage() {
       {/* Top Header & Actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Hồ Sơ & Danh Sách Sinh Viên
-            </h1>
-            <Badge className="bg-[#1F5CA9]/10 text-[#1F5CA9] hover:bg-[#1F5CA9]/20 font-semibold border-0">
-              Sinh viên nội trú
-            </Badge>
-          </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 text-balance">
+            Hồ Sơ &amp; Danh Sách Sinh Viên
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
             Quản lý thông tin cư trú, phòng ở, thẻ từ ra vào và công nợ KTX
           </p>
         </div>
@@ -471,10 +466,10 @@ export default function StudentsPage() {
                 Đang lưu trú có hợp đồng
               </p>
               <div className="flex items-baseline gap-2 mt-1.5">
-                <span className="text-2xl font-extrabold text-[#00AFEF] tabular-nums font-mono">
+                <span className="text-2xl font-extrabold text-[#0369A1] tabular-nums font-mono">
                   {assignedStudentsCount.toLocaleString("vi-VN")}
                 </span>
-                <span className="text-xs font-medium text-[#00AFEF] bg-sky-50 px-2 py-0.5 rounded-full">
+                <span className="text-xs font-medium text-[#0369A1] bg-sky-50 px-2 py-0.5 rounded-full">
                   Khóa CTU (K47+)
                 </span>
               </div>
@@ -482,14 +477,14 @@ export default function StudentsPage() {
                 Tỷ lệ xếp chỗ: {Math.round((assignedStudentsCount / Math.max(1, totalStudentsCount)) * 100)}% hồ sơ
               </p>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-[#00AFEF] dark:bg-sky-950">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-[#0369A1]">
               <Sparkles className="h-6 w-6" />
             </div>
           </CardContent>
         </Card>
 
         {/* Card 3: Cảnh báo nợ phí & kỷ luật */}
-        <Card className="border-amber-200/80 shadow-sm bg-gradient-to-br from-white to-amber-50/30 dark:bg-slate-900">
+        <Card className="border-amber-200/80 shadow-sm bg-white">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
@@ -572,7 +567,7 @@ export default function StudentsPage() {
                 <select
                   value={selectedBuilding}
                   onChange={(e) => setSelectedBuilding(e.target.value)}
-                  className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#1F5CA9] dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#1F5CA9] cursor-pointer"
                 >
                   <option value="all">Tất cả các tòa</option>
                   <option value="Tòa B1">Tòa B1 (Nam)</option>
@@ -588,7 +583,7 @@ export default function StudentsPage() {
                 <select
                   value={selectedCohort}
                   onChange={(e) => setSelectedCohort(e.target.value)}
-                  className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#1F5CA9] dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#1F5CA9] cursor-pointer"
                 >
                   <option value="all">Tất cả khóa</option>
                   <option value="K47">K47</option>
@@ -604,7 +599,7 @@ export default function StudentsPage() {
                 <select
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#1F5CA9] dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#1F5CA9] cursor-pointer"
                 >
                   <option value="all">Tất cả trạng thái</option>
                   <option value="paid">Đã hoàn thành phí</option>
@@ -709,7 +704,7 @@ export default function StudentsPage() {
                         <span className="text-xs font-medium text-slate-800 dark:text-slate-200">
                           {s.faculty}
                         </span>
-                        <span className="text-[11px] font-semibold text-[#00AFEF]">
+                        <span className="text-[11px] font-semibold text-[#0369A1]">
                           Khóa {s.cohort}
                         </span>
                       </div>
@@ -1098,7 +1093,7 @@ export default function StudentsPage() {
                   <select
                     value={newRoomSelection}
                     onChange={(e) => setNewRoomSelection(e.target.value)}
-                    className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1F5CA9]"
+                    className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1F5CA9] cursor-pointer"
                   >
                     <option value="B1-101">Phòng B1-101 (Tòa B1 Nam)</option>
                     <option value="B1-102">Phòng B1-102 (Tòa B1 Nam)</option>
@@ -1114,7 +1109,7 @@ export default function StudentsPage() {
                   <select
                     value={newBedSelection}
                     onChange={(e) => setNewBedSelection(e.target.value)}
-                    className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1F5CA9]"
+                    className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1F5CA9] cursor-pointer"
                   >
                     <option value="G01">Giường 1 (Tầng 1 - Cạnh cửa sổ)</option>
                     <option value="G02">Giường 2 (Tầng 2 - Phía trong)</option>
@@ -1210,7 +1205,7 @@ export default function StudentsPage() {
                 <select
                   value={newStudentForm.gender}
                   onChange={(e) => setNewStudentForm({ ...newStudentForm, gender: e.target.value as "Nam" | "Nữ" })}
-                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800"
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 cursor-pointer"
                 >
                   <option value="Nam">Nam</option>
                   <option value="Nữ">Nữ</option>
@@ -1224,7 +1219,7 @@ export default function StudentsPage() {
                 <select
                   value={newStudentForm.cohort}
                   onChange={(e) => setNewStudentForm({ ...newStudentForm, cohort: e.target.value })}
-                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800"
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 cursor-pointer"
                 >
                   <option value="K47">K47</option>
                   <option value="K48">K48</option>
@@ -1240,7 +1235,7 @@ export default function StudentsPage() {
                 <select
                   value={newStudentForm.faculty}
                   onChange={(e) => setNewStudentForm({ ...newStudentForm, faculty: e.target.value })}
-                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800"
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 cursor-pointer"
                 >
                   <option value="Công nghệ thông tin">CNTT & TT</option>
                   <option value="Điện tử viễn thông">Điện tử VT</option>
@@ -1297,7 +1292,7 @@ export default function StudentsPage() {
                 <select
                   value={newStudentForm.priorityCategory}
                   onChange={(e) => setNewStudentForm({ ...newStudentForm, priorityCategory: e.target.value as Student["priorityCategory"] })}
-                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800"
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 cursor-pointer"
                 >
                   <option value="Bình thường">Bình thường (Đại trà)</option>
                   <option value="Hộ nghèo">Hộ nghèo (Giảm 50% tiền phòng)</option>

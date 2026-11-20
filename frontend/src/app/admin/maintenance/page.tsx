@@ -205,7 +205,7 @@ export default function MaintenancePage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 text-balance">
               Báo Hỏng &amp; Sửa Chữa Kỹ Thuật
             </h1>
             <Badge className="bg-[#1F5CA9]/10 text-[#1F5CA9] font-semibold border-0 tabular-nums font-mono">
@@ -276,7 +276,7 @@ export default function MaintenancePage() {
       {/* 4 StatCards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Card 1: Chờ tiếp nhận (Vàng #FFB800) */}
-        <Card className="border-amber-200 shadow-sm bg-gradient-to-br from-white to-amber-50/40">
+        <Card className="border-amber-200 shadow-sm bg-white">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
               <p className="text-xs font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1">
@@ -323,7 +323,7 @@ export default function MaintenancePage() {
         </Card>
 
         {/* Card 3: Khẩn cấp */}
-        <Card className="border-red-200 shadow-sm bg-gradient-to-br from-white to-red-50/30">
+        <Card className="border-red-200 shadow-sm bg-white">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
               <p className="text-xs font-bold text-red-700 uppercase tracking-wider">
@@ -388,7 +388,7 @@ export default function MaintenancePage() {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-800 shadow-sm"
+                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-800 shadow-sm cursor-pointer"
               >
                 <option value="all">Tất cả hạng mục</option>
                 <option value="Điện">Hệ thống Điện</option>
@@ -491,7 +491,7 @@ export default function MaintenancePage() {
                         <span className="text-xs font-mono font-bold text-[#1F5CA9]">
                           {ticket.code}
                         </span>
-                        <Badge className="bg-sky-50 text-[#00AFEF] border-sky-200 text-[10px]">
+                        <Badge className="bg-sky-50 text-[#0369A1] border-sky-200 text-[10px]">
                           Đang làm
                         </Badge>
                       </div>
@@ -697,7 +697,7 @@ export default function MaintenancePage() {
                 <select
                   value={selectedTech}
                   onChange={(e) => setSelectedTech(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800"
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800 cursor-pointer"
                 >
                   <option value="Nguyễn Văn Hùng (Kỹ thuật điện nước)">Nguyễn Văn Hùng (Điện nước — Đang rảnh)</option>
                   <option value="Trần Đình Nam (Kỹ thuật điện lạnh/điều hòa)">Trần Đình Nam (Điều hòa Daikin/Panasonic)</option>

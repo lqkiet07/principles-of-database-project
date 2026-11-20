@@ -402,7 +402,7 @@ export default function BillingPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 text-balance">
             Quản lý Điện Nước & Hóa Đơn
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
@@ -494,7 +494,7 @@ export default function BillingPage() {
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">Sản lượng tiêu thụ (từ {bills.length} HĐ)</span>
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-[#00AFEF] dark:bg-sky-950/60 dark:text-sky-400">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-[#0369A1]">
                 <TrendingUp className="h-4.5 w-4.5" />
               </div>
             </div>
@@ -633,7 +633,7 @@ export default function BillingPage() {
                   </div>
                 </th>
                 <th className="py-3.5 px-4">
-                  <div className="flex items-center gap-1 text-[#00AFEF]">
+                  <div className="flex items-center gap-1 text-[#0369A1]">
                     <Droplets className="h-3 w-3" />
                     <span>Nước (Cũ → Mới)</span>
                   </div>
@@ -1025,14 +1025,14 @@ export default function BillingPage() {
               <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-100 text-[#00AFEF]">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-100 text-[#0369A1]">
                       <Droplets className="h-4 w-4" />
                     </div>
                     <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
                       Chỉ số Nước (m³)
                     </span>
                   </div>
-                  <span className="text-[11px] font-semibold text-[#00AFEF]">
+                  <span className="text-[11px] font-semibold text-[#0369A1]">
                     {formatCurrency(WATER_RATE)}/m³
                   </span>
                 </div>
@@ -1089,7 +1089,7 @@ export default function BillingPage() {
 
                 <div className="mt-2.5 flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 font-medium">
                   <span>Tiêu thụ: {Math.max(0, tempCurrWater - editingBill.prevWater)} m³</span>
-                  <span className="font-bold text-[#00AFEF]">
+                  <span className="font-bold text-[#0369A1]">
                     {formatCurrency(Math.max(0, tempCurrWater - editingBill.prevWater) * WATER_RATE)}
                   </span>
                 </div>
@@ -1335,7 +1335,7 @@ export default function BillingPage() {
                 <select
                   value={genRoomId}
                   onChange={(e) => setGenRoomId(Number(e.target.value))}
-                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800"
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 cursor-pointer"
                 >
                   {roomsList.length > 0 ? (
                     roomsList.map((r) => (

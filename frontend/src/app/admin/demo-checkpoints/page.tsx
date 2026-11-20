@@ -402,7 +402,7 @@ export default function DemoCheckpointsPage() {
                 6 Trọng Tâm Kỹ Thuật (Live API Connected)
               </Badge>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight">
+            <h1 className="text-2xl font-bold tracking-tight text-balance">
               Trung Tâm Kiểm Thử & Chấm Thi Đồ Án (Demo Checkpoints)
             </h1>
             <p className="text-xs text-blue-100 max-w-2xl leading-relaxed">
@@ -756,14 +756,14 @@ export default function DemoCheckpointsPage() {
           <CardHeader className="pb-3 border-b border-slate-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-100 text-[#00AFEF] font-bold text-xs">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-100 text-[#0369A1] font-bold text-xs">
                   06
                 </span>
                 <CardTitle className="text-sm font-bold text-slate-900">
                   Benchmark Index: 1.000.000 Bản Ghi Thật
                 </CardTitle>
               </div>
-              <Badge variant="outline" className="text-[10px] font-mono border-sky-200 text-[#00AFEF]">
+              <Badge variant="outline" className="text-[10px] font-mono border-sky-200 text-[#0369A1]">
                 EXPLAIN (ANALYZE, BUFFERS)
               </Badge>
             </div>

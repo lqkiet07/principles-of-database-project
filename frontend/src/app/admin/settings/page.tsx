@@ -59,12 +59,9 @@ export default function SettingsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 text-balance">
               Cài Đặt & Cấu Hình Hệ Thống KTX
             </h1>
-            <Badge className="bg-[#1F5CA9]/10 text-[#1F5CA9] font-semibold border-0">
-              Quản trị viên
-            </Badge>
             {isDemoMode && (
               <Badge className="bg-amber-100 text-amber-900 border border-amber-300 font-bold flex items-center gap-1">
                 <GraduationCap className="h-3.5 w-3.5 text-[#FFB800]" />
@@ -215,7 +212,7 @@ export default function SettingsPage() {
                       <Droplets className="h-4 w-4 text-[#00AFEF]" />
                       Đơn giá nước sạch (SP1)
                     </span>
-                    <Badge className="bg-sky-100 text-[#00AFEF] border-sky-200 text-[10px]">
+                    <Badge className="bg-sky-100 text-[#0369A1] border-sky-200 text-[10px]">
                       VNĐ / m³
                     </Badge>
                   </div>
@@ -223,7 +220,7 @@ export default function SettingsPage() {
                     type="number"
                     value={waterRate}
                     onChange={(e) => setWaterRate(Number(e.target.value))}
-                    className="h-10 text-sm font-bold text-[#00AFEF] bg-white border-slate-200 tabular-nums font-mono"
+                    className="h-10 text-sm font-bold text-[#0369A1] bg-white border-slate-200 tabular-nums font-mono"
                   />
                   <p className="text-[11px] text-slate-500">
                     Mặc định đồng nhất với <code>sp_generate_and_split_utility_bill</code>: 10.000 đ/m³.

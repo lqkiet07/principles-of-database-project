@@ -326,8 +326,8 @@ export default function RoomsManagementPage() {
       {/* Header section */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-            Quản trị Phòng & Giường ở
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 text-balance">
+            Quản trị Phòng &amp; Giường ở
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Theo dõi danh mục phòng 4-6 chỗ, sức chứa thực tế và lịch sử cư trú của sinh viên.
@@ -480,7 +480,7 @@ export default function RoomsManagementPage() {
       </Card>
 
       {/* AI Semantic Search Bar (Vector Search) */}
-      <Card className="rounded-2xl border-blue-200/80 bg-gradient-to-r from-blue-50/50 via-white to-sky-50/40 p-4 shadow-xs">
+      <Card className="rounded-2xl border-blue-200/80 bg-slate-50/70 p-4 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <div className="h-8 w-8 rounded-xl bg-[#1F5CA9] text-white flex items-center justify-center shrink-0">
@@ -490,7 +490,7 @@ export default function RoomsManagementPage() {
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-900">Tìm Kiếm Phòng Bằng AI (Semantic Search)</span>
                 {isDemoMode && (
-                  <Badge className="bg-sky-100 text-[#00AFEF] border-0 text-[10px] font-mono">
+                  <Badge className="bg-sky-100 text-[#0369A1] border-0 text-[10px] font-mono">
                     pgvector Cosine Distance (&lt;=&gt;)
                   </Badge>
                 )}
@@ -556,7 +556,7 @@ export default function RoomsManagementPage() {
                 setAiSearchText(prompt);
                 handleRunAiSearch(prompt);
               }}
-              className="px-2 py-0.5 rounded-lg bg-white border border-blue-200 text-slate-700 hover:bg-blue-50 hover:text-[#1F5CA9] transition-colors"
+              className="px-2 py-0.5 rounded-lg bg-white border border-blue-200 text-slate-700 hover:bg-blue-50 hover:text-[#1F5CA9] transition-colors cursor-pointer"
             >
               &ldquo;{prompt}&rdquo;
             </button>
@@ -597,7 +597,7 @@ export default function RoomsManagementPage() {
                       </Badge>
                     )}
                     {room.status === "Available" && (
-                      <Badge className="bg-sky-50 text-[#00AFEF] border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 text-[11px] font-semibold rounded-full px-2.5">
+                      <Badge className="bg-sky-50 text-[#0369A1] border-sky-200 text-[11px] font-semibold rounded-full px-2.5">
                         Còn {room.totalBeds - room.occupiedBeds} chỗ
                       </Badge>
                     )}
@@ -668,12 +668,12 @@ export default function RoomsManagementPage() {
                         return (
                           <div
                             key={bIdx}
-                            className="flex items-center gap-2 p-2 rounded-xl border border-dashed border-[#00AFEF]/50 bg-sky-50/30 text-[#00AFEF] hover:bg-sky-50 transition-colors cursor-pointer"
+                            className="flex items-center gap-2 p-2 rounded-xl border border-dashed border-[#0369A1]/40 bg-sky-50/40 text-[#0369A1] hover:bg-sky-50 transition-colors cursor-pointer"
                           >
-                            <div className="h-6 w-6 rounded-lg border border-[#00AFEF] text-[#00AFEF] flex items-center justify-center text-[10px] font-bold">
+                            <div className="h-6 w-6 rounded-lg border border-[#0369A1] text-[#0369A1] flex items-center justify-center text-[10px] font-bold">
                               {bed.bedNumber}
                             </div>
-                            <div className="text-[11px] font-medium text-[#00AFEF]">
+                            <div className="text-[11px] font-medium text-[#0369A1]">
                               + Trống (Xếp SV)
                             </div>
                           </div>

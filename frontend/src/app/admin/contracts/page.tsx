@@ -330,15 +330,10 @@ export default function ContractsPage() {
       {/* Top Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Hợp Đồng Lưu Trú & Ký Quỹ
-            </h1>
-            <Badge className="bg-[#1F5CA9]/10 text-[#1F5CA9] font-semibold border-0">
-              Hợp đồng lưu trú
-            </Badge>
-          </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 text-balance">
+            Hợp Đồng Lưu Trú &amp; Ký Quỹ
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
             Quản lý hợp đồng xếp phòng (`room_assignments`), thanh lý hợp đồng và tiền thuê hàng tháng
           </p>
         </div>
@@ -394,7 +389,7 @@ export default function ContractsPage() {
         </Card>
 
         {/* Card 2: Sắp hết hạn */}
-        <Card className="border-amber-200 shadow-sm bg-gradient-to-br from-white to-amber-50/40">
+        <Card className="border-amber-200 shadow-sm bg-white">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
               <p className="text-xs font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
@@ -452,10 +447,10 @@ export default function ContractsPage() {
                 Tổng tiền phòng / tháng
               </p>
               <div className="flex items-baseline gap-2 mt-1.5">
-                <span className="text-2xl font-extrabold text-[#00AFEF] tabular-nums font-mono">
+                <span className="text-2xl font-extrabold text-[#0369A1] tabular-nums font-mono">
                   {(totalActiveRent / 1_000_000).toFixed(2)} tr đ
                 </span>
-                <span className="text-xs font-semibold text-[#00AFEF] bg-sky-50 px-2 py-0.5 rounded-full">
+                <span className="text-xs font-semibold text-[#0369A1] bg-sky-50 px-2 py-0.5 rounded-full">
                   {activeCount} chỗ
                 </span>
               </div>
@@ -463,7 +458,7 @@ export default function ContractsPage() {
                 {totalActiveRent.toLocaleString("vi-VN")} đ/tháng đang thu
               </p>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-[#00AFEF]">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-[#0369A1]">
               <DollarSign className="h-6 w-6" />
             </div>
           </CardContent>
@@ -490,7 +485,7 @@ export default function ContractsPage() {
                 <select
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-800 shadow-sm"
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-800 shadow-sm cursor-pointer"
                 >
                   <option value="all">Tất cả hợp đồng</option>
                   <option value="active">Đang hiệu lực (Xanh)</option>
@@ -504,7 +499,7 @@ export default function ContractsPage() {
                 <select
                   value={selectedBuilding}
                   onChange={(e) => setSelectedBuilding(e.target.value)}
-                  className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-800 shadow-sm"
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-800 shadow-sm cursor-pointer"
                 >
                   <option value="all">Tất cả tòa</option>
                   <option value="Tòa B1">Tòa B1</option>
@@ -663,7 +658,7 @@ export default function ContractsPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 text-xs font-medium border-slate-200 text-[#00AFEF] hover:bg-sky-50"
+                            className="h-8 text-xs font-medium border-slate-200 text-[#0369A1] hover:bg-sky-50 cursor-pointer"
                             onClick={() => handleOpenExtend(c)}
                           >
                             <RefreshCw className="h-3.5 w-3.5 mr-1" />
@@ -720,7 +715,7 @@ export default function ContractsPage() {
                 <select
                   value={extendDurationMonths}
                   onChange={(e) => setExtendDurationMonths(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800"
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 cursor-pointer"
                 >
                   <option value="5">Gia hạn thêm 1 học kỳ (5 tháng) — Đến 30/06/2027</option>
                   <option value="10">Gia hạn cả năm học mới (10 tháng) — Đến 31/12/2027</option>
@@ -917,7 +912,7 @@ export default function ContractsPage() {
                 <select
                   value={newContractForm.roomId}
                   onChange={(e) => setNewContractForm({ ...newContractForm, roomId: Number(e.target.value) })}
-                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800"
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 cursor-pointer"
                 >
                   {availableRooms.length > 0 ? (
                     availableRooms.map((r) => (

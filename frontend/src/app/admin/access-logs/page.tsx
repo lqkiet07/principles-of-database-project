@@ -228,7 +228,7 @@ export default function AccessLogsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 text-balance">
               An Ninh Ra Vào Cổng & Benchmark Index
             </h1>
             <Badge className="bg-[#1F5CA9]/10 text-[#1F5CA9] font-bold border-0">
