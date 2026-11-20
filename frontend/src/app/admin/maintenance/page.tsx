@@ -69,13 +69,13 @@ const mockTickets: Ticket[] = [
   {
     id: "T-01",
     code: "BH-2026-081",
-    room: "B.402",
-    building: "Tòa B",
-    studentName: "Trần Thị Mai",
-    studentPhone: "0987.654.321",
+    room: "B3-302",
+    building: "Tòa B3",
+    studentName: "Đỗ Minh Khôi",
+    studentPhone: "0912.345.009",
     category: "Điều hòa",
     device: "Điều hòa Daikin 12.000 BTU",
-    description: "Điều hòa bị rò rỉ nước nhiều ở dàn lạnh nhỏ xuống bàn học của sinh viên.",
+    description: "Điều hòa phòng B3-302 đang kiểm tra bảo trì định kỳ và rò rỉ nước dàn lạnh.",
     priority: "Khẩn cấp",
     status: "pending",
     createdAt: "24/10/2026 08:30",
@@ -83,10 +83,10 @@ const mockTickets: Ticket[] = [
   {
     id: "T-02",
     code: "BH-2026-079",
-    room: "A.301",
-    building: "Tòa A",
+    room: "B1-101",
+    building: "Tòa B1",
     studentName: "Nguyễn Văn An",
-    studentPhone: "0912.345.678",
+    studentPhone: "0912.345.001",
     category: "Điện",
     device: "Bóng đèn LED tuýp 1.2m",
     description: "Bóng đèn bàn học nhấp nháy liên tục không sáng được.",
@@ -98,10 +98,10 @@ const mockTickets: Ticket[] = [
   {
     id: "T-03",
     code: "BH-2026-077",
-    room: "A.205",
-    building: "Tòa A",
-    studentName: "Lê Hoàng Long",
-    studentPhone: "0971.223.344",
+    room: "B2-201",
+    building: "Tòa B2",
+    studentName: "Trần Thị Lan",
+    studentPhone: "0912.345.005",
     category: "Nước",
     device: "Vòi sen tắm & Vòi xịt WC",
     description: "Vòi sen bị nứt gioăng cao su, rỉ nước cả ngày gây lãng phí nước sạch.",
@@ -112,10 +112,10 @@ const mockTickets: Ticket[] = [
   {
     id: "T-04",
     code: "BH-2026-072",
-    room: "C.104",
-    building: "Tòa C",
-    studentName: "Phạm Hải Đăng",
-    studentPhone: "0904.556.778",
+    room: "B3-301",
+    building: "Tòa B3",
+    studentName: "Ngô Tấn Phát",
+    studentPhone: "0912.345.010",
     category: "Cơ sở vật chất",
     device: "Bản lề cánh cửa sổ nhôm kính",
     description: "Cửa sổ bị kẹt bản lề khó khép kín khi trời mưa gió.",
@@ -128,10 +128,10 @@ const mockTickets: Ticket[] = [
   {
     id: "T-05",
     code: "BH-2026-065",
-    room: "B.208",
-    building: "Tòa B",
-    studentName: "Vũ Phương Thảo",
-    studentPhone: "0982.113.355",
+    room: "B1-102",
+    building: "Tòa B1",
+    studentName: "Lê Văn Cường",
+    studentPhone: "0912.345.003",
     category: "Điện",
     device: "Aptomat tổng 32A",
     description: "Bật bình nóng lạnh thì Aptomat bị nhảy tự ngắt điện.",
@@ -222,14 +222,17 @@ export default function MaintenancePage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Báo Hỏng & Sửa Chữa Kỹ Thuật
+              Báo Hỏng &amp; Sửa Chữa Kỹ Thuật
             </h1>
-            <Badge className="bg-[#1F5CA9]/10 text-[#1F5CA9] font-semibold border-0">
-              8 yêu cầu mới
+            <Badge className="bg-[#1F5CA9]/10 text-[#1F5CA9] font-semibold border-0 tabular-nums font-mono">
+              {tickets.filter((t) => t.status === "pending").length} chờ xử lý
+            </Badge>
+            <Badge variant="outline" className="text-[11px] font-medium border-slate-300 text-slate-600">
+              Mô phỏng UI (ngoài 10 bảng DDL)
             </Badge>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Tiếp nhận sự cố điện nước, phân công kỹ thuật viên và kiểm soát vật tư thay thế
+            Quy trình minh họa tiếp nhận sự cố kỹ thuật các phòng Tòa B1, B2, B3 (dữ liệu hiển thị trên state trình duyệt)
           </p>
         </div>
 
@@ -238,7 +241,7 @@ export default function MaintenancePage() {
           <div className="flex rounded-lg border border-slate-200 p-0.5 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
             <button
               onClick={() => setViewMode("kanban")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                 viewMode === "kanban"
                   ? "bg-white text-[#1F5CA9] shadow-xs dark:bg-slate-900"
                   : "text-slate-500 hover:text-slate-800"
@@ -249,7 +252,7 @@ export default function MaintenancePage() {
             </button>
             <button
               onClick={() => setViewMode("table")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                 viewMode === "table"
                   ? "bg-white text-[#1F5CA9] shadow-xs dark:bg-slate-900"
                   : "text-slate-500 hover:text-slate-800"
@@ -261,15 +264,15 @@ export default function MaintenancePage() {
           </div>
 
           <Button
-            className="bg-[#1F5CA9] text-white hover:bg-[#184988] shadow-sm font-medium"
+            className="bg-[#1F5CA9] text-white hover:bg-[#184988] shadow-sm font-medium cursor-pointer"
             onClick={() => {
               const newTicket: Ticket = {
                 id: `T-${Date.now().toString().slice(-4)}`,
                 code: `BH-2026-${Math.floor(100 + Math.random() * 900)}`,
-                room: "B.304",
-                building: "Tòa B",
-                studentName: "Đỗ Mai Linh",
-                studentPhone: "0915.222.888",
+                room: "B2-202",
+                building: "Tòa B2",
+                studentName: "Phạm Ngọc Mai",
+                studentPhone: "0912.345.006",
                 category: "Nước",
                 device: "Vòi nước chậu rửa mặt",
                 description: "Vòi bị rỉ nước liên tục dưới gầm chậu.",

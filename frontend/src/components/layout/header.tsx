@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Bell, Moon, Sun, Search, Smartphone, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,8 @@ import { GraduationCap } from "lucide-react";
 export function Header() {
   const { theme, setTheme } = useTheme();
   const { isDemoMode } = useDemoMode();
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = React.useState("");
   const [dbOnline, setDbOnline] = React.useState<boolean | null>(null);
 
   React.useEffect(() => {
@@ -46,14 +49,25 @@ export function Header() {
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-white/80 dark:bg-slate-900/80 px-6 backdrop-blur-md">
       {/* Global Search Bar */}
-      <div className="relative w-full max-w-md">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const q = searchQuery.trim().toLowerCase();
+          if (!q) return;
+          const isRoom = /^(b[123]|p\.|phòng)/.test(q) || q.includes("-");
+          router.push(isRoom ? "/admin/rooms" : "/admin/students");
+        }}
+        className="relative w-full max-w-md"
+      >
         <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="search"
-          placeholder="Tìm kiếm sinh viên, số phòng, hoặc hóa đơn..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Tìm phòng (B1-101) hoặc MSSV rồi nhấn Enter..."
           className="h-10 w-full rounded-full bg-slate-50 dark:bg-slate-800/80 pl-10 pr-4 text-sm border-slate-200 dark:border-slate-700 focus-visible:ring-[#1F5CA9]"
         />
-      </div>
+      </form>
 
       {/* Right Actions */}
       <div className="flex items-center gap-2.5">

@@ -32,10 +32,10 @@ import { GraduationCap, ArrowUpRight } from "lucide-react";
 export default function SettingsPage() {
   const { isDemoMode, setDemoMode, toggleDemoMode } = useDemoMode();
 
-  // Utility rates state
-  const [electricityRate, setElectricityRate] = React.useState(3000);
-  const [waterRate, setWaterRate] = React.useState(12000);
-  const [cleaningFee, setCleaningFee] = React.useState(100000);
+  // Utility rates state (aligned with SP1 default rates; UI preview outside 10-table DDL)
+  const [electricityRate, setElectricityRate] = React.useState(2000);
+  const [waterRate, setWaterRate] = React.useState(10000);
+  const [cleaningFee, setCleaningFee] = React.useState(0);
   const [cutoffDay, setCutoffDay] = React.useState(25);
   const [dueDay, setDueDay] = React.useState(15);
 
@@ -97,7 +97,7 @@ export default function SettingsPage() {
       {isSaved && (
         <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4 flex items-center gap-3 text-emerald-800 text-sm font-semibold shadow-xs animate-in fade-in duration-200">
           <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-          <span>Toàn bộ cài đặt hệ thống KTX đã được lưu thành công và áp dụng cho toàn bộ dữ liệu!</span>
+          <span>Đã lưu tham số tham chiếu trên trình duyệt (Mô phỏng UI ngoài 10 bảng DDL; riêng Demo Mode lưu qua localStorage).</span>
         </div>
       )}
 
@@ -189,7 +189,7 @@ export default function SettingsPage() {
                 Biểu Phí Điện, Nước & Dịch Vụ Nội Trú
               </CardTitle>
               <CardDescription className="text-xs text-slate-500">
-                Đơn giá được áp dụng tự động vào bảng tính hóa đơn hàng tháng cho toàn bộ các phòng KTX.
+                Tham chiếu biểu giá chuẩn đang chạy trong Stored Procedure SP1 (giao diện mô phỏng cấu hình cục bộ).
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
@@ -199,7 +199,7 @@ export default function SettingsPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                       <Zap className="h-4 w-4 text-amber-500" />
-                      Đơn giá điện sinh hoạt
+                      Đơn giá điện bậc 1 (SP1 lũy tiến 3 bậc)
                     </span>
                     <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-[10px]">
                       VNĐ / kWh
@@ -209,10 +209,10 @@ export default function SettingsPage() {
                     type="number"
                     value={electricityRate}
                     onChange={(e) => setElectricityRate(Number(e.target.value))}
-                    className="h-10 text-sm font-bold text-[#1F5CA9] bg-white border-slate-200"
+                    className="h-10 text-sm font-bold text-[#1F5CA9] bg-white border-slate-200 tabular-nums font-mono"
                   />
                   <p className="text-[11px] text-slate-500">
-                    Theo quyết định giá điện nội trú ưu đãi của Bộ Công Thương.
+                    Biểu giá SP1: Bậc 1 (≤100 kWh): 2.000đ • Bậc 2 (101–200): 2.500đ • Bậc 3 (&gt;200): 3.000đ.
                   </p>
                 </div>
 
@@ -221,7 +221,7 @@ export default function SettingsPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                       <Droplets className="h-4 w-4 text-[#00AFEF]" />
-                      Đơn giá nước sạch
+                      Đơn giá nước sạch (SP1)
                     </span>
                     <Badge className="bg-sky-100 text-[#00AFEF] border-sky-200 text-[10px]">
                       VNĐ / m³
@@ -231,10 +231,10 @@ export default function SettingsPage() {
                     type="number"
                     value={waterRate}
                     onChange={(e) => setWaterRate(Number(e.target.value))}
-                    className="h-10 text-sm font-bold text-[#00AFEF] bg-white border-slate-200"
+                    className="h-10 text-sm font-bold text-[#00AFEF] bg-white border-slate-200 tabular-nums font-mono"
                   />
                   <p className="text-[11px] text-slate-500">
-                    Bao gồm thuế VAT và phí bảo vệ môi trường thoát nước thải.
+                    Mặc định đồng nhất với <code>sp_generate_and_split_utility_bill</code>: 10.000 đ/m³.
                   </p>
                 </div>
 

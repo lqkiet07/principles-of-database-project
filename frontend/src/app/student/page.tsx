@@ -198,16 +198,18 @@ export default function StudentPortalPage() {
   }>>([]);
   const [isSearchingAi, setIsSearchingAi] = React.useState(false);
 
-  // Load real data from Backend API
-  const reloadStudentPortal = React.useCallback(async (targetStudentId: string) => {
-    try {
-      const [profRes, debtRes, roomRes, txRes, accessRes] = await Promise.all([
-        api.getStudentProfile(targetStudentId),
-        api.getStudentDebts(targetStudentId),
-        api.getStudentRoom(targetStudentId),
-        api.getStudentTransactions(targetStudentId),
-        api.getStudentAccessLogs(targetStudentId),
-      ]);
+  // Load real data from Backend API (guard against stale responses on rapid student switch)
+  const reloadStudentPortal = React.useCallback(
+    async (targetStudentId: string, isStillActive?: () => boolean) => {
+      try {
+        const [profRes, debtRes, roomRes, txRes, accessRes] = await Promise.all([
+          api.getStudentProfile(targetStudentId),
+          api.getStudentDebts(targetStudentId),
+          api.getStudentRoom(targetStudentId),
+          api.getStudentTransactions(targetStudentId),
+          api.getStudentAccessLogs(targetStudentId),
+        ]);
+        if (isStillActive && !isStillActive()) return;
 
       let currentFullName = "Nguyễn Văn An";
       let currentMajor = "Kỹ thuật Phần mềm";
@@ -317,7 +319,7 @@ export default function StudentPortalPage() {
   React.useEffect(() => {
     let active = true;
     Promise.resolve().then(() => {
-      if (active) void reloadStudentPortal(studentId);
+      if (active) void reloadStudentPortal(studentId, () => active);
     });
     return () => {
       active = false;
@@ -396,12 +398,17 @@ export default function StudentPortalPage() {
         api.payDebt(studentId, currentDebt.id, currentDebt.amount),
         api.payDebt(studentId, currentDebt.id, currentDebt.amount),
       ]);
-      setStudentDebtPaid(true);
-      setDemoSimResult(`[Thành công] Request 1: ${res1.message} (Code = ${res1.status_code || 0}). Request 2: ${res2.message} (Code = ${res2.status_code || 2}). Khóa bi quan FOR UPDATE triệt tiêu rủi ro trừ tiền 2 lần!`);
+      await reloadStudentPortal(studentId);
+      const anySuccess = res1.success || res2.success;
+      const r1Tag = res1.success ? "COMMIT (Code 0)" : `${res1.error_code || "ERR"} (${res1.status_code})`;
+      const r2Tag = res2.success ? "COMMIT (Code 0)" : `${res2.error_code || "ERR"} (${res2.status_code})`;
+      setDemoSimResult(
+        anySuccess
+          ? `[Kiểm chứng FOR UPDATE thành công] Request 1: ${r1Tag} | Request 2: ${r2Tag}. Khoản nợ chỉ bị trừ 1 lần duy nhất.`
+          : `[Cảnh báo] Cả 2 request đều bị từ chối — Request 1: ${res1.message} | Request 2: ${res2.message}`
+      );
     } catch {
-      setStudentWallet((prev) => Math.max(0, prev - currentDebt.amount));
-      setStudentDebtPaid(true);
-      setDemoSimResult("[Thành công] Request 1: Lock 'FOR UPDATE' thành công (Code 0). Request 2: Lock Wait -> đọc nợ đã PAID -> thoát an toàn với mã DEBT_ALREADY_PAID (Code 2). Không bị trừ tiền 2 lần!");
+      setDemoSimResult("[Ngoại tuyến] Không kết nối được Backend; SP2 dùng SELECT ... FOR UPDATE để chặn trừ tiền 2 lần.");
     }
   };
 
@@ -435,13 +442,13 @@ export default function StudentPortalPage() {
     e.preventDefault();
     setIsReportModalOpen(false);
     setRepairDescription("");
-    showToast("Đã gửi yêu cầu sửa chữa #SC-4029! Kỹ thuật viên sẽ liên hệ trong 2h.");
+    showToast("Đã ghi nhận phiếu báo hỏng mô phỏng #SC-4029 (UI ngoài 10 bảng CSDL).");
   };
 
   const handleSubmitAbsence = (e: React.FormEvent) => {
     e.preventDefault();
     setIsAbsenceModalOpen(false);
-    showToast("Đã duyệt đơn đăng ký tạm vắng tự động! Chúc bạn chuyến đi an toàn.");
+    showToast("Đã ghi nhận đơn tạm vắng mô phỏng trên giao diện (ngoài 10 bảng CSDL).");
   };
 
   return (
@@ -490,9 +497,8 @@ export default function StudentPortalPage() {
             size="sm"
             variant={isSimulatorMode ? "default" : "outline"}
             onClick={() => setIsSimulatorMode(true)}
-            className={`h-7 px-2.5 rounded-lg text-xs gap-1.5 ${
-              isSimulatorMode ? "bg-[#1F5CA9] text-white shadow-xs" : ""
-            }`}
+            className={`h-7 px-2.5 rounded-lg text-xs gap-1.5 ${isSimulatorMode ? "bg-[#1F5CA9] text-white shadow-xs" : ""
+              }`}
           >
             <Smartphone className="h-3.5 w-3.5" />
             <span>iPhone 16 (393×852)</span>
@@ -501,9 +507,8 @@ export default function StudentPortalPage() {
             size="sm"
             variant={!isSimulatorMode ? "default" : "outline"}
             onClick={() => setIsSimulatorMode(false)}
-            className={`h-7 px-2.5 rounded-lg text-xs gap-1.5 ${
-              !isSimulatorMode ? "bg-[#1F5CA9] text-white shadow-xs" : ""
-            }`}
+            className={`h-7 px-2.5 rounded-lg text-xs gap-1.5 ${!isSimulatorMode ? "bg-[#1F5CA9] text-white shadow-xs" : ""
+              }`}
           >
             <Maximize2 className="h-3.5 w-3.5" />
             <span>Mở rộng</span>
@@ -513,11 +518,10 @@ export default function StudentPortalPage() {
 
       {/* Main Container — Styled strictly to iPhone 16 specifications (393 × 852 px) */}
       <div
-        className={`transition-all duration-300 w-full ${
-          isSimulatorMode
-            ? "max-w-[393px] h-[852px] rounded-[52px] border-[10px] border-slate-900 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden bg-white dark:bg-slate-900 relative flex flex-col"
-            : "max-w-xl min-h-[852px] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md overflow-hidden bg-white dark:bg-slate-900 relative flex flex-col"
-        }`}
+        className={`transition-all duration-300 w-full ${isSimulatorMode
+          ? "max-w-[393px] h-[852px] rounded-[52px] border-[10px] border-slate-900 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden bg-white dark:bg-slate-900 relative flex flex-col"
+          : "max-w-xl min-h-[852px] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md overflow-hidden bg-white dark:bg-slate-900 relative flex flex-col"
+          }`}
       >
         {/* iPhone 16 Dynamic Island & Status Bar */}
         {isSimulatorMode && (
@@ -651,72 +655,71 @@ export default function StudentPortalPage() {
               {/* 3. Monthly Bill Highlight Card */}
               <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3.5 shadow-xs">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-[#1F5CA9]">
-                        <Zap className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block">
-                          Hóa đơn điện nước
-                        </span>
-                        <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                          Kỳ Tháng 10/2026
-                        </span>
-                      </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-[#1F5CA9]">
+                      <Zap className="h-4 w-4" />
                     </div>
-                    {studentDebtPaid ? (
-                      <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        Đã thanh toán (0 đ)
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-[#FEF3C7] text-[#B45309] border border-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        Chưa thanh toán
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Amount Display */}
-                  <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3 border border-slate-100 dark:border-slate-800">
-                    <div className="text-xs text-muted-foreground mb-0.5">Số tiền bạn cần nộp (student_utility_debts):</div>
-                    <div className="flex items-baseline justify-between">
-                      <span className={`text-2xl font-extrabold ${studentDebtPaid ? "text-emerald-600 dark:text-emerald-400" : "text-[#1F5CA9] dark:text-sky-400"}`}>
-                        {studentDebtPaid ? "0 đ (Đã tất toán)" : `${currentDebt.amount.toLocaleString("vi-VN")} đ`}
+                    <div>
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block">
+                        Hóa đơn điện nước
                       </span>
-                      <span className="text-[11px] text-slate-500 font-medium">
-                        Phòng: B1-101 (2 SV)
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                        Kỳ Tháng 10/2026
                       </span>
                     </div>
-
-                    {/* Sub-item details */}
-                    <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700 text-[10px]">
-                      <div>
-                        <span className="text-muted-foreground block">Điện lũy tiến</span>
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">200.000 đ</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground block">Nước sạch</span>
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">125.000 đ</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground block">Dịch vụ & Wifi</span>
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">50.000 đ</span>
-                      </div>
-                    </div>
                   </div>
-
-                  {/* Prominent Friendly CTA Button */}
-                  <Button
-                    onClick={() => setActiveTab("bills")}
-                    className={`w-full h-10 rounded-xl font-semibold text-xs text-white shadow-xs flex items-center justify-center gap-2 group transition-all cursor-pointer ${
-                      studentDebtPaid
-                        ? "bg-emerald-600 hover:bg-emerald-700"
-                        : "bg-[#1F5CA9] hover:bg-[#184988]"
-                    }`}
-                  >
-                    <QrCode className="h-4 w-4" />
-                    <span>{studentDebtPaid ? "Xem biên lai thanh toán (SP2)" : "Thanh toán ngay qua Ví KTX"}</span>
-                  </Button>
+                  {studentDebtPaid ? (
+                    <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      Đã thanh toán (0 đ)
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-[#FEF3C7] text-[#B45309] border border-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      Chưa thanh toán
+                    </Badge>
+                  )}
                 </div>
+
+                {/* Amount Display */}
+                <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3 border border-slate-100 dark:border-slate-800">
+                  <div className="text-xs text-muted-foreground mb-0.5">Số tiền bạn cần nộp (student_utility_debts):</div>
+                  <div className="flex items-baseline justify-between">
+                    <span className={`text-2xl font-extrabold ${studentDebtPaid ? "text-emerald-600 dark:text-emerald-400" : "text-[#1F5CA9] dark:text-sky-400"}`}>
+                      {studentDebtPaid ? "0 đ (Đã tất toán)" : `${currentDebt.amount.toLocaleString("vi-VN")} đ`}
+                    </span>
+                    <span className="text-[11px] text-slate-500 font-medium">
+                      Phòng: B1-101 (2 SV)
+                    </span>
+                  </div>
+
+                  {/* Sub-item details */}
+                  <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700 text-[10px]">
+                    <div>
+                      <span className="text-muted-foreground block">Điện lũy tiến</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">200.000 đ</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block">Nước sạch</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">125.000 đ</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block">Dịch vụ & Wifi</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">50.000 đ</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Prominent Friendly CTA Button */}
+                <Button
+                  onClick={() => setActiveTab("bills")}
+                  className={`w-full h-10 rounded-xl font-semibold text-xs text-white shadow-xs flex items-center justify-center gap-2 group transition-all cursor-pointer ${studentDebtPaid
+                    ? "bg-emerald-600 hover:bg-emerald-700"
+                    : "bg-[#1F5CA9] hover:bg-[#184988]"
+                    }`}
+                >
+                  <QrCode className="h-4 w-4" />
+                  <span>{studentDebtPaid ? "Xem biên lai thanh toán (SP2)" : "Thanh toán ngay qua Ví KTX"}</span>
+                </Button>
+              </div>
 
               {/* 4. Roommate list (Bạn cùng phòng) */}
               <div className="space-y-2.5 pt-1">
@@ -742,19 +745,17 @@ export default function StudentPortalPage() {
                         <div className="relative">
                           <Avatar className="h-10 w-10 border border-slate-200">
                             <AvatarFallback
-                              className={`font-bold text-xs ${
-                                student.id === "1"
-                                  ? "bg-[#1F5CA9] text-white"
-                                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
-                              }`}
+                              className={`font-bold text-xs ${student.id === "1"
+                                ? "bg-[#1F5CA9] text-white"
+                                : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                                }`}
                             >
                               {student.avatarText}
                             </AvatarFallback>
                           </Avatar>
                           <span
-                            className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white dark:border-slate-900 ${
-                              student.isOnline ? "bg-emerald-500" : "bg-slate-400"
-                            }`}
+                            className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white dark:border-slate-900 ${student.isOnline ? "bg-emerald-500" : "bg-slate-400"
+                              }`}
                           />
                         </div>
                         <div>
@@ -1199,9 +1200,8 @@ export default function StudentPortalPage() {
                     {Array.from({ length: 42 }).map((_, i) => (
                       <div
                         key={i}
-                        className={`h-full bg-slate-900 ${
-                          i % 3 === 0 ? "w-1" : i % 2 === 0 ? "w-0.5" : "w-1.5"
-                        }`}
+                        className={`h-full bg-slate-900 ${i % 3 === 0 ? "w-1" : i % 2 === 0 ? "w-0.5" : "w-1.5"
+                          }`}
                       />
                     ))}
                   </div>
@@ -1313,9 +1313,8 @@ export default function StudentPortalPage() {
         <div className="absolute bottom-0 inset-x-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800 px-6 py-2 flex items-center justify-between z-20">
           <button
             onClick={() => setActiveTab("home")}
-            className={`flex flex-col items-center gap-1 transition-colors cursor-pointer ${
-              activeTab === "home" ? "text-[#1F5CA9] font-bold" : "text-slate-500"
-            }`}
+            className={`flex flex-col items-center gap-1 transition-colors cursor-pointer ${activeTab === "home" ? "text-[#1F5CA9] font-bold" : "text-slate-500"
+              }`}
           >
             <Home className="h-5 w-5" />
             <span className="text-[10px]">Trang chủ</span>
@@ -1323,9 +1322,8 @@ export default function StudentPortalPage() {
 
           <button
             onClick={() => setActiveTab("room")}
-            className={`flex flex-col items-center gap-1 transition-colors cursor-pointer ${
-              activeTab === "room" ? "text-[#1F5CA9] font-bold" : "text-slate-500"
-            }`}
+            className={`flex flex-col items-center gap-1 transition-colors cursor-pointer ${activeTab === "room" ? "text-[#1F5CA9] font-bold" : "text-slate-500"
+              }`}
           >
             <DoorOpen className="h-5 w-5" />
             <span className="text-[10px]">Phòng của tôi</span>
@@ -1333,9 +1331,8 @@ export default function StudentPortalPage() {
 
           <button
             onClick={() => setActiveTab("bills")}
-            className={`flex flex-col items-center gap-1 transition-colors relative cursor-pointer ${
-              activeTab === "bills" ? "text-[#1F5CA9] font-bold" : "text-slate-500"
-            }`}
+            className={`flex flex-col items-center gap-1 transition-colors relative cursor-pointer ${activeTab === "bills" ? "text-[#1F5CA9] font-bold" : "text-slate-500"
+              }`}
           >
             <FileText className="h-5 w-5" />
             <span className="absolute -top-1 right-1 h-2 w-2 rounded-full bg-[#FFB800]" />
@@ -1344,9 +1341,8 @@ export default function StudentPortalPage() {
 
           <button
             onClick={() => setActiveTab("profile")}
-            className={`flex flex-col items-center gap-1 transition-colors cursor-pointer ${
-              activeTab === "profile" ? "text-[#1F5CA9] font-bold" : "text-slate-500"
-            }`}
+            className={`flex flex-col items-center gap-1 transition-colors cursor-pointer ${activeTab === "profile" ? "text-[#1F5CA9] font-bold" : "text-slate-500"
+              }`}
           >
             <User className="h-5 w-5" />
             <span className="text-[10px]">Cá nhân</span>
@@ -1395,11 +1391,10 @@ export default function StudentPortalPage() {
                     key={item.id}
                     type="button"
                     onClick={() => setRepairCategory(item.id)}
-                    className={`p-2.5 rounded-xl border flex items-center gap-2 text-left transition-all ${
-                      repairCategory === item.id
-                        ? "border-[#00AFEF] bg-sky-50 text-[#00AFEF] font-bold"
-                        : "border-slate-200 text-slate-700 hover:bg-slate-50"
-                    }`}
+                    className={`p-2.5 rounded-xl border flex items-center gap-2 text-left transition-all ${repairCategory === item.id
+                      ? "border-[#00AFEF] bg-sky-50 text-[#00AFEF] font-bold"
+                      : "border-slate-200 text-slate-700 hover:bg-slate-50"
+                      }`}
                   >
                     <item.icon className="h-4 w-4 shrink-0" />
                     <span>{item.label}</span>
@@ -1417,22 +1412,20 @@ export default function StudentPortalPage() {
                 <button
                   type="button"
                   onClick={() => setRepairPriority("binh_thuong")}
-                  className={`flex-1 py-1.5 rounded-xl border text-center font-medium ${
-                    repairPriority === "binh_thuong"
-                      ? "border-[#1F5CA9] bg-blue-50 text-[#1F5CA9] font-bold"
-                      : "border-slate-200 text-slate-600"
-                  }`}
+                  className={`flex-1 py-1.5 rounded-xl border text-center font-medium ${repairPriority === "binh_thuong"
+                    ? "border-[#1F5CA9] bg-blue-50 text-[#1F5CA9] font-bold"
+                    : "border-slate-200 text-slate-600"
+                    }`}
                 >
                   Bình thường
                 </button>
                 <button
                   type="button"
                   onClick={() => setRepairPriority("khan_cap")}
-                  className={`flex-1 py-1.5 rounded-xl border text-center font-medium ${
-                    repairPriority === "khan_cap"
-                      ? "border-red-500 bg-red-50 text-red-600 font-bold"
-                      : "border-slate-200 text-slate-600"
-                  }`}
+                  className={`flex-1 py-1.5 rounded-xl border text-center font-medium ${repairPriority === "khan_cap"
+                    ? "border-red-500 bg-red-50 text-red-600 font-bold"
+                    : "border-slate-200 text-slate-600"
+                    }`}
                 >
                   Khẩn cấp (Rò điện/nước)
                 </button>
@@ -1532,11 +1525,10 @@ export default function StudentPortalPage() {
                     key={item.id}
                     type="button"
                     onClick={() => setAbsenceReason(item.id)}
-                    className={`py-2 rounded-xl border text-center font-medium ${
-                      absenceReason === item.id
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-700 font-bold"
-                        : "border-slate-200 text-slate-600"
-                    }`}
+                    className={`py-2 rounded-xl border text-center font-medium ${absenceReason === item.id
+                      ? "border-emerald-500 bg-emerald-50 text-emerald-700 font-bold"
+                      : "border-slate-200 text-slate-600"
+                      }`}
                   >
                     {item.label}
                   </button>
@@ -1663,9 +1655,8 @@ export default function StudentPortalPage() {
                   {Array.from({ length: 36 }).map((_, i) => (
                     <div
                       key={i}
-                      className={`rounded-xs ${
-                        i % 2 === 0 || i % 5 === 0 ? "bg-white" : "bg-transparent"
-                      }`}
+                      className={`rounded-xs ${i % 2 === 0 || i % 5 === 0 ? "bg-white" : "bg-transparent"
+                        }`}
                     />
                   ))}
                 </div>

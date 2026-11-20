@@ -190,13 +190,15 @@ export function SidebarNav({ collapsed, onToggle }: SidebarNavProps) {
             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mb-2.5">
               Cần giải đáp nghiệp vụ KTX? Liên hệ quản trị viên.
             </p>
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full text-xs font-medium h-7 bg-white dark:bg-slate-800 border-slate-200 text-[#1F5CA9] hover:bg-slate-50 shadow-none"
-            >
-              Liên hệ quản lý
-            </Button>
+            <Link href="/admin/settings" className="block">
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full text-xs font-medium h-7 bg-white dark:bg-slate-800 border-slate-200 text-[#1F5CA9] hover:bg-slate-50 shadow-none cursor-pointer"
+              >
+                Mở Cài đặt hệ thống
+              </Button>
+            </Link>
           </div>
 
           <div className="mt-3 flex items-center justify-between px-1">
