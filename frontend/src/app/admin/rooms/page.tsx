@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   ArrowRightLeft,
@@ -90,15 +91,15 @@ const mockRooms: RoomInfo[] = [
     floor: "2",
     roomNumber: "Phòng B2-201",
     type: "Phòng 4 giường",
-    gender: "Nam",
+    gender: "Nữ",
     totalBeds: 4,
     occupiedBeds: 2,
     status: "Available",
     price: "1.400.000 đ/tháng",
-    description: "Phòng nam tầng 2 chất lượng cao, có máy lạnh và bàn học riêng",
+    description: "Phòng nữ tầng 2 thoáng mát, gần thư viện tự học",
     beds: [
-      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Phạm Gia Huy", studentId: "B2100005", checkInDate: "01/09/2026" },
-      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Đặng Minh Khôi", studentId: "B2100006", checkInDate: "01/09/2026" },
+      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Huỳnh Ngọc Dung", studentId: "B2100005", checkInDate: "01/09/2026" },
+      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Đặng Thùy Dương", studentId: "B2100006", checkInDate: "01/09/2026" },
       { bedNumber: "G03", isOccupied: false, status: "empty" },
       { bedNumber: "G04", isOccupied: false, status: "empty" },
     ],
@@ -110,15 +111,15 @@ const mockRooms: RoomInfo[] = [
     floor: "2",
     roomNumber: "Phòng B2-202",
     type: "Phòng 4 giường",
-    gender: "Nam",
+    gender: "Nữ",
     totalBeds: 4,
     occupiedBeds: 2,
     status: "Available",
     price: "1.400.000 đ/tháng",
-    description: "Phòng nam tầng 2 yên tĩnh cho sinh viên CNTT học nhóm đêm",
+    description: "Phòng nữ tầng 2 yên tĩnh, ban công hướng hồ nước",
     beds: [
-      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Bùi Tuấn Kiệt", studentId: "B2100007", checkInDate: "01/09/2026" },
-      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Ngô Thành Long", studentId: "B2100008", checkInDate: "01/09/2026" },
+      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Võ Hoàng Giang", studentId: "B2100007", checkInDate: "01/09/2026" },
+      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Bùi Ngọc Hạnh", studentId: "B2100008", checkInDate: "01/09/2026" },
       { bedNumber: "G03", isOccupied: false, status: "empty" },
       { bedNumber: "G04", isOccupied: false, status: "empty" },
     ],
@@ -130,15 +131,15 @@ const mockRooms: RoomInfo[] = [
     floor: "3",
     roomNumber: "Phòng B3-301",
     type: "Phòng 4 giường",
-    gender: "Nữ",
+    gender: "Nam",
     totalBeds: 4,
     occupiedBeds: 2,
     status: "Available",
     price: "1.300.000 đ/tháng",
-    description: "Phòng nữ tầng 3 thoáng mát, gần thư viện tự học",
+    description: "Phòng nam chất lượng cao tầng 3, có máy lạnh và bàn học riêng",
     beds: [
-      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Huỳnh Ngọc Ánh", studentId: "B2100009", checkInDate: "01/09/2026" },
-      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Đỗ Thúy Hiền", studentId: "B2100010", checkInDate: "01/09/2026" },
+      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Ngô Minh Khoa", studentId: "B2100009", checkInDate: "01/09/2026" },
+      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Trịnh Công Long", studentId: "B2100010", checkInDate: "01/09/2026" },
       { bedNumber: "G03", isOccupied: false, status: "empty" },
       { bedNumber: "G04", isOccupied: false, status: "empty" },
     ],
@@ -150,17 +151,17 @@ const mockRooms: RoomInfo[] = [
     floor: "3",
     roomNumber: "Phòng B3-302",
     type: "Phòng 4 giường",
-    gender: "Nữ",
+    gender: "Nam",
     totalBeds: 4,
-    occupiedBeds: 2,
-    status: "Available",
+    occupiedBeds: 0,
+    status: "Maintenance",
     price: "1.300.000 đ/tháng",
-    description: "Phòng nữ tầng 3 ban công hướng hồ nước mát mẻ",
+    description: "Phòng nam tầng 3 đang bảo trì nâng cấp hệ thống điều hòa",
     beds: [
-      { bedNumber: "G01", isOccupied: true, status: "occupied", studentName: "Lý Thanh Thảo", studentId: "B2100011", checkInDate: "10/09/2026" },
-      { bedNumber: "G02", isOccupied: true, status: "occupied", studentName: "Trương Mỹ Trâm", studentId: "B2100012", checkInDate: "10/09/2026" },
-      { bedNumber: "G03", isOccupied: false, status: "empty" },
-      { bedNumber: "G04", isOccupied: false, status: "empty" },
+      { bedNumber: "G01", isOccupied: false, status: "maintenance" },
+      { bedNumber: "G02", isOccupied: false, status: "maintenance" },
+      { bedNumber: "G03", isOccupied: false, status: "maintenance" },
+      { bedNumber: "G04", isOccupied: false, status: "maintenance" },
     ],
   },
 ];
@@ -175,6 +176,7 @@ const roomVectorScores: Record<string, { similarity: number; distance: number; r
 };
 
 export default function RoomsManagementPage() {
+  const router = useRouter();
   const { isDemoMode } = useDemoMode();
   const [rooms, setRooms] = React.useState<RoomInfo[]>(mockRooms);
   const [selectedBuilding, setSelectedBuilding] = React.useState("ALL");
@@ -187,6 +189,20 @@ export default function RoomsManagementPage() {
   const [isSearchingAi, setIsSearchingAi] = React.useState(false);
   const [isReindexing, setIsReindexing] = React.useState(false);
   const [reindexMessage, setReindexMessage] = React.useState<string | null>(null);
+
+  // Sync initial search filter from header redirect without useSearchParams SSR bailout
+  React.useEffect(() => {
+    let active = true;
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) {
+      Promise.resolve().then(() => {
+        if (active) setSearchQuery(q);
+      });
+    }
+    return () => {
+      active = false;
+    };
+  }, []);
 
   React.useEffect(() => {
     let mounted = true;
@@ -321,6 +337,24 @@ export default function RoomsManagementPage() {
       return a.roomId - b.roomId;
     });
 
+  const availableCount = rooms.filter((r) => r.status === "Available").length;
+  const fullCount = rooms.filter((r) => r.status === "Full").length;
+  const maintenanceCount = rooms.filter((r) => r.status === "Maintenance").length;
+
+  const handleExportRoomsCsv = () => {
+    const header = "MaPhong,Toa,Tang,GioiTinh,DangO,SucChua,TrangThai";
+    const rows = filteredRooms.map((r) =>
+      [r.id, r.buildingId, r.floor, r.gender, r.occupiedBeds, r.totalBeds, r.status].join(",")
+    );
+    const blob = new Blob(["\uFEFF" + [header, ...rows].join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "ktx-rooms-export.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header section */}
@@ -339,25 +373,36 @@ export default function RoomsManagementPage() {
             size="sm"
             onClick={handleReindexVectors}
             disabled={isReindexing}
-            className="h-9 gap-1.5 rounded-xl text-xs font-medium border-blue-200 text-[#1F5CA9] hover:bg-blue-50"
+            className="h-9 gap-1.5 rounded-xl text-xs font-medium border-blue-200 text-[#1F5CA9] hover:bg-blue-50 cursor-pointer"
           >
             <Sparkles className="h-3.5 w-3.5 text-[#00AFEF]" />
             <span>{isReindexing ? "Đang đồng bộ..." : "Đồng bộ Vector AI"}</span>
           </Button>
-          <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl text-xs font-medium">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportRoomsCsv}
+            className="h-9 gap-1.5 rounded-xl text-xs font-medium cursor-pointer"
+          >
             <Download className="h-3.5 w-3.5" />
             <span>Xuất danh sách</span>
           </Button>
-          <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl text-xs font-medium">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/admin/students")}
+            className="h-9 gap-1.5 rounded-xl text-xs font-medium cursor-pointer"
+          >
             <ArrowRightLeft className="h-3.5 w-3.5 text-[#00AFEF]" />
             <span>Chuyển phòng SV</span>
           </Button>
           <Button
             size="sm"
-            className="h-9 gap-1.5 rounded-xl text-xs font-medium bg-[#1F5CA9] text-white hover:bg-[#1a4f91] shadow-sm"
+            onClick={() => router.push("/admin/contracts")}
+            className="h-9 gap-1.5 rounded-xl text-xs font-medium bg-[#1F5CA9] text-white hover:bg-[#1a4f91] shadow-sm cursor-pointer"
           >
             <Plus className="h-4 w-4" />
-            <span>Thêm phòng mới</span>
+            <span>Xếp phòng (Hợp đồng)</span>
           </Button>
         </div>
       </div>
@@ -365,7 +410,7 @@ export default function RoomsManagementPage() {
       {reindexMessage && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-medium text-emerald-800 flex items-center justify-between">
           <span>{reindexMessage}</span>
-          <button onClick={() => setReindexMessage(null)} className="text-emerald-700 hover:underline">
+          <button onClick={() => setReindexMessage(null)} className="text-emerald-700 hover:underline cursor-pointer">
             Đóng
           </button>
         </div>
@@ -387,7 +432,7 @@ export default function RoomsManagementPage() {
                 <button
                   key={b.id}
                   onClick={() => setSelectedBuilding(b.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                     selectedBuilding === b.id
                       ? "bg-[#1F5CA9] text-white shadow-sm"
                       : "text-slate-600 dark:text-slate-300 hover:text-slate-900"
@@ -409,7 +454,7 @@ export default function RoomsManagementPage() {
                 <button
                   key={floor.id}
                   onClick={() => setSelectedFloor(floor.id)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                     selectedFloor === floor.id
                       ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
                       : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
@@ -436,43 +481,43 @@ export default function RoomsManagementPage() {
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setFilterStatus("all")}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
                   filterStatus === "all"
                     ? "bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900"
                     : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
                 }`}
               >
-                Tất cả (6)
+                Tất cả ({rooms.length})
               </button>
               <button
                 onClick={() => setFilterStatus("available")}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
                   filterStatus === "available"
-                    ? "bg-[#00AFEF] text-white border-[#00AFEF]"
+                    ? "bg-[#0369A1] text-white border-[#0369A1]"
                     : "bg-white text-sky-700 border-sky-200 hover:bg-sky-50"
                 }`}
               >
-                Còn trống (3)
+                Còn trống ({availableCount})
               </button>
               <button
                 onClick={() => setFilterStatus("full")}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
                   filterStatus === "full"
                     ? "bg-[#1F5CA9] text-white border-[#1F5CA9]"
                     : "bg-white text-blue-700 border-blue-200 hover:bg-blue-50"
                 }`}
               >
-                Đầy (2)
+                Đầy ({fullCount})
               </button>
               <button
                 onClick={() => setFilterStatus("maintenance")}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
                   filterStatus === "maintenance"
                     ? "bg-[#FFB800] text-amber-900 border-[#FFB800]"
                     : "bg-white text-amber-700 border-amber-200 hover:bg-amber-50"
                 }`}
               >
-                Bảo trì (1)
+                Bảo trì ({maintenanceCount})
               </button>
             </div>
           </div>
@@ -666,9 +711,11 @@ export default function RoomsManagementPage() {
 
                       if (bed.status === "empty") {
                         return (
-                          <div
+                          <button
                             key={bIdx}
-                            className="flex items-center gap-2 p-2 rounded-xl border border-dashed border-[#0369A1]/40 bg-sky-50/40 text-[#0369A1] hover:bg-sky-50 transition-colors cursor-pointer"
+                            type="button"
+                            onClick={() => router.push("/admin/contracts")}
+                            className="w-full text-left flex items-center gap-2 p-2 rounded-xl border border-dashed border-[#0369A1]/40 bg-sky-50/40 text-[#0369A1] hover:bg-sky-50 transition-colors cursor-pointer"
                           >
                             <div className="h-6 w-6 rounded-lg border border-[#0369A1] text-[#0369A1] flex items-center justify-center text-[10px] font-bold">
                               {bed.bedNumber}
@@ -676,7 +723,7 @@ export default function RoomsManagementPage() {
                             <div className="text-[11px] font-medium text-[#0369A1]">
                               + Trống (Xếp SV)
                             </div>
-                          </div>
+                          </button>
                         );
                       }
 

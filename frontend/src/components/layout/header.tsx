@@ -47,10 +47,11 @@ export function Header() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          const q = searchQuery.trim().toLowerCase();
+          const raw = searchQuery.trim();
+          const q = raw.toLowerCase();
           if (!q) return;
           const isRoom = /^(b[123]|p\.|phòng)/.test(q) || q.includes("-");
-          router.push(isRoom ? "/admin/rooms" : "/admin/students");
+          router.push(`${isRoom ? "/admin/rooms" : "/admin/students"}?q=${encodeURIComponent(raw)}`);
         }}
         className="relative w-full max-w-md"
       >
