@@ -20,30 +20,23 @@ import {
   CheckCircle2,
   Check,
   Copy,
-  ExternalLink,
   ShieldCheck,
   Info,
   Maximize2,
   Smartphone,
   ArrowLeft,
-  Calendar,
   Lock,
   AirVent,
   Bed,
   Sparkles,
   AlertTriangle,
-  Clock,
-  Printer,
-  Upload,
   Camera,
-  Share2,
   Wallet,
   GraduationCap,
 } from "lucide-react";
 import { useDemoMode } from "@/lib/demo-context";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -146,7 +139,6 @@ export default function StudentPortalPage() {
   const { isDemoMode } = useDemoMode();
   const [studentId, setStudentId] = React.useState("B2100001");
   const [studentName, setStudentName] = React.useState("Nguyễn Văn An");
-  const [studentMajor, setStudentMajor] = React.useState("Kỹ thuật Phần mềm (K47)");
   const [studentRoom, setStudentRoom] = React.useState("B1-101 (Tòa B1 - Nam)");
   const [studentRoomDesc, setStudentRoomDesc] = React.useState("Phòng nam tầng 1, ban công thoáng mát gần căng-tin");
   const [studentWallet, setStudentWallet] = React.useState(1500000);
@@ -220,7 +212,6 @@ export default function StudentPortalPage() {
         currentMajor = profRes.data.major;
         currentPhone = profRes.data.phone;
         setStudentName(profRes.data.full_name);
-        setStudentMajor(`${profRes.data.major} (${profRes.data.cohort || "K47"})`);
         const rawBalance = profRes.data.wallet?.balance ?? profRes.data.wallet_balance ?? 0;
         setStudentWallet(Number(rawBalance));
       }

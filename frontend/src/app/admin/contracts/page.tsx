@@ -1,36 +1,23 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import {
-  FileText,
   Plus,
   Search,
-  Filter,
   Download,
-  Calendar,
   AlertTriangle,
   CheckCircle2,
   Clock,
   Printer,
-  ChevronRight,
-  ShieldCheck,
-  Building,
-  DoorOpen,
-  User,
   DollarSign,
-  ArrowRight,
   RefreshCw,
-  XCircle,
-  Eye,
   FileCheck,
-  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -136,7 +123,6 @@ export default function ContractsPage() {
   const [isTerminateModalOpen, setIsTerminateModalOpen] = React.useState(false);
   const [terminateTargetContract, setTerminateTargetContract] = React.useState<Contract | null>(null);
   const [damageFee, setDamageFee] = React.useState(0);
-  const [terminateReason, setTerminateReason] = React.useState("Hết thời gian lưu trú / Tốt nghiệp");
 
   const [isPreviewModalOpen, setIsPreviewModalOpen] = React.useState(false);
   const [previewContract, setPreviewContract] = React.useState<Contract | null>(null);

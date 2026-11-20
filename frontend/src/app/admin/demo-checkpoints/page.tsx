@@ -9,19 +9,14 @@ import {
   AlertTriangle,
   Zap,
   ShieldCheck,
-  Database,
   Flame,
-  Terminal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useDemoMode } from "@/lib/demo-context";
 import { api, AuditLogItem } from "@/lib/api";
 
 export default function DemoCheckpointsPage() {
-  const { isDemoMode } = useDemoMode();
-
   // Checkpoint 1: Dual SP 1 (Generate & Split)
   const [cp1Status, setCp1Status] = React.useState<"idle" | "running" | "done" | "error">("idle");
   const [cp1Result, setCp1Result] = React.useState<{

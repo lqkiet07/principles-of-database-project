@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import {
   Wrench,
   AlertTriangle,
@@ -9,27 +8,16 @@ import {
   CheckCircle2,
   Plus,
   Search,
-  Filter,
   UserCheck,
   DoorOpen,
   Zap,
-  Droplets,
-  AirVent,
-  SlidersHorizontal,
-  ChevronRight,
-  Phone,
-  Eye,
-  Camera,
   Layers,
   List,
-  Sparkles,
-  ArrowRight,
-  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -46,7 +34,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Ticket {
   id: string;
@@ -158,9 +145,6 @@ export default function MaintenancePage() {
   const [isCompleteModalOpen, setIsCompleteModalOpen] = React.useState(false);
   const [completeTargetTicket, setCompleteTargetTicket] = React.useState<Ticket | null>(null);
   const [settledCost, setSettledCost] = React.useState(120000);
-
-  // Detail Modal
-  const [selectedTicketDetail, setSelectedTicketDetail] = React.useState<Ticket | null>(null);
 
   // Filter
   const filteredTickets = React.useMemo(() => {

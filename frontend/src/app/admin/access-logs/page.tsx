@@ -1,25 +1,12 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import {
-  ShieldCheck,
-  ShieldAlert,
-  Clock,
-  Zap,
-  TrendingDown,
   Database,
   Search,
-  Filter,
   CheckCircle2,
   AlertTriangle,
   Play,
-  FileCode,
-  Layers,
-  ArrowRight,
-  Sparkles,
-  Lock,
-  Unlock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +20,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useDemoMode } from "@/lib/demo-context";
 import { api } from "@/lib/api";
 
 interface AccessLog {
@@ -101,7 +87,6 @@ const mockAccessLogs: AccessLog[] = [
 ];
 
 export default function AccessLogsPage() {
-  const { isDemoMode } = useDemoMode();
   const [hasIndex, setHasIndex] = React.useState(true);
   const [isRunning, setIsRunning] = React.useState(false);
   const [queryFilter, setQueryFilter] = React.useState("");

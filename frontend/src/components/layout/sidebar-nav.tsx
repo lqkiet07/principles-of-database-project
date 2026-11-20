@@ -16,7 +16,6 @@ import {
   ChevronLeft,
   ChevronRight,
   HelpCircle,
-  Building,
   Smartphone,
   GraduationCap,
   ShieldCheck,

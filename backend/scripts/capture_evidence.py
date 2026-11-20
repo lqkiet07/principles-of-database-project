@@ -157,14 +157,16 @@ async def capture_all_evidence():
         )
         print("-> 05_trigger_fraud_reversal.json saved.")
 
-        # 6. Trigger Audit Log JSONB
+        # 6. Trigger Audit Log JSONB (use Room 2's UNPAID bill from Step 4 since PARTIALLY_PAID bills reject meter edits)
+        target_bill_id = b2["bill_id"]
         await client.patch(
-            f"/api/admin/bills/{bill_id}/meters",
-            json={"curr_electric": 360, "curr_water": 38},
+            f"/api/admin/bills/{target_bill_id}/meters",
+            json={"curr_electric": 510, "curr_water": 85},
             headers={"X-Role": "admin"},
         )
         res6 = await client.get(
-            f"/api/admin/audit-logs?record_id={bill_id}", headers={"X-Role": "admin"}
+            f"/api/admin/audit-logs?record_id={target_bill_id}",
+            headers={"X-Role": "admin"},
         )
         data6 = {
             "description": "Trigger trg_audit_utility_meter_update tự động ghi vết thay đổi trạng thái trước/sau dạng JSONB vào audit_logs.",

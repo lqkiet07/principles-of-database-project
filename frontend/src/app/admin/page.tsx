@@ -13,7 +13,6 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock,
-  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -36,7 +35,7 @@ import {
   ZAxis,
 } from "recharts";
 import { useDemoMode } from "@/lib/demo-context";
-import { GraduationCap, Sparkles, TrendingUp } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 import { api, AdminBillItem, ClusterSummary, DashboardSummary, ForecastData, RoomItem } from "@/lib/api";
 
 // Consumption fallback when API is offline

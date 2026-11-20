@@ -3,21 +3,14 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  Settings,
   Zap,
   Droplets,
   Clock,
-  CreditCard,
-  ShieldCheck,
   Save,
   CheckCircle2,
-  Lock,
   QrCode,
   Building,
-  Bell,
-  Users,
   AlertTriangle,
-  RefreshCw,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,7 +23,7 @@ import { useDemoMode } from "@/lib/demo-context";
 import { GraduationCap, ArrowUpRight } from "lucide-react";
 
 export default function SettingsPage() {
-  const { isDemoMode, setDemoMode, toggleDemoMode } = useDemoMode();
+  const { isDemoMode, toggleDemoMode } = useDemoMode();
 
   // Utility rates state (aligned with SP1 default rates; UI preview outside 10-table DDL)
   const [electricityRate, setElectricityRate] = React.useState(2000);
@@ -43,7 +36,6 @@ export default function SettingsPage() {
   const [curfewStart, setCurfewStart] = React.useState("23:00");
   const [curfewEnd, setCurfewEnd] = React.useState("05:00");
   const [autoRecordViolation, setAutoRecordViolation] = React.useState(true);
-  const [maxViolations, setMaxViolations] = React.useState(3);
 
   // Bank & VietQR state
   const [bankName, setBankName] = React.useState("VietinBank (Ngân hàng TMCP Công Thương Việt Nam)");

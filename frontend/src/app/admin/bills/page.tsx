@@ -8,31 +8,24 @@ import {
   AlertCircle,
   Plus,
   Search,
-  Filter,
   Download,
   Calendar,
   Send,
   FileText,
   CheckCircle2,
   Clock,
-  ArrowRight,
   TrendingUp,
-  SlidersHorizontal,
-  ChevronDown,
   X,
   Printer,
-  Copy,
   Receipt,
-  Check,
   History,
   ShieldAlert,
   Flame,
   Terminal,
-  Database,
   FlaskConical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -189,7 +182,7 @@ export default function BillingPage() {
   const [activeView, setActiveView] = React.useState<"bills" | "audit">("bills");
   const [statusFilter, setStatusFilter] = React.useState<"all" | "paid" | "unpaid">("all");
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [selectedMonth, setSelectedMonth] = React.useState("10/2026");
+  const selectedMonth = "10/2026";
 
   // Slide-over drawer state
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
