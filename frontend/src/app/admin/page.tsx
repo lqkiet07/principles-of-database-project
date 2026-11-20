@@ -108,6 +108,7 @@ export default function AdminDashboardPage() {
   const [forecastBuilding, setForecastBuilding] = React.useState<"B1" | "B2" | "B3">("B1");
   const [forecast, setForecast] = React.useState<ForecastData | null>(null);
   const [clusters, setClusters] = React.useState<ClusterSummary | null>(null);
+  const [clusterView, setClusterView] = React.useState<"summary" | "pca">("summary");
 
   React.useEffect(() => {
     let mounted = true;
@@ -217,6 +218,10 @@ export default function AdminDashboardPage() {
   }, [forecast]);
 
   const latestBillMonth = bills.length > 0 ? bills[0].month_year : "2026-10";
+  const openBillsCount = React.useMemo(
+    () => bills.filter((b) => b.bill_status !== "PAID").length,
+    [bills]
+  );
 
   const liveBillRows = React.useMemo(() => {
     if (bills.length === 0) return fallbackBillRows;
@@ -256,23 +261,15 @@ export default function AdminDashboardPage() {
       {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-              Tổng quan điều hành KTX
-            </h1>
-            {isDemoMode && (
-              <Badge className="bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs flex items-center gap-1">
-                <GraduationCap className="h-3.5 w-3.5 text-amber-600" />
-                Demo Mode Đang Bật
-              </Badge>
-            )}
-          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 text-balance">
+            Tổng quan điều hành KTX
+          </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Theo dõi tỷ lệ lấp đầy phòng, công nợ điện nước và hoạt động ra vào cổng theo thời gian thực.
           </p>
         </div>
         <div className="flex items-center gap-2.5">
-          <div className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+          <div className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700">
             <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="tabular-nums font-mono">Kỳ {latestBillMonth}</span>
           </div>
@@ -289,7 +286,7 @@ export default function AdminDashboardPage() {
 
       {/* Evaluator Demo Mode Callout - Only visible when turned ON in Settings */}
       {isDemoMode && (
-        <div className="rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-2xs">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shrink-0">
               <GraduationCap className="h-5 w-5" />
@@ -305,7 +302,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <Link href="/admin/demo-checkpoints">
-            <Button size="sm" className="bg-[#1F5CA9] text-white hover:bg-[#184988] text-xs font-bold h-8 shrink-0 flex items-center gap-1">
+            <Button size="sm" className="bg-[#1F5CA9] text-white hover:bg-[#184988] text-xs font-bold h-8 shrink-0 flex items-center gap-1 cursor-pointer">
               <span>Mở Bảng Demo Checkpoints</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
@@ -343,7 +340,7 @@ export default function AdminDashboardPage() {
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">Tỷ Lệ Lấp Đầy Giường</span>
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-[#00AFEF] dark:bg-sky-950/60 dark:text-sky-400">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-[#0369A1]">
                 <DoorOpen className="h-4.5 w-4.5" />
               </div>
             </div>
@@ -380,8 +377,8 @@ export default function AdminDashboardPage() {
                 {dashboard ? `${(dashboard.total_unpaid_debt / 1000000).toFixed(1)} tr đ` : "28.5 tr đ"}
               </span>
               <div className="flex items-center gap-1.5 mt-1 text-xs">
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200">
-                  student_utility_debts
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 tabular-nums">
+                  {bills.length > 0 ? `${openBillsCount} hóa đơn chờ thu` : "Công nợ điện nước chờ thu"}
                 </span>
               </div>
             </div>
@@ -416,11 +413,11 @@ export default function AdminDashboardPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-50">
-                  Monthly Utility Consumption
+                <CardTitle className="text-base font-bold text-slate-900">
+                  Tiêu thụ Điện &amp; Nước theo tháng
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Electricity & Water usage across all buildings
+                  Tổng sản lượng điện (kWh) và nước (m³) toàn KTX
                 </CardDescription>
               </div>
               <div className="flex items-center gap-4 text-xs font-medium">
@@ -549,10 +546,10 @@ export default function AdminDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-50">
+                  <CardTitle className="text-base font-bold text-slate-900">
                     AI Forecast: Dự Báo Sản Lượng Điện Tháng Tiếp Theo
                   </CardTitle>
-                  <Badge className="bg-sky-100 text-[#00AFEF] text-[10px] font-mono border-0">
+                  <Badge className="bg-sky-100 text-[#0369A1] text-[10px] font-mono border-0">
                     Scikit-learn Regression
                   </Badge>
                 </div>
@@ -583,7 +580,7 @@ export default function AdminDashboardPage() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-full bg-[#00AFEF] border border-dashed border-[#00AFEF]" />
-                  <span className="text-[#00AFEF] font-bold">{forecastDeltaLabel}</span>
+                  <span className="text-[#0369A1] font-bold">{forecastDeltaLabel}</span>
                 </div>
               </div>
             </div>
@@ -624,103 +621,129 @@ export default function AdminDashboardPage() {
         </Card>
 
         {/* Right: AI Student Clustering K-Means (1 col) */}
-        <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+        <Card className="rounded-2xl border-slate-200/80 shadow-sm flex flex-col justify-between">
           <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-50">
-                AI Clustering: Phân Cụm Sinh Viên
-              </CardTitle>
-              <Badge className="bg-purple-100 text-purple-700 text-[10px] font-mono border-0">
-                K-Means (K=3)
-              </Badge>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-base font-bold text-slate-900">
+                  AI Clustering: Phân Cụm Sinh Viên
+                </CardTitle>
+                <Badge className="bg-slate-100 text-slate-700 text-[10px] font-mono border-0">
+                  K-Means (K=3)
+                </Badge>
+              </div>
+              <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setClusterView("summary")}
+                  className={`px-2 py-0.5 rounded-md text-[11px] font-semibold cursor-pointer transition-colors ${
+                    clusterView === "summary"
+                      ? "bg-[#1F5CA9] text-white"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  3 Cụm
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setClusterView("pca")}
+                  className={`px-2 py-0.5 rounded-md text-[11px] font-semibold cursor-pointer transition-colors ${
+                    clusterView === "pca"
+                      ? "bg-[#1F5CA9] text-white"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Biểu đồ PCA
+                </button>
+              </div>
             </div>
             <CardDescription className="text-xs">
               Phân loại 3 cụm theo nợ, giờ giới nghiêm & sản lượng điện
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2.5 pt-1">
-            {clusters && clusters.clusters && clusters.clusters.length > 0 ? (
-              clusters.clusters.map((cl, idx) => {
-                const pct =
-                  clusters.total_students > 0
-                    ? Math.round((cl.student_count / clusters.total_students) * 100)
-                    : 0;
-                const styles = [
-                  {
-                    box: "border-emerald-200 bg-emerald-50/50",
-                    title: "text-emerald-800",
-                    desc: "text-emerald-700",
-                  },
-                  {
-                    box: "border-amber-200 bg-amber-50/50",
-                    title: "text-amber-800",
-                    desc: "text-amber-700",
-                  },
-                  {
-                    box: "border-red-200 bg-red-50/50",
-                    title: "text-red-800",
-                    desc: "text-red-700",
-                  },
-                ][idx % 3];
-                return (
-                  <div key={cl.cluster_id} className={`rounded-xl border p-2.5 ${styles.box}`}>
-                    <div className={`flex justify-between items-center text-xs font-bold ${styles.title}`}>
-                      <span>
-                        Cụm {cl.cluster_id}: {cl.label_vi}
-                      </span>
-                      <span>
-                        {cl.student_count} SV ({pct}%)
-                      </span>
+            {clusterView === "summary" ? (
+              clusters && clusters.clusters && clusters.clusters.length > 0 ? (
+                clusters.clusters.map((cl, idx) => {
+                  const pct =
+                    clusters.total_students > 0
+                      ? Math.round((cl.student_count / clusters.total_students) * 100)
+                      : 0;
+                  const styles = [
+                    {
+                      box: "border-emerald-200 bg-emerald-50/50",
+                      title: "text-emerald-800",
+                      desc: "text-emerald-700",
+                    },
+                    {
+                      box: "border-amber-200 bg-amber-50/50",
+                      title: "text-amber-800",
+                      desc: "text-amber-700",
+                    },
+                    {
+                      box: "border-red-200 bg-red-50/50",
+                      title: "text-red-800",
+                      desc: "text-red-700",
+                    },
+                  ][idx % 3];
+                  return (
+                    <div key={cl.cluster_id} className={`rounded-xl border p-2.5 ${styles.box}`}>
+                      <div className={`flex justify-between items-center text-xs font-bold ${styles.title}`}>
+                        <span>
+                          Cụm {cl.cluster_id}: {cl.label_vi}
+                        </span>
+                        <span>
+                          {cl.student_count} SV ({pct}%)
+                        </span>
+                      </div>
+                      <p className={`text-[10px] mt-0.5 ${styles.desc}`}>
+                        {cl.description} (TB đi trễ: {cl.avg_late_count} lần, TB điện: {cl.avg_power_kwh} kWh)
+                      </p>
                     </div>
-                    <p className={`text-[10px] mt-0.5 ${styles.desc}`}>
-                      {cl.description} (TB đi trễ: {cl.avg_late_count} lần, TB điện: {cl.avg_power_kwh} kWh)
+                  );
+                })
+              ) : (
+                <>
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-2.5">
+                    <div className="flex justify-between items-center text-xs font-bold text-emerald-800">
+                      <span>Cụm 0: Sinh Viên Gương Mẫu</span>
+                      <span>82%</span>
+                    </div>
+                    <p className="text-[10px] text-emerald-700 mt-0.5">
+                      Không vi phạm giới nghiêm, nộp tiền đúng hạn 100%.
                     </p>
                   </div>
-                );
-              })
-            ) : (
-              <>
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-2.5">
-                  <div className="flex justify-between items-center text-xs font-bold text-emerald-800">
-                    <span>Cụm 0: Sinh Viên Gương Mẫu</span>
-                    <span>82%</span>
-                  </div>
-                  <p className="text-[10px] text-emerald-700 mt-0.5">
-                    Không vi phạm giới nghiêm, nộp tiền đúng hạn 100%.
-                  </p>
-                </div>
 
-                <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-2.5">
-                  <div className="flex justify-between items-center text-xs font-bold text-amber-800">
-                    <span>Cụm 1: Rủi Ro Tài Chính</span>
-                    <span>12%</span>
+                  <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-2.5">
+                    <div className="flex justify-between items-center text-xs font-bold text-amber-800">
+                      <span>Cụm 1: Rủi Ro Tài Chính</span>
+                      <span>12%</span>
+                    </div>
+                    <p className="text-[10px] text-amber-700 mt-0.5">
+                      Nợ điện nước kéo dài &gt; 15 ngày, cần SMS nhắc nhở.
+                    </p>
                   </div>
-                  <p className="text-[10px] text-amber-700 mt-0.5">
-                    Nợ điện nước kéo dài &gt; 15 ngày, cần SMS nhắc nhở.
-                  </p>
-                </div>
 
-                <div className="rounded-xl border border-red-200 bg-red-50/50 p-2.5">
-                  <div className="flex justify-between items-center text-xs font-bold text-red-800">
-                    <span>Cụm 2: Cảnh Báo An Ninh</span>
-                    <span>6%</span>
+                  <div className="rounded-xl border border-red-200 bg-red-50/50 p-2.5">
+                    <div className="flex justify-between items-center text-xs font-bold text-red-800">
+                      <span>Cụm 2: Cảnh Báo An Ninh</span>
+                      <span>6%</span>
+                    </div>
+                    <p className="text-[10px] text-red-700 mt-0.5">
+                      Về muộn sau 23:00 trên 3 lần trong tháng.
+                    </p>
                   </div>
-                  <p className="text-[10px] text-red-700 mt-0.5">
-                    Về muộn sau 23:00 trên 3 lần trong tháng.
-                  </p>
-                </div>
-              </>
-            )}
-
-            {clusters && clusters.points && clusters.points.length > 0 && (
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                </>
+              )
+            ) : clusters && clusters.points && clusters.points.length > 0 ? (
+              <div>
                 <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                  <span className="font-semibold text-slate-700">
                     Bản đồ PCA 2D ({clusters.points.length} sinh viên)
                   </span>
                   <span>Trục: PC1 × PC2</span>
                 </div>
-                <div className="h-[130px] w-full">
+                <div className="h-[230px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <ScatterChart margin={{ top: 6, right: 8, bottom: 0, left: -24 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" opacity={0.6} />
@@ -750,6 +773,10 @@ export default function AdminDashboardPage() {
                     </ScatterChart>
                   </ResponsiveContainer>
                 </div>
+              </div>
+            ) : (
+              <div className="h-[230px] rounded-xl border border-dashed border-slate-200 flex items-center justify-center text-xs text-slate-500 text-center px-4">
+                Cần kết nối Backend để vẽ biểu đồ phân tán PCA 2D theo dữ liệu sinh viên thực tế.
               </div>
             )}
           </CardContent>
