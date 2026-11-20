@@ -1,10 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { useTheme } from "next-themes";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, Moon, Sun, Search, Smartphone, Database } from "lucide-react";
+import { Search, Smartphone, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,13 +17,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { useDemoMode } from "@/lib/demo-context";
 import { api } from "@/lib/api";
-import { GraduationCap } from "lucide-react";
 
 export function Header() {
-  const { theme, setTheme } = useTheme();
-  const { isDemoMode } = useDemoMode();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = React.useState("");
   const [dbOnline, setDbOnline] = React.useState<boolean | null>(null);
@@ -85,80 +80,57 @@ export function Header() {
           </Badge>
         )}
 
-        {/* Evaluator Demo Mode Pill - Only visible when turned ON in Settings */}
-        {isDemoMode && (
-          <Link href="/admin/demo-checkpoints">
-            <Button
-              size="sm"
-              className="h-8 gap-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 shadow-xs"
-            >
-              <GraduationCap className="h-4 w-4 text-amber-700" />
-              <span>Demo Checkpoints (6)</span>
-            </Button>
-          </Link>
-        )}
-
         <Link href="/student">
           <Button
             variant="outline"
             size="sm"
-            className="h-8 gap-1.5 rounded-full text-xs font-semibold text-[#1F5CA9] border-blue-200 hover:bg-blue-50 dark:border-blue-900 dark:hover:bg-blue-950"
+            className="h-8 gap-1.5 rounded-full text-xs font-semibold text-[#1F5CA9] border-blue-200 hover:bg-blue-50 cursor-pointer"
           >
-            <Smartphone className="h-3.5 w-3.5 text-[#00AFEF]" />
+            <Smartphone className="h-3.5 w-3.5 text-[#0369A1]" />
             <span className="hidden sm:inline">Cổng Sinh Viên</span>
           </Button>
         </Link>
 
-        {/* Theme Toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="h-9 w-9 rounded-full text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
-        >
-          <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          <span className="sr-only">Toggle theme</span>
-        </Button>
-
-        {/* Notifications with Static Status Dot */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative h-9 w-9 rounded-full text-slate-600 hover:text-slate-900 dark:text-slate-300"
-        >
-          <Bell className="h-4 w-4" />
-          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-500 border border-white dark:border-slate-900" />
-          <span className="sr-only">Notifications</span>
-        </Button>
-
-        <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
+        <div className="h-6 w-px bg-slate-200 mx-1" />
 
         {/* User Profile */}
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-3 rounded-full py-1 pl-1 pr-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors outline-none cursor-pointer">
+          <DropdownMenuTrigger className="flex items-center gap-3 rounded-full py-1 pl-1 pr-2 hover:bg-slate-100 transition-colors outline-none cursor-pointer">
             <Avatar className="h-9 w-9 border-2 border-[#1F5CA9]/20">
-                <AvatarFallback className="bg-[#1F5CA9] text-white text-xs font-semibold">
-                  QL
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden sm:flex flex-col text-left">
-                <span className="text-xs font-semibold text-slate-800 dark:text-slate-100">
-                  Quản lý Ký túc xá
-                </span>
-                <span className="text-[10px] text-muted-foreground">
-                  admin@dormitory.edu.vn
-                </span>
-              </div>
+              <AvatarFallback className="bg-[#1F5CA9] text-white text-xs font-semibold">
+                QL
+              </AvatarFallback>
+            </Avatar>
+            <div className="hidden sm:flex flex-col text-left">
+              <span className="text-xs font-semibold text-slate-800">
+                Quản lý Ký túc xá
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                admin@dormitory.edu.vn
+              </span>
+            </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 rounded-xl">
             <DropdownMenuLabel>Tài khoản Quản trị</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Hồ sơ cá nhân</DropdownMenuItem>
-            <DropdownMenuItem>Cài đặt hệ thống</DropdownMenuItem>
-            <DropdownMenuItem>Nhật ký bảo mật</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">Đăng xuất</DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => router.push("/admin/settings")}
+              className="cursor-pointer"
+            >
+              Cài đặt hệ thống
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => router.push("/admin/access-logs")}
+              className="cursor-pointer"
+            >
+              Nhật ký bảo mật
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => router.push("/student")}
+              className="cursor-pointer"
+            >
+              Cổng Sinh Viên
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

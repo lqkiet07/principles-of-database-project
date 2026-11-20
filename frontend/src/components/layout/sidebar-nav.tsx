@@ -15,8 +15,6 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  HelpCircle,
-  Smartphone,
   GraduationCap,
   ShieldCheck,
 } from "lucide-react";
@@ -44,13 +42,12 @@ export function SidebarNav({ collapsed, onToggle }: SidebarNavProps) {
 
   const navItems: NavItem[] = React.useMemo(() => {
     const baseItems: NavItem[] = [
-      { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-      { label: "Rooms & Beds", href: "/admin/rooms", icon: DoorOpen },
-      { label: "Utility & Bills", href: "/admin/bills", icon: Zap },
-      { label: "Students", href: "/admin/students", icon: Users },
-      { label: "Contracts", href: "/admin/contracts", icon: FileText },
-      { label: "Maintenance", href: "/admin/maintenance", icon: Wrench },
-      { label: "Cổng Sinh Viên", href: "/student", icon: Smartphone },
+      { label: "Tổng quan", href: "/admin", icon: LayoutDashboard },
+      { label: "Phòng & Giường", href: "/admin/rooms", icon: DoorOpen },
+      { label: "Điện nước & Hóa đơn", href: "/admin/bills", icon: Zap },
+      { label: "Sinh viên", href: "/admin/students", icon: Users },
+      { label: "Hợp đồng", href: "/admin/contracts", icon: FileText },
+      { label: "Bảo trì", href: "/admin/maintenance", icon: Wrench },
     ];
 
     if (isDemoMode) {
@@ -77,8 +74,8 @@ export function SidebarNav({ collapsed, onToggle }: SidebarNavProps) {
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-30 flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 shadow-sm",
-        collapsed ? "w-[72px]" : "w-[240px]"
+        "fixed inset-y-0 left-0 z-30 flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 shadow-sm w-[72px]",
+        collapsed ? "md:w-[72px]" : "md:w-[240px]"
       )}
     >
       {/* Brand Logo */}
@@ -88,7 +85,7 @@ export function SidebarNav({ collapsed, onToggle }: SidebarNavProps) {
             KTX
           </div>
           {!collapsed && (
-            <div className="flex flex-col leading-tight">
+            <div className="hidden md:flex flex-col leading-tight">
               <span className="text-sm font-bold tracking-tight text-[#1F5CA9]">
                 KTX Smart
               </span>
@@ -103,7 +100,7 @@ export function SidebarNav({ collapsed, onToggle }: SidebarNavProps) {
             variant="ghost"
             size="icon"
             onClick={onToggle}
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            className="hidden md:inline-flex h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -138,7 +135,7 @@ export function SidebarNav({ collapsed, onToggle }: SidebarNavProps) {
                   )}
                 />
                 {!collapsed && (
-                  <div className="flex flex-1 items-center justify-between">
+                  <div className="hidden md:flex flex-1 items-center justify-between">
                     <span>{item.label}</span>
                     {item.badge && (
                       <Badge
@@ -174,41 +171,19 @@ export function SidebarNav({ collapsed, onToggle }: SidebarNavProps) {
         </nav>
       </ScrollArea>
 
-      {/* Footer Support Card */}
+      {/* Footer Settings Link */}
       {!collapsed ? (
         <div className="p-3 border-t border-sidebar-border">
-          <div className="rounded-xl bg-slate-50 dark:bg-slate-800/80 p-3.5 border border-slate-200 dark:border-slate-700">
-            <div className="flex items-center gap-2 mb-1.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#00AFEF] text-white">
-                <HelpCircle className="h-4 w-4" />
-              </div>
-              <span className="text-xs font-semibold text-slate-800 dark:text-slate-100">
-                Hỗ trợ kỹ thuật
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mb-2.5">
-              Cần giải đáp nghiệp vụ KTX? Liên hệ quản trị viên.
-            </p>
-            <Link href="/admin/settings" className="block">
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full text-xs font-medium h-7 bg-white dark:bg-slate-800 border-slate-200 text-[#1F5CA9] hover:bg-slate-50 shadow-none cursor-pointer"
-              >
-                Mở Cài đặt hệ thống
-              </Button>
-            </Link>
-          </div>
-
-          <div className="mt-3 flex items-center justify-between px-1">
+          <div className="flex items-center justify-center md:justify-between px-1">
             <Link
               href="/admin/settings"
-              className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-900 dark:hover:text-white"
+              className="flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-900"
+              title="Cài đặt hệ thống"
             >
-              <Settings className="h-3.5 w-3.5" />
-              <span>Settings</span>
+              <Settings className="h-4 w-4 shrink-0" />
+              <span className="hidden md:inline">Cài đặt hệ thống</span>
             </Link>
-            <span className="text-[10px] text-slate-400">v1.0.0</span>
+            <span className="hidden md:inline text-[10px] text-slate-500">v1.0.0</span>
           </div>
         </div>
       ) : (
@@ -217,10 +192,17 @@ export function SidebarNav({ collapsed, onToggle }: SidebarNavProps) {
             variant="ghost"
             size="icon"
             onClick={onToggle}
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            className="hidden md:inline-flex h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
+          <Link
+            href="/admin/settings"
+            className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 hover:text-slate-900"
+            title="Cài đặt hệ thống"
+          >
+            <Settings className="h-4 w-4" />
+          </Link>
         </div>
       )}
     </aside>

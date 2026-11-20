@@ -20,12 +20,14 @@ export default function AdminLayout({
       />
       <div
         className={cn(
-          "flex flex-1 flex-col transition-all duration-200",
-          sidebarCollapsed ? "ml-[72px]" : "ml-[240px]"
+          "flex flex-1 flex-col transition-all duration-200 ml-[72px]",
+          sidebarCollapsed ? "md:ml-[72px]" : "md:ml-[240px]"
         )}
       >
         <Header />
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6">
+          <div className="mx-auto w-full max-w-7xl">{children}</div>
+        </main>
       </div>
     </div>
   );
