@@ -44,7 +44,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useDemoMode } from "@/lib/demo-context";
-import { api } from "@/lib/api";
+import { api, RoomItem } from "@/lib/api";
 
 interface AuditLogRecord {
   id: string;
@@ -71,8 +71,11 @@ interface BillRecord {
   prevWater: number;
   currWater: number;
   serviceFee: number;
+  totalAmount: number;
+  paidAmount: number;
   dueDate: string;
   status: "paid" | "unpaid";
+  rawStatus: "UNPAID" | "PARTIALLY_PAID" | "PAID";
   paidDate?: string;
 }
 
@@ -90,8 +93,11 @@ const initialBills: BillRecord[] = [
     prevWater: 20,
     currWater: 35,
     serviceFee: 0,
+    totalAmount: 750000,
+    paidAmount: 375000,
     dueDate: "25/10/2026",
     status: "unpaid",
+    rawStatus: "PARTIALLY_PAID",
   },
   {
     id: "B-102",
@@ -106,8 +112,11 @@ const initialBills: BillRecord[] = [
     prevWater: 30,
     currWater: 85,
     serviceFee: 0,
+    totalAmount: 2050000,
+    paidAmount: 0,
     dueDate: "25/10/2026",
     status: "unpaid",
+    rawStatus: "UNPAID",
   },
   {
     id: "B-201",
@@ -122,8 +131,11 @@ const initialBills: BillRecord[] = [
     prevWater: 15,
     currWater: 28,
     serviceFee: 0,
+    totalAmount: 530000,
+    paidAmount: 530000,
     dueDate: "25/10/2026",
     status: "paid",
+    rawStatus: "PAID",
     paidDate: "20/10/2026",
   },
 ];
@@ -189,8 +201,17 @@ export default function BillingPage() {
   // Invoice modal state
   const [invoiceModalBill, setInvoiceModalBill] = React.useState<BillRecord | null>(null);
 
-  // Bulk generate dialog state
+  // Bulk / SP1 generate dialog state
   const [isBulkDialogOpen, setIsBulkDialogOpen] = React.useState(false);
+  const [roomsList, setRoomsList] = React.useState<RoomItem[]>([]);
+  const [genRoomId, setGenRoomId] = React.useState(1);
+  const [genMonth, setGenMonth] = React.useState("2026-11");
+  const [genPrevElec, setGenPrevElec] = React.useState(100);
+  const [genCurrElec, setGenCurrElec] = React.useState(350);
+  const [genPrevWater, setGenPrevWater] = React.useState(20);
+  const [genCurrWater, setGenCurrWater] = React.useState(35);
+  const [genError, setGenError] = React.useState<string | null>(null);
+  const [isGeneratingBill, setIsGeneratingBill] = React.useState(false);
   const [toastMessage, setToastMessage] = React.useState<string | null>(null);
 
   // Trigger feedback toast
@@ -201,10 +222,15 @@ export default function BillingPage() {
 
   const loadBillsAndAudit = React.useCallback(async () => {
     try {
-      const [billsRes, auditRes] = await Promise.all([
+      const [billsRes, auditRes, roomsRes] = await Promise.all([
         api.getBills({ limit: 30 }),
         api.getAuditLogs(),
+        api.getRooms(),
       ]);
+
+      if (roomsRes.success && roomsRes.data && roomsRes.data.length > 0) {
+        setRoomsList(roomsRes.data);
+      }
 
       if (billsRes.success && billsRes.data && billsRes.data.length > 0) {
         const mappedBills: BillRecord[] = billsRes.data.map((b) => ({
@@ -220,8 +246,11 @@ export default function BillingPage() {
           prevWater: b.prev_water,
           currWater: b.curr_water,
           serviceFee: 0,
+          totalAmount: Number(b.total_amount),
+          paidAmount: Number(b.paid_amount),
           dueDate: `25/${b.month_year.slice(5, 7)}/${b.month_year.slice(0, 4)}`,
           status: b.bill_status === "PAID" ? "paid" : "unpaid",
+          rawStatus: b.bill_status,
           paidDate: b.bill_status === "PAID" ? `20/${b.month_year.slice(5, 7)}/${b.month_year.slice(0, 4)}` : undefined,
         }));
         setBills(mappedBills);
@@ -269,16 +298,29 @@ export default function BillingPage() {
     return true;
   });
 
-  // Calculate high-level summary
-  const totalCollected = bills
-    .filter((b) => b.status === "paid")
-    .reduce((sum, b) => sum + calculateTotals(b).total, 0);
+  // Calculate high-level summary from real paid/unpaid ledger balances
+  const totalCollected = bills.reduce((sum, b) => sum + b.paidAmount, 0);
+  const totalUnpaid = bills.reduce((sum, b) => sum + Math.max(0, b.totalAmount - b.paidAmount), 0);
+  const unpaidBills = bills.filter((b) => b.rawStatus !== "PAID");
+  const overdueCount = unpaidBills.length;
+  const paidBillsCount = bills.length - overdueCount;
+  const paidPct = bills.length > 0 ? Math.round((paidBillsCount / bills.length) * 100) : 0;
+  const totalElecUsage = bills.reduce((sum, b) => sum + Math.max(0, b.currElec - b.prevElec), 0);
+  const totalWaterUsage = bills.reduce((sum, b) => sum + Math.max(0, b.currWater - b.prevWater), 0);
 
-  const totalUnpaid = bills
-    .filter((b) => b.status === "unpaid")
-    .reduce((sum, b) => sum + calculateTotals(b).total, 0);
-
-  const overdueCount = bills.filter((b) => b.status === "unpaid").length;
+  const handleExportCsv = () => {
+    const header = "MaHD,Phong,KyThu,DienCu,DienMoi,NuocCu,NuocMoi,TongTien,DaNop,TrangThai";
+    const rows = filteredBills.map((b) =>
+      [b.id, b.roomNumber, b.monthYear, b.prevElec, b.currElec, b.prevWater, b.currWater, b.totalAmount, b.paidAmount, b.rawStatus].join(",")
+    );
+    const blob = new Blob([[header, ...rows].join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `hoa-don-ktx-${selectedMonth.replace("/", "-")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const openMeterDrawer = (bill: BillRecord) => {
     setEditingBill(bill);
@@ -378,29 +420,33 @@ export default function BillingPage() {
           <Button
             variant="outline"
             size="sm"
-            className="h-9 gap-1.5 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200"
+            onClick={handleExportCsv}
+            className="h-9 gap-1.5 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 cursor-pointer"
           >
             <Download className="h-3.5 w-3.5" />
-            <span>Xuất Excel</span>
+            <span>Xuất CSV</span>
           </Button>
           <Button
             size="sm"
-            onClick={() => setIsBulkDialogOpen(true)}
-            className="h-9 gap-1.5 rounded-xl text-xs font-semibold bg-[#1F5CA9] text-white hover:bg-[#1a4f91] shadow-sm"
+            onClick={() => {
+              setGenError(null);
+              setIsBulkDialogOpen(true);
+            }}
+            className="h-9 gap-1.5 rounded-xl text-xs font-semibold bg-[#1F5CA9] text-white hover:bg-[#1a4f91] shadow-sm cursor-pointer"
           >
             <Plus className="h-4 w-4" />
-            <span>Tạo hóa đơn hàng loạt</span>
+            <span>Phát hành hóa đơn (SP1)</span>
           </Button>
         </div>
       </div>
 
       {/* 1. Overview Summary: 3 quick highlight widgets */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Widget 1: Total Collected This Month */}
+        {/* Widget 1: Total Collected */}
         <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Tổng tiền đã thu trong tháng</span>
+              <span className="text-xs font-medium text-muted-foreground">Tổng tiền đã thu (tất cả kỳ)</span>
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-[#1F5CA9] dark:bg-blue-950/60 dark:text-blue-400">
                 <CreditCard className="h-4.5 w-4.5" />
               </div>
@@ -410,22 +456,22 @@ export default function BillingPage() {
                 {formatCurrency(totalCollected)}
               </span>
               <div className="flex items-center justify-between text-xs mt-2 text-muted-foreground">
-                <span>Tiến độ thu: 75% phòng đã nộp</span>
-                <span className="font-semibold text-emerald-600">Đạt mục tiêu</span>
+                <span>Tiến độ thu: {paidPct}% hóa đơn tất toán</span>
+                <span className="font-semibold text-[#1F5CA9] tabular-nums font-mono">{paidBillsCount}/{bills.length}</span>
               </div>
               <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-2 overflow-hidden">
-                <div className="bg-[#00AFEF] h-full rounded-full" style={{ width: "75%" }} />
+                <div className="bg-[#00AFEF] h-full rounded-full transition-all" style={{ width: `${paidPct}%` }} />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Widget 2: Overdue Bills */}
+        {/* Widget 2: Overdue / Unpaid Bills */}
         <Card className="rounded-2xl border-amber-200/80 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-amber-900 dark:text-amber-200">
-                Hóa đơn chưa thanh toán
+                Hóa đơn chưa tất toán
               </span>
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-[#B45309] dark:bg-amber-950/80 dark:text-amber-400">
                 <AlertCircle className="h-4.5 w-4.5" />
@@ -434,7 +480,7 @@ export default function BillingPage() {
             <div className="mt-3">
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-extrabold tracking-tight text-[#B45309] tabular-nums font-mono">
-                  {overdueCount} phòng
+                  {overdueCount} hóa đơn
                 </span>
                 <span className="text-xs font-semibold text-slate-500 tabular-nums font-mono">
                   ({formatCurrency(totalUnpaid)})
@@ -442,9 +488,9 @@ export default function BillingPage() {
               </div>
               <div className="flex items-center gap-2 mt-2">
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#FEF3C7] text-[#B45309] border border-amber-300/80">
-                  Hạn chót: 25/10/2026
+                  Dư nợ còn lại
                 </span>
-                <span className="text-[11px] text-muted-foreground">Cần gửi SMS nhắc</span>
+                <span className="text-[11px] text-muted-foreground">Bao gồm nộp 1 phần</span>
               </div>
             </div>
           </CardContent>
@@ -454,7 +500,7 @@ export default function BillingPage() {
         <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Sản lượng điện nước tiêu thụ</span>
+              <span className="text-xs font-medium text-muted-foreground">Sản lượng tiêu thụ (từ {bills.length} HĐ)</span>
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-[#00AFEF] dark:bg-sky-950/60 dark:text-sky-400">
                 <TrendingUp className="h-4.5 w-4.5" />
               </div>
@@ -463,19 +509,19 @@ export default function BillingPage() {
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
                   <Zap className="h-3.5 w-3.5 text-[#1F5CA9]" />
-                  <span>Điện: <strong className="tabular-nums font-mono">19.800 kWh</strong></span>
+                  <span>Điện: <strong className="tabular-nums font-mono">{totalElecUsage.toLocaleString("vi-VN")} kWh</strong></span>
                 </div>
-                <span className="text-emerald-600 font-semibold tabular-nums font-mono">+6.4%</span>
+                <span className="text-[11px] text-muted-foreground font-mono">3 bậc SP1</span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
                   <Droplets className="h-3.5 w-3.5 text-[#00AFEF]" />
-                  <span>Nước: <strong className="tabular-nums font-mono">5.600 m³</strong></span>
+                  <span>Nước: <strong className="tabular-nums font-mono">{totalWaterUsage.toLocaleString("vi-VN")} m³</strong></span>
                 </div>
-                <span className="text-emerald-600 font-semibold tabular-nums font-mono">+2.1%</span>
+                <span className="text-[11px] text-muted-foreground font-mono">10.000đ/m³</span>
               </div>
               <p className="text-[11px] text-muted-foreground pt-1 border-t border-slate-100 dark:border-slate-800">
-                Đơn giá chuẩn: 3.000 đ/kWh • 12.000 đ/m³
+                Biểu giá SP1: Điện lũy tiến 2.000–3.000 đ/kWh • Nước 10.000 đ/m³
               </p>
             </div>
           </CardContent>
@@ -515,7 +561,7 @@ export default function BillingPage() {
         {isDemoMode && activeView === "audit" && (
           <Badge className="bg-amber-100 text-amber-900 border border-amber-300 font-mono text-[11px] flex items-center gap-1.5 py-1 px-3">
             <Flame className="h-3.5 w-3.5 text-amber-600" />
-            <span>PostgreSQL Trigger `trg_prevent_meter_decrement` & `audit_logs` (JSONB)</span>
+            <span>PostgreSQL Trigger `trg_validate_utility_meter_fraud` & `audit_logs` (JSONB)</span>
           </Badge>
         )}
       </div>
@@ -571,7 +617,7 @@ export default function BillingPage() {
               <div className="relative w-full md:w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
-                  placeholder="Tìm theo số phòng (vd: A.201)..."
+                  placeholder="Tìm theo số phòng (vd: B1-101)..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="h-9 pl-9 text-xs rounded-xl border-slate-200 dark:border-slate-700"
@@ -662,9 +708,13 @@ export default function BillingPage() {
 
                     {/* Status Pill */}
                     <td className="py-3.5 px-4">
-                      {bill.status === "paid" ? (
+                      {bill.rawStatus === "PAID" ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300">
                           <CheckCircle2 className="h-3 w-3" /> Đã nộp
+                        </span>
+                      ) : bill.rawStatus === "PARTIALLY_PAID" ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-50 text-[#1F5CA9] border border-sky-200 dark:bg-sky-950/60 dark:text-sky-300">
+                          <Clock className="h-3 w-3" /> Đã nộp 1 phần
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FEF3C7] text-[#B45309] border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300">
@@ -933,7 +983,7 @@ export default function BillingPage() {
                       <span>Test Trigger Gian Lận (CT221H)</span>
                     </div>
                     <Badge className="bg-amber-200 text-amber-950 border-0 text-[10px] font-mono">
-                      trg_prevent_meter_decrement
+                      trg_validate_utility_meter_fraud
                     </Badge>
                   </div>
                   <p className="text-[11px] text-amber-800 leading-relaxed">
@@ -1155,8 +1205,20 @@ export default function BillingPage() {
                   </div>
                   <div>
                     <span className="text-muted-foreground block text-[11px]">Trạng thái:</span>
-                    <span className={`font-bold ${invoiceModalBill.status === "paid" ? "text-emerald-600" : "text-amber-600"}`}>
-                      {invoiceModalBill.status === "paid" ? "Đã nộp đủ" : "Chưa thanh toán"}
+                    <span
+                      className={`font-bold ${
+                        invoiceModalBill.rawStatus === "PAID"
+                          ? "text-emerald-600"
+                          : invoiceModalBill.rawStatus === "PARTIALLY_PAID"
+                            ? "text-[#1F5CA9]"
+                            : "text-amber-600"
+                      }`}
+                    >
+                      {invoiceModalBill.rawStatus === "PAID"
+                        ? "Đã nộp đủ"
+                        : invoiceModalBill.rawStatus === "PARTIALLY_PAID"
+                          ? "Đã nộp một phần"
+                          : "Chưa thanh toán"}
                     </span>
                   </div>
                 </div>
@@ -1167,20 +1229,32 @@ export default function BillingPage() {
                   return (
                     <div className="space-y-2 pt-2">
                       <div className="flex justify-between border-b border-dashed pb-1.5 text-slate-600">
-                        <span>Tiền điện ({t.elecUsage} kWh × 3.000đ):</span>
-                        <span className="font-medium text-slate-900">{formatCurrency(t.elecCost)}</span>
+                        <span>Tiền điện ({t.elecUsage} kWh — lũy tiến 3 bậc SP1):</span>
+                        <span className="font-medium text-slate-900 tabular-nums font-mono">{formatCurrency(t.elecCost)}</span>
                       </div>
                       <div className="flex justify-between border-b border-dashed pb-1.5 text-slate-600">
-                        <span>Tiền nước ({t.waterUsage} m³ × 12.000đ):</span>
-                        <span className="font-medium text-slate-900">{formatCurrency(t.waterCost)}</span>
+                        <span>Tiền nước ({t.waterUsage} m³ × 10.000đ):</span>
+                        <span className="font-medium text-slate-900 tabular-nums font-mono">{formatCurrency(t.waterCost)}</span>
                       </div>
                       <div className="flex justify-between border-b border-dashed pb-1.5 text-slate-600">
                         <span>Phí vệ sinh & quản trị KTX:</span>
-                        <span className="font-medium text-slate-900">{formatCurrency(invoiceModalBill.serviceFee)}</span>
+                        <span className="font-medium text-slate-900 tabular-nums font-mono">{formatCurrency(invoiceModalBill.serviceFee)}</span>
                       </div>
+                      {invoiceModalBill.paidAmount > 0 && invoiceModalBill.rawStatus !== "PAID" && (
+                        <div className="flex justify-between border-b border-dashed pb-1.5 text-emerald-700">
+                          <span>Đã thanh toán trước đó:</span>
+                          <span className="font-semibold tabular-nums font-mono">-{formatCurrency(invoiceModalBill.paidAmount)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between pt-1 text-sm font-extrabold text-[#1F5CA9]">
-                        <span>TỔNG TIỀN PHẢI NỘP:</span>
-                        <span>{formatCurrency(t.total)}</span>
+                        <span>{invoiceModalBill.paidAmount > 0 && invoiceModalBill.rawStatus !== "PAID" ? "CÒN PHẢI NỘP:" : "TỔNG TIỀN PHẢI NỘP:"}</span>
+                        <span className="tabular-nums font-mono">
+                          {formatCurrency(
+                            invoiceModalBill.rawStatus === "PARTIALLY_PAID"
+                              ? Math.max(0, t.total - invoiceModalBill.paidAmount)
+                              : t.total
+                          )}
+                        </span>
                       </div>
                     </div>
                   );
@@ -1213,63 +1287,162 @@ export default function BillingPage() {
         </DialogContent>
       </Dialog>
 
-      {/* 6. Bulk Generation Dialog */}
+      {/* 6. SP1 Generate Bill Dialog */}
       <Dialog open={isBulkDialogOpen} onOpenChange={setIsBulkDialogOpen}>
         <DialogContent className="sm:max-w-md rounded-2xl p-6">
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-slate-900">
-              Tạo Hóa Đơn Hàng Loạt
+              Phát Hành Hóa Đơn Mới (Stored Procedure SP1)
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Hệ thống sẽ tự động quét chỉ số công tơ điện nước mới nhất và phát hành thông báo nộp tiền cho sinh viên.
+              Chọn phòng và nhập chỉ số công tơ để gọi <code>sp_generate_and_split_utility_bill</code> tính tiền lũy tiến và chia đều công nợ cho sinh viên đang ở.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 py-3 text-xs">
-            <div className="rounded-xl bg-blue-50/70 border border-blue-100 p-3 text-slate-700 space-y-1.5">
-              <div className="font-semibold text-[#1F5CA9]">Thông số phát hành kỳ {selectedMonth}:</div>
-              <div>• Số phòng áp dụng: <strong>6 phòng</strong> (Tòa B1, B2 & B3)</div>
-              <div>• Đơn giá điện: <strong>3.000 đ/kWh</strong></div>
-              <div>• Đơn giá nước: <strong>12.000 đ/m³</strong></div>
-              <div>• Hạn nộp dự kiến: <strong>25/10/2026</strong></div>
-            </div>
-          </div>
-
-          <DialogFooter className="flex gap-2 sm:justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsBulkDialogOpen(false)}
-              className="rounded-xl text-xs"
-            >
-              Hủy
-            </Button>
-            <Button
-              size="sm"
-              onClick={async () => {
-                setIsBulkDialogOpen(false);
-                try {
-                  const res = await api.generateBill({
-                    room_id: 1,
-                    month_year: "2026-11",
-                    prev_electric: 100,
-                    curr_electric: 350,
-                    prev_water: 20,
-                    curr_water: 35,
-                  });
-                  await loadBillsAndAudit();
-                  showToast(
-                    res.message || "Đã gọi Stored Procedure SP1 phát hành hóa đơn và chia nợ thành công!"
-                  );
-                } catch {
-                  showToast("Đã phát hành hóa đơn kỳ mới thành công!");
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setGenError(null);
+              setIsGeneratingBill(true);
+              try {
+                const res = await api.generateBill({
+                  room_id: genRoomId,
+                  month_year: genMonth.trim(),
+                  prev_electric: Number(genPrevElec),
+                  curr_electric: Number(genCurrElec),
+                  prev_water: Number(genPrevWater),
+                  curr_water: Number(genCurrWater),
+                });
+                if (!res.success) {
+                  setGenError(res.message || "Không thể phát hành hóa đơn từ SP1.");
+                  return;
                 }
-              }}
-              className="rounded-xl text-xs font-semibold bg-[#1F5CA9] text-white hover:bg-[#1a4f91]"
-            >
-              Xác nhận Tạo hóa đơn (SP1)
-            </Button>
-          </DialogFooter>
+                await loadBillsAndAudit();
+                setIsBulkDialogOpen(false);
+                showToast(
+                  res.message || "Đã gọi Stored Procedure SP1 phát hành hóa đơn và chia nợ thành công!"
+                );
+              } catch {
+                setGenError("Lỗi kết nối máy chủ khi gọi SP1.");
+              } finally {
+                setIsGeneratingBill(false);
+              }
+            }}
+            className="space-y-3 py-2 text-xs"
+          >
+            {genError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-medium text-red-700">
+                {genError}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-semibold text-slate-700 block mb-1">Phòng áp dụng</label>
+                <select
+                  value={genRoomId}
+                  onChange={(e) => setGenRoomId(Number(e.target.value))}
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800"
+                >
+                  {roomsList.length > 0 ? (
+                    roomsList.map((r) => (
+                      <option key={r.room_id} value={r.room_id} disabled={r.current_occupancy === 0}>
+                        {r.room_number} ({r.building_id}) — {r.current_occupancy}/{r.capacity} SV
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value={1}>B1-101 (B1)</option>
+                      <option value={2}>B1-102 (B1)</option>
+                      <option value={3}>B2-201 (B2)</option>
+                    </>
+                  )}
+                </select>
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-700 block mb-1">Kỳ thu (YYYY-MM)</label>
+                <Input
+                  required
+                  pattern="\d{4}-(0[1-9]|1[0-2])"
+                  value={genMonth}
+                  onChange={(e) => setGenMonth(e.target.value)}
+                  className="h-9 text-xs font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-semibold text-slate-700 block mb-1">Điện cũ (kWh)</label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={genPrevElec}
+                  onChange={(e) => setGenPrevElec(Number(e.target.value))}
+                  className="h-9 text-xs font-mono"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-700 block mb-1">Điện mới (kWh)</label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={genCurrElec}
+                  onChange={(e) => setGenCurrElec(Number(e.target.value))}
+                  className="h-9 text-xs font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-semibold text-slate-700 block mb-1">Nước cũ (m³)</label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={genPrevWater}
+                  onChange={(e) => setGenPrevWater(Number(e.target.value))}
+                  className="h-9 text-xs font-mono"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-700 block mb-1">Nước mới (m³)</label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={genCurrWater}
+                  onChange={(e) => setGenCurrWater(Number(e.target.value))}
+                  className="h-9 text-xs font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-blue-50/70 border border-blue-100 p-3 text-slate-700 space-y-1">
+              <div className="font-semibold text-[#1F5CA9]">Biểu giá áp dụng trong SP1:</div>
+              <div>• Điện 3 bậc: <strong>2.000đ</strong> (≤100) / <strong>2.500đ</strong> (101–200) / <strong>3.000đ</strong> (&gt;200 kWh)</div>
+              <div>• Nước sạch: <strong>10.000 đ/m³</strong></div>
+            </div>
+
+            <DialogFooter className="flex gap-2 sm:justify-end pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsBulkDialogOpen(false)}
+                className="rounded-xl text-xs"
+              >
+                Hủy
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isGeneratingBill}
+                className="rounded-xl text-xs font-semibold bg-[#1F5CA9] text-white hover:bg-[#1a4f91] cursor-pointer"
+              >
+                {isGeneratingBill ? "Đang gọi SP1..." : "Xác nhận Tạo hóa đơn (SP1)"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
