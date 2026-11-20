@@ -70,106 +70,55 @@ interface Contract {
 
 const mockContracts: Contract[] = [
   {
-    id: "HD-01",
-    contractNumber: "HĐ-2024-0812",
+    id: "HD-1",
+    contractNumber: "HĐ-CTU-0001",
     studentName: "Nguyễn Văn An",
-    studentCode: "20230101",
-    avatarText: "NA",
-    room: "A.301",
-    building: "Tòa A",
-    startDate: "01/10/2024",
-    endDate: "30/06/2025",
-    daysRemaining: 120,
+    studentCode: "B2100001",
+    avatarText: "VA",
+    room: "B1-101 (Giường 1)",
+    building: "Tòa B1",
+    startDate: "2026-09-01",
+    endDate: "2027-06-30",
+    daysRemaining: 240,
+    monthlyRent: 300000,
+    depositAmount: 1000000,
+    depositStatus: "paid",
+    status: "active",
+    roomType: "Tiêu chuẩn 4 người (Tòa B1 - Nam)",
+  },
+  {
+    id: "HD-5",
+    contractNumber: "HĐ-CTU-0005",
+    studentName: "Trần Thị Lan",
+    studentCode: "B2100005",
+    avatarText: "TL",
+    room: "B2-201 (Giường 1)",
+    building: "Tòa B2",
+    startDate: "2026-09-01",
+    endDate: "2027-06-30",
+    daysRemaining: 240,
+    monthlyRent: 300000,
+    depositAmount: 1000000,
+    depositStatus: "paid",
+    status: "active",
+    roomType: "Tiêu chuẩn 4 người (Tòa B2 - Nữ)",
+  },
+  {
+    id: "HD-9",
+    contractNumber: "HĐ-CTU-0009",
+    studentName: "Đỗ Minh Khôi",
+    studentCode: "B2100009",
+    avatarText: "MK",
+    room: "B3-301 (Giường 1)",
+    building: "Tòa B3",
+    startDate: "2026-09-01",
+    endDate: "2027-06-30",
+    daysRemaining: 240,
     monthlyRent: 450000,
     depositAmount: 1000000,
     depositStatus: "paid",
     status: "active",
-    roomType: "Tiêu chuẩn 4 người",
-  },
-  {
-    id: "HD-02",
-    contractNumber: "HĐ-2024-0419",
-    studentName: "Trần Thị Mai",
-    studentCode: "20230245",
-    avatarText: "TM",
-    room: "B.402",
-    building: "Tòa B",
-    startDate: "01/10/2024",
-    endDate: "30/11/2026",
-    daysRemaining: 22,
-    monthlyRent: 500000,
-    depositAmount: 1000000,
-    depositStatus: "paid",
-    status: "expiring_soon",
-    roomType: "Tiêu chuẩn 4 người",
-  },
-  {
-    id: "HD-03",
-    contractNumber: "HĐ-2023-1102",
-    studentName: "Lê Hoàng Long",
-    studentCode: "20221980",
-    avatarText: "LL",
-    room: "A.205",
-    building: "Tòa A",
-    startDate: "15/09/2023",
-    endDate: "15/07/2025",
-    daysRemaining: 180,
-    monthlyRent: 450000,
-    depositAmount: 1000000,
-    depositStatus: "paid",
-    status: "active",
-    roomType: "Tiêu chuẩn 4 người",
-  },
-  {
-    id: "HD-04",
-    contractNumber: "HĐ-2022-0941",
-    studentName: "Phạm Hải Đăng",
-    studentCode: "20215540",
-    avatarText: "HĐ",
-    room: "C.104",
-    building: "Tòa C",
-    startDate: "01/09/2022",
-    endDate: "30/09/2024",
-    daysRemaining: -15,
-    monthlyRent: 850000,
-    depositAmount: 1500000,
-    depositStatus: "paid",
-    status: "terminated",
-    roomType: "Chất lượng cao 2 người",
-  },
-  {
-    id: "HD-05",
-    contractNumber: "HĐ-2024-0992",
-    studentName: "Hoàng Ngọc Ánh",
-    studentCode: "20241102",
-    avatarText: "NA",
-    room: "B.402",
-    building: "Tòa B",
-    startDate: "01/10/2024",
-    endDate: "30/06/2025",
-    daysRemaining: 135,
-    monthlyRent: 500000,
-    depositAmount: 1000000,
-    depositStatus: "paid",
-    status: "active",
-    roomType: "Tiêu chuẩn 4 người",
-  },
-  {
-    id: "HD-06",
-    contractNumber: "HĐ-2024-0315",
-    studentName: "Vũ Phương Thảo",
-    studentCode: "20248831",
-    avatarText: "PT",
-    room: "B.208",
-    building: "Tòa B",
-    startDate: "01/10/2024",
-    endDate: "15/11/2026",
-    daysRemaining: 14,
-    monthlyRent: 450000,
-    depositAmount: 1000000,
-    depositStatus: "paid",
-    status: "expiring_soon",
-    roomType: "Tiêu chuẩn 6 người",
+    roomType: "Chất lượng cao 4 người (Tòa B3 - Nam)",
   },
 ];
 
@@ -288,11 +237,11 @@ export default function ContractsPage() {
       prev.map((c) =>
         c.id === extendTargetContract.id
           ? {
-              ...c,
-              endDate: "30/06/2027",
-              daysRemaining: c.daysRemaining + parseInt(extendDurationMonths) * 30,
-              status: "active",
-            }
+            ...c,
+            endDate: "30/06/2027",
+            daysRemaining: c.daysRemaining + parseInt(extendDurationMonths) * 30,
+            status: "active",
+          }
           : c
       )
     );
@@ -321,10 +270,10 @@ export default function ContractsPage() {
       prev.map((c) =>
         c.id === terminateTargetContract.id
           ? {
-              ...c,
-              status: "terminated",
-              daysRemaining: 0,
-            }
+            ...c,
+            status: "terminated",
+            daysRemaining: 0,
+          }
           : c
       )
     );
@@ -368,6 +317,28 @@ export default function ContractsPage() {
     }
   };
 
+  const activeCount = contracts.filter((c) => c.status === "active").length;
+  const expiringSoonCount = contracts.filter((c) => c.status === "expiring_soon").length;
+  const terminatedCount = contracts.filter((c) => c.status === "terminated").length;
+  const activePct = contracts.length > 0 ? Math.round((activeCount / contracts.length) * 100) : 0;
+  const totalActiveRent = contracts
+    .filter((c) => c.status !== "terminated")
+    .reduce((sum, c) => sum + c.monthlyRent, 0);
+
+  const handleExportContractsCsv = () => {
+    const header = "SoHD,MSSV,HoTen,Phong,Toa,NgayBatDau,NgayKetThuc,TrangThai";
+    const rows = filteredContracts.map((c) =>
+      [c.contractNumber, c.studentCode, c.studentName, c.room, c.building, c.startDate, c.endDate, c.status].join(",")
+    );
+    const blob = new Blob([[header, ...rows].join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "hop-dong-ktx.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -382,25 +353,26 @@ export default function ContractsPage() {
             </Badge>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Quản lý thời hạn lưu trú, tiền ký quỹ tài sản phòng ở và phụ lục gia hạn
+            Quản lý hợp đồng xếp phòng (`room_assignments`), thanh lý hợp đồng và tiền thuê hàng tháng
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <Button
             variant="outline"
-            className="border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200"
-            onClick={() => {
-              // Non-blocking toast/log instead of alert
-            }}
+            className="border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 cursor-pointer"
+            onClick={handleExportContractsCsv}
           >
             <Download className="mr-2 h-4 w-4 text-slate-500" />
-            Xuất Excel
+            Xuất CSV
           </Button>
 
           <Button
-            className="bg-[#1F5CA9] text-white hover:bg-[#184988] shadow-sm font-medium"
-            onClick={() => setIsNewContractModalOpen(true)}
+            className="bg-[#1F5CA9] text-white hover:bg-[#184988] shadow-sm font-medium cursor-pointer"
+            onClick={() => {
+              setContractFormError(null);
+              setIsNewContractModalOpen(true);
+            }}
           >
             <Plus className="mr-2 h-4 w-4" />
             Lập hợp đồng mới
@@ -408,7 +380,7 @@ export default function ContractsPage() {
         </div>
       </div>
 
-      {/* 4 StatCards */}
+      {/* 4 StatCards (100% live from assignments DB) */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Card 1 */}
         <Card className="border-slate-200/80 shadow-sm bg-white dark:bg-slate-900">
@@ -418,15 +390,15 @@ export default function ContractsPage() {
                 Đang có hiệu lực
               </p>
               <div className="flex items-baseline gap-2 mt-1.5">
-                <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
-                  1,720
+                <span className="text-2xl font-extrabold text-slate-900 dark:text-white tabular-nums font-mono">
+                  {activeCount.toLocaleString("vi-VN")}
                 </span>
-                <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                  93.5%
+                <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full tabular-nums font-mono">
+                  {activePct}%
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 mt-1">
-                Lưu trú đúng quy định KTX
+                Trên tổng {contracts.length} hợp đồng KTX
               </p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#1F5CA9]">
@@ -435,7 +407,7 @@ export default function ContractsPage() {
           </CardContent>
         </Card>
 
-        {/* Card 2: Sắp hết hạn (Vàng cảnh báo #FFB800) */}
+        {/* Card 2: Sắp hết hạn */}
         <Card className="border-amber-200 shadow-sm bg-gradient-to-br from-white to-amber-50/40">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
@@ -444,15 +416,15 @@ export default function ContractsPage() {
                 Sắp hết hạn (30 ngày)
               </p>
               <div className="flex items-baseline gap-2 mt-1.5">
-                <span className="text-2xl font-extrabold text-amber-800">
-                  48
+                <span className="text-2xl font-extrabold text-amber-800 tabular-nums font-mono">
+                  {expiringSoonCount}
                 </span>
                 <span className="text-xs font-bold bg-[#FEF3C7] text-[#B45309] px-2 py-0.5 rounded-full border border-amber-200">
-                  Cần nhắc gia hạn
+                  {expiringSoonCount > 0 ? "Cần nhắc gia hạn" : "Ổn định"}
                 </span>
               </div>
               <p className="text-[11px] text-amber-700/80 mt-1">
-                Hạn chót trước ngày 30/11
+                Theo trường end_date hợp đồng
               </p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100/90 text-[#B45309]">
@@ -466,18 +438,18 @@ export default function ContractsPage() {
           <CardContent className="p-5 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                Đã thanh lý & hoàn tất
+                Đã thanh lý &amp; trả phòng
               </p>
               <div className="flex items-baseline gap-2 mt-1.5">
-                <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
-                  72
+                <span className="text-2xl font-extrabold text-slate-900 dark:text-white tabular-nums font-mono">
+                  {terminatedCount}
                 </span>
                 <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                  Kỳ trước
+                  is_active = false
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 mt-1">
-                Đã bàn giao phòng & hoàn cọc
+                Đã hoàn tất trả giường về phòng
               </p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
@@ -486,23 +458,23 @@ export default function ContractsPage() {
           </CardContent>
         </Card>
 
-        {/* Card 4: Tổng quỹ ký quỹ */}
+        {/* Card 4: Tổng tiền thuê tháng đang hiệu lực */}
         <Card className="border-slate-200/80 shadow-sm bg-white dark:bg-slate-900">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                Quỹ đặt cọc cơ sở vật chất
+                Tổng tiền phòng / tháng
               </p>
               <div className="flex items-baseline gap-2 mt-1.5">
-                <span className="text-2xl font-extrabold text-[#00AFEF]">
-                  1.84 tỷ
+                <span className="text-2xl font-extrabold text-[#00AFEF] tabular-nums font-mono">
+                  {(totalActiveRent / 1_000_000).toFixed(2)} tr đ
                 </span>
                 <span className="text-xs font-semibold text-[#00AFEF] bg-sky-50 px-2 py-0.5 rounded-full">
-                  100% bảo đảm
+                  {activeCount} chỗ
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
-                1.000.000 đ/sinh viên lưu trú
+              <p className="text-[11px] text-slate-400 mt-1 tabular-nums font-mono">
+                {totalActiveRent.toLocaleString("vi-VN")} đ/tháng đang thu
               </p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-[#00AFEF]">
@@ -519,7 +491,7 @@ export default function ContractsPage() {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Tìm số hợp đồng (HĐ-2024...), tên SV, MSSV, phòng..."
+                placeholder="Tìm số hợp đồng (HĐ-CTU...), tên SV, MSSV, phòng..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-10 border-slate-200 bg-slate-50/50 focus-visible:bg-white"
@@ -913,7 +885,13 @@ export default function ContractsPage() {
       </Dialog>
 
       {/* Modal Lập Hợp Đồng Mới */}
-      <Dialog open={isNewContractModalOpen} onOpenChange={setIsNewContractModalOpen}>
+      <Dialog
+        open={isNewContractModalOpen}
+        onOpenChange={(open) => {
+          setIsNewContractModalOpen(open);
+          if (!open) setContractFormError(null);
+        }}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -957,8 +935,17 @@ export default function ContractsPage() {
                 >
                   {availableRooms.length > 0 ? (
                     availableRooms.map((r) => (
-                      <option key={r.room_id} value={r.room_id}>
+                      <option
+                        key={r.room_id}
+                        value={r.room_id}
+                        disabled={r.status === "MAINTENANCE" || r.current_occupancy >= r.capacity}
+                      >
                         {r.room_number} ({r.building_id}) — {r.current_occupancy}/{r.capacity}
+                        {r.status === "MAINTENANCE"
+                          ? " [Bảo trì]"
+                          : r.current_occupancy >= r.capacity
+                            ? " [Đầy]"
+                            : ""}
                       </option>
                     ))
                   ) : (

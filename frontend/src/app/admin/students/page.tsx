@@ -88,165 +88,96 @@ interface Student {
 
 const mockStudents: Student[] = [
   {
-    id: "SV-01",
+    id: "B2100001",
     name: "Nguyễn Văn An",
-    studentCode: "20230101",
-    avatarText: "NA",
+    studentCode: "B2100001",
+    avatarText: "VA",
     gender: "Nam",
-    faculty: "Công nghệ thông tin",
-    cohort: "K68",
-    building: "Tòa A",
-    room: "A.301",
-    bed: "A1",
-    phone: "0912.345.678",
-    email: "an.nv230101@sis.hust.edu.vn",
-    idCard: "001204018293",
-    hometown: "Bắc Ninh",
+    faculty: "Kỹ thuật Phần mềm",
+    cohort: "K47",
+    building: "Tòa B1",
+    room: "B1-101",
+    bed: "G01",
+    phone: "0912.345.001",
+    email: "b2100001@student.ctu.edu.vn",
+    idCard: "092203001001",
+    hometown: "Cần Thơ",
     priorityCategory: "Bình thường",
-    feeStatus: "paid",
-    feeAmount: 0,
-    disciplineStatus: "clean",
-    checkInDate: "15/09/2024",
-    cardActive: true,
-    rfidCard: "RFID-8829-4410",
-  },
-  {
-    id: "SV-02",
-    name: "Trần Thị Mai",
-    studentCode: "20230245",
-    avatarText: "TM",
-    gender: "Nữ",
-    faculty: "Kinh tế & Quản lý",
-    cohort: "K68",
-    building: "Tòa B",
-    room: "B.402",
-    bed: "B1",
-    phone: "0987.654.321",
-    email: "mai.tt230245@sis.hust.edu.vn",
-    idCard: "024203009412",
-    hometown: "Hà Nam",
-    priorityCategory: "Hộ nghèo",
     feeStatus: "unpaid",
-    feeAmount: 345000,
+    feeAmount: 375000,
     disciplineStatus: "clean",
-    checkInDate: "01/10/2024",
+    checkInDate: "2026-09-01",
     cardActive: true,
-    rfidCard: "RFID-9902-1234",
+    rfidCard: "RFID-CTU-B2100001",
   },
   {
-    id: "SV-03",
-    name: "Lê Hoàng Long",
-    studentCode: "20221980",
-    avatarText: "LL",
+    id: "B2100003",
+    name: "Lê Văn Cường",
+    studentCode: "B2100003",
+    avatarText: "VC",
     gender: "Nam",
-    faculty: "Điện tử viễn thông",
-    cohort: "K67",
-    building: "Tòa A",
-    room: "A.205",
-    bed: "A2",
-    phone: "0971.223.344",
-    email: "long.lh221980@sis.hust.edu.vn",
-    idCard: "019202008741",
-    hometown: "Thanh Hóa",
+    faculty: "Khoa học Máy tính",
+    cohort: "K47",
+    building: "Tòa B1",
+    room: "B1-102",
+    bed: "G01",
+    phone: "0912.345.003",
+    email: "b2100003@student.ctu.edu.vn",
+    idCard: "092203001003",
+    hometown: "Cần Thơ",
+    priorityCategory: "Bình thường",
+    feeStatus: "unpaid",
+    feeAmount: 1025000,
+    disciplineStatus: "clean",
+    checkInDate: "2026-09-01",
+    cardActive: true,
+    rfidCard: "RFID-CTU-B2100003",
+  },
+  {
+    id: "B2100005",
+    name: "Trần Thị Lan",
+    studentCode: "B2100005",
+    avatarText: "TL",
+    gender: "Nữ",
+    faculty: "Hệ thống Thông tin",
+    cohort: "K47",
+    building: "Tòa B2",
+    room: "B2-201",
+    bed: "G01",
+    phone: "0912.345.005",
+    email: "b2100005@student.ctu.edu.vn",
+    idCard: "092203001005",
+    hometown: "Cần Thơ",
     priorityCategory: "Bình thường",
     feeStatus: "paid",
     feeAmount: 0,
     disciplineStatus: "clean",
-    checkInDate: "20/09/2023",
+    checkInDate: "2026-09-01",
     cardActive: true,
-    rfidCard: "RFID-4421-9876",
+    rfidCard: "RFID-CTU-B2100005",
   },
   {
-    id: "SV-04",
-    name: "Phạm Hải Đăng",
-    studentCode: "20215540",
-    avatarText: "HĐ",
+    id: "B2100009",
+    name: "Đỗ Minh Khôi",
+    studentCode: "B2100009",
+    avatarText: "MK",
     gender: "Nam",
-    faculty: "Cơ khí chế tạo máy",
-    cohort: "K66",
-    building: "Tòa C",
-    room: "C.104",
-    bed: "C1",
-    phone: "0904.556.778",
-    email: "dang.ph215540@sis.hust.edu.vn",
-    idCard: "031201004523",
-    hometown: "Hải Phòng",
-    priorityCategory: "Con thương binh",
-    feeStatus: "overdue",
-    feeAmount: 850000,
+    faculty: "Mạng máy tính & Truyền thông",
+    cohort: "K47",
+    building: "Tòa B3",
+    room: "B3-301",
+    bed: "G01",
+    phone: "0912.345.009",
+    email: "b2100009@student.ctu.edu.vn",
+    idCard: "092203001009",
+    hometown: "Cần Thơ",
+    priorityCategory: "Bình thường",
+    feeStatus: "unpaid",
+    feeAmount: 550000,
     disciplineStatus: "warned",
-    checkInDate: "10/09/2022",
-    cardActive: false,
-    rfidCard: "RFID-1002-3349",
-  },
-  {
-    id: "SV-05",
-    name: "Hoàng Ngọc Ánh",
-    studentCode: "20241102",
-    avatarText: "NA",
-    gender: "Nữ",
-    faculty: "Ngoại ngữ tiếng Anh",
-    cohort: "K69",
-    building: "Tòa B",
-    room: "B.402",
-    bed: "B2",
-    phone: "0936.889.900",
-    email: "anh.hn241102@sis.hust.edu.vn",
-    idCard: "001205011782",
-    hometown: "Hà Nội",
-    priorityCategory: "Bình thường",
-    feeStatus: "paid",
-    feeAmount: 0,
-    disciplineStatus: "clean",
-    checkInDate: "25/09/2025",
+    checkInDate: "2026-09-01",
     cardActive: true,
-    rfidCard: "RFID-7711-2358",
-  },
-  {
-    id: "SV-06",
-    name: "Đỗ Quốc Bảo",
-    studentCode: "20234419",
-    avatarText: "QB",
-    gender: "Nam",
-    faculty: "Khoa học máy tính",
-    cohort: "K68",
-    building: "Tòa A",
-    room: "A.301",
-    bed: "A2",
-    phone: "0915.667.788",
-    email: "bao.dq234419@sis.hust.edu.vn",
-    idCard: "022203014592",
-    hometown: "Quảng Ninh",
-    priorityCategory: "Dân tộc",
-    feeStatus: "paid",
-    feeAmount: 0,
-    disciplineStatus: "clean",
-    checkInDate: "15/09/2024",
-    cardActive: true,
-    rfidCard: "RFID-9023-8871",
-  },
-  {
-    id: "SV-07",
-    name: "Vũ Phương Thảo",
-    studentCode: "20248831",
-    avatarText: "PT",
-    gender: "Nữ",
-    faculty: "Công nghệ Sinh học",
-    cohort: "K69",
-    building: "Tòa B",
-    room: "B.208",
-    bed: "B1",
-    phone: "0982.113.355",
-    email: "thao.vp248831@sis.hust.edu.vn",
-    idCard: "025205001298",
-    hometown: "Nam Định",
-    priorityCategory: "Hộ nghèo",
-    feeStatus: "unpaid",
-    feeAmount: 220000,
-    disciplineStatus: "clean",
-    checkInDate: "28/09/2025",
-    cardActive: true,
-    rfidCard: "RFID-6623-1029",
+    rfidCard: "RFID-CTU-B2100009",
   },
 ];
 
@@ -264,8 +195,8 @@ export default function StudentsPage() {
   // Modals
   const [isTransferModalOpen, setIsTransferModalOpen] = React.useState(false);
   const [transferTargetStudent, setTransferTargetStudent] = React.useState<Student | null>(null);
-  const [newRoomSelection, setNewRoomSelection] = React.useState("A.405");
-  const [newBedSelection, setNewBedSelection] = React.useState("A1");
+  const [newRoomSelection, setNewRoomSelection] = React.useState("B1-101");
+  const [newBedSelection, setNewBedSelection] = React.useState("G03");
   const [transferReason, setTransferReason] = React.useState("Theo nguyện vọng cá nhân");
 
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = React.useState(false);
@@ -429,14 +360,14 @@ export default function StudentsPage() {
       room: newStudentForm.room,
       bed: newStudentForm.bed,
       phone: newStudentForm.phone || "0988.000.111",
-      email: newStudentForm.email || `${newStudentForm.studentCode}@sis.hust.edu.vn`,
-      idCard: newStudentForm.idCard || "001205009999",
-      hometown: newStudentForm.hometown || "Hà Nội",
+      email: newStudentForm.email || `${newStudentForm.studentCode.toLowerCase()}@student.ctu.edu.vn`,
+      idCard: newStudentForm.idCard || "092203009999",
+      hometown: newStudentForm.hometown || "Cần Thơ",
       priorityCategory: newStudentForm.priorityCategory,
       feeStatus: "paid",
       feeAmount: 0,
       disciplineStatus: "clean",
-      checkInDate: "24/10/2026",
+      checkInDate: new Date().toISOString().slice(0, 10),
       cardActive: true,
       rfidCard: `RFID-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`,
     };
@@ -448,16 +379,36 @@ export default function StudentsPage() {
       studentCode: "",
       gender: "Nam",
       faculty: "Công nghệ thông tin",
-      cohort: "K69",
-      building: "Tòa A",
-      room: "A.302",
-      bed: "A1",
+      cohort: "K47",
+      building: "Tòa B1",
+      room: "B1-101",
+      bed: "G01",
       phone: "",
       email: "",
       idCard: "",
       hometown: "",
       priorityCategory: "Bình thường",
     });
+  };
+
+  const totalStudentsCount = students.length;
+  const assignedStudentsCount = students.filter((s) => s.room !== "Chưa xếp").length;
+  const unpaidStudentsCount = students.filter((s) => s.feeStatus !== "paid").length;
+  const warnedStudentsCount = students.filter((s) => s.disciplineStatus === "warned").length;
+  const totalStudentDebt = students.reduce((sum, s) => sum + s.feeAmount, 0);
+
+  const handleExportStudentsCsv = () => {
+    const header = "MSSV,HoTen,GioiTinh,Khoa,Toa,Phong,CongNo,TrangThaiThe";
+    const rows = filteredStudents.map((s) =>
+      [s.studentCode, s.name, s.gender, s.cohort, s.building, s.room, s.feeAmount, s.cardActive ? "ACTIVE" : "LOCKED"].join(",")
+    );
+    const blob = new Blob([[header, ...rows].join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "danh-sach-sinh-vien-ktx.csv";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -474,33 +425,31 @@ export default function StudentsPage() {
             </Badge>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Quản lý thông tin cư trú, phòng ở, thẻ từ ra vào và đối tượng chính sách KTX
+            Quản lý thông tin cư trú, phòng ở, thẻ từ ra vào và công nợ KTX
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <Button
             variant="outline"
-            className="border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200"
-            onClick={() => {
-              // Export handler
-            }}
+            className="border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 cursor-pointer"
+            onClick={handleExportStudentsCsv}
           >
             <Download className="mr-2 h-4 w-4 text-slate-500" />
-            Xuất Excel
+            Xuất CSV
           </Button>
 
           <Button
-            className="bg-[#1F5CA9] text-white hover:bg-[#184988] shadow-sm font-medium"
+            className="bg-[#1F5CA9] text-white hover:bg-[#184988] shadow-sm font-medium cursor-pointer"
             onClick={() => setIsAddStudentModalOpen(true)}
           >
             <UserPlus className="mr-2 h-4 w-4" />
-            Tiếp nhận sinh viên mới
+            Tiếp nhận sinh viên (Mô phỏng)
           </Button>
         </div>
       </div>
 
-      {/* 4 Quick Stat Highlight Cards */}
+      {/* 4 Quick Stat Highlight Cards (100% live from students state) */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Card 1: Tổng sinh viên */}
         <Card className="border-slate-200/80 shadow-sm bg-white dark:bg-slate-900">
@@ -510,15 +459,15 @@ export default function StudentsPage() {
                 Tổng sinh viên nội trú
               </p>
               <div className="flex items-baseline gap-2 mt-1.5">
-                <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
-                  1,840
+                <span className="text-2xl font-extrabold text-slate-900 dark:text-white tabular-nums font-mono">
+                  {totalStudentsCount.toLocaleString("vi-VN")}
                 </span>
-                <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                  92% lấp đầy
+                <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full tabular-nums font-mono">
+                  {assignedStudentsCount} có phòng
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 mt-1">
-                +45 sinh viên so với học kỳ trước
+                Đồng bộ từ bảng students PostgreSQL
               </p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#1F5CA9] dark:bg-blue-950 dark:text-blue-300">
@@ -527,23 +476,23 @@ export default function StudentsPage() {
           </CardContent>
         </Card>
 
-        {/* Card 2: Sinh viên mới nhập KTX */}
+        {/* Card 2: Tỷ lệ đã xếp chỗ */}
         <Card className="border-slate-200/80 shadow-sm bg-white dark:bg-slate-900">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                Tân sinh viên (K69)
+                Đang lưu trú có hợp đồng
               </p>
               <div className="flex items-baseline gap-2 mt-1.5">
-                <span className="text-2xl font-extrabold text-[#00AFEF]">
-                  320
+                <span className="text-2xl font-extrabold text-[#00AFEF] tabular-nums font-mono">
+                  {assignedStudentsCount.toLocaleString("vi-VN")}
                 </span>
                 <span className="text-xs font-medium text-[#00AFEF] bg-sky-50 px-2 py-0.5 rounded-full">
-                  Đã nhận phòng
+                  Khóa CTU (K47+)
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 mt-1">
-                Hoàn thành cấp phát thẻ từ NFC 100%
+                Tỷ lệ xếp chỗ: {Math.round((assignedStudentsCount / Math.max(1, totalStudentsCount)) * 100)}% hồ sơ
               </p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-[#00AFEF] dark:bg-sky-950">
@@ -561,15 +510,15 @@ export default function StudentsPage() {
                 Nợ phí & Cần nhắc nhở
               </p>
               <div className="flex items-baseline gap-2 mt-1.5">
-                <span className="text-2xl font-extrabold text-amber-700">
-                  24
+                <span className="text-2xl font-extrabold text-amber-700 tabular-nums font-mono">
+                  {unpaidStudentsCount + warnedStudentsCount}
                 </span>
-                <span className="text-xs font-medium bg-[#FEF3C7] text-[#B45309] px-2 py-0.5 rounded-full border border-amber-200">
-                  18 nợ phí / 6 vi phạm
+                <span className="text-xs font-medium bg-[#FEF3C7] text-[#B45309] px-2 py-0.5 rounded-full border border-amber-200 tabular-nums font-mono">
+                  {unpaidStudentsCount} nợ phí / {warnedStudentsCount} trễ giờ
                 </span>
               </div>
               <p className="text-[11px] text-amber-700/80 mt-1">
-                Tự động gửi SMS cảnh báo hôm nay
+                Từ `student_utility_debts` &amp; `dorm_access_logs`
               </p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100/80 text-[#B45309]">
@@ -578,23 +527,23 @@ export default function StudentsPage() {
           </CardContent>
         </Card>
 
-        {/* Card 4: Diện chính sách ưu tiên */}
+        {/* Card 4: Tổng công nợ */}
         <Card className="border-slate-200/80 shadow-sm bg-white dark:bg-slate-900">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                Diện chính sách ưu tiên
+                Tổng dư nợ điện nước
               </p>
               <div className="flex items-baseline gap-2 mt-1.5">
-                <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
-                  85
+                <span className="text-2xl font-extrabold text-slate-900 dark:text-white tabular-nums font-mono">
+                  {(totalStudentDebt / 1_000_000).toFixed(2)} tr đ
                 </span>
-                <span className="text-xs font-medium text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full">
-                  Miễn giảm 50-100%
+                <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+                  Chưa thu
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Hộ nghèo, con TB-LS, dân tộc thiểu số
+              <p className="text-[11px] text-slate-400 mt-1 tabular-nums font-mono">
+                {totalStudentDebt.toLocaleString("vi-VN")} đ trên {unpaidStudentsCount} sinh viên
               </p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 dark:bg-purple-950">
@@ -612,7 +561,7 @@ export default function StudentsPage() {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Tìm tên sinh viên, MSSV, phòng (A.301), SĐT..."
+                placeholder="Tìm tên sinh viên, MSSV (B21...), phòng (B1-101), SĐT..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-10 border-slate-200 bg-slate-50/50 focus-visible:bg-white focus-visible:ring-[#1F5CA9]"
@@ -640,8 +589,8 @@ export default function StudentsPage() {
                 >
                   <option value="all">Tất cả các tòa</option>
                   <option value="Tòa B1">Tòa B1 (Nam)</option>
-                  <option value="Tòa B2">Tòa B2 (Nam)</option>
-                  <option value="Tòa B3">Tòa B3 (Nữ)</option>
+                  <option value="Tòa B2">Tòa B2 (Nữ)</option>
+                  <option value="Tòa B3">Tòa B3 (Nam CLC)</option>
                 </select>
               </div>
 
@@ -1133,10 +1082,10 @@ export default function StudentsPage() {
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <ArrowRightLeft className="h-5 w-5 text-[#1F5CA9]" />
-              Điều Chuyển Phòng Lưu Trú
+              Điều Chuyển Phòng Lưu Trú (Mô phỏng UI local)
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Chuyển sinh viên sang phòng hoặc giường mới trong hệ thống KTX.
+              Cập nhật tạm trên giao diện xem trước; dùng trang Hợp đồng để ghi xuống PostgreSQL.
             </DialogDescription>
           </DialogHeader>
 
@@ -1164,10 +1113,10 @@ export default function StudentsPage() {
                     onChange={(e) => setNewRoomSelection(e.target.value)}
                     className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1F5CA9]"
                   >
-                    <option value="A.302">Phòng A.302 (Tòa A - Còn 2 giường trống)</option>
-                    <option value="A.405">Phòng A.405 (Tòa A - Còn 1 giường trống)</option>
-                    <option value="B.208">Phòng B.208 (Tòa B - Còn 1 giường trống)</option>
-                    <option value="C.104">Phòng C.104 (Tòa C CLC - Còn 2 giường trống)</option>
+                    <option value="B1-101">Phòng B1-101 (Tòa B1 Nam)</option>
+                    <option value="B1-102">Phòng B1-102 (Tòa B1 Nam)</option>
+                    <option value="B2-201">Phòng B2-201 (Tòa B2 Nữ)</option>
+                    <option value="B3-301">Phòng B3-301 (Tòa B3 Nam CLC)</option>
                   </select>
                 </div>
 
@@ -1180,9 +1129,10 @@ export default function StudentsPage() {
                     onChange={(e) => setNewBedSelection(e.target.value)}
                     className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1F5CA9]"
                   >
-                    <option value="A1">Giường A1 (Tầng 1 - Cạnh cửa sổ)</option>
-                    <option value="A2">Giường A2 (Tầng 2 - Phía trong)</option>
-                    <option value="B1">Giường B1 (Tầng 1 - Cạnh bàn học)</option>
+                    <option value="G01">Giường 1 (Tầng 1 - Cạnh cửa sổ)</option>
+                    <option value="G02">Giường 2 (Tầng 2 - Phía trong)</option>
+                    <option value="G03">Giường 3 (Tầng 1 - Cạnh bàn học)</option>
+                    <option value="G04">Giường 4 (Tầng 2 - Cạnh bàn học)</option>
                   </select>
                 </div>
 
@@ -1229,10 +1179,10 @@ export default function StudentsPage() {
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <UserPlus className="h-5 w-5 text-[#1F5CA9]" />
-              Tiếp Nhận & Đăng Ký Sinh Viên Nội Trú Mới
+              Tiếp Nhận Sinh Viên Mới (Mô phỏng UI local)
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Nhập thông tin hồ sơ sinh viên để xếp phòng và cấp quyền thẻ KTX.
+              Biểu mẫu thêm nhanh trên bộ nhớ trình duyệt; để xếp chỗ vào CSDL thật, hãy dùng trang Hợp đồng.
             </DialogDescription>
           </DialogHeader>
 
@@ -1244,7 +1194,7 @@ export default function StudentsPage() {
                 </label>
                 <Input
                   required
-                  placeholder="VD: Lê Đức Anh"
+                  placeholder="VD: Nguyễn Văn An"
                   value={newStudentForm.name}
                   onChange={(e) => setNewStudentForm({ ...newStudentForm, name: e.target.value })}
                   className="text-xs"
@@ -1257,7 +1207,7 @@ export default function StudentsPage() {
                 </label>
                 <Input
                   required
-                  placeholder="VD: 20245678"
+                  placeholder="VD: B2100013"
                   value={newStudentForm.studentCode}
                   onChange={(e) => setNewStudentForm({ ...newStudentForm, studentCode: e.target.value })}
                   className="text-xs font-mono"
@@ -1289,10 +1239,10 @@ export default function StudentsPage() {
                   onChange={(e) => setNewStudentForm({ ...newStudentForm, cohort: e.target.value })}
                   className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800"
                 >
-                  <option value="K69">K69 (Năm 1)</option>
-                  <option value="K68">K68 (Năm 2)</option>
-                  <option value="K67">K67 (Năm 3)</option>
-                  <option value="K66">K66 (Năm 4)</option>
+                  <option value="K47">K47</option>
+                  <option value="K48">K48</option>
+                  <option value="K49">K49</option>
+                  <option value="K50">K50</option>
                 </select>
               </div>
 
