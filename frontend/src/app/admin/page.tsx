@@ -37,82 +37,76 @@ import {
 } from "recharts";
 import { useDemoMode } from "@/lib/demo-context";
 import { GraduationCap, Sparkles, TrendingUp } from "lucide-react";
-import { api, DashboardSummary, ForecastData, ClusterSummary } from "@/lib/api";
+import { api, AdminBillItem, ClusterSummary, DashboardSummary, ForecastData, RoomItem } from "@/lib/api";
 
-// Consumption data for Monthly Utility Chart
+// Consumption fallback when API is offline
 const consumptionData = [
-  { month: "Jan", electricity: 12400, water: 3400 },
-  { month: "Feb", electricity: 11200, water: 3100 },
-  { month: "Mar", electricity: 14500, water: 4200 },
-  { month: "Apr", electricity: 16800, water: 4800 },
-  { month: "May", electricity: 19200, water: 5400 },
-  { month: "Jun", electricity: 22100, water: 6100 },
-  { month: "Jul", electricity: 15300, water: 4100 },
-  { month: "Aug", electricity: 18900, water: 5200 },
-  { month: "Sep", electricity: 21500, water: 5900 },
-  { month: "Oct", electricity: 19800, water: 5600 },
+  { month: "2026-01", electricity: 620, water: 72 },
+  { month: "2026-02", electricity: 580, water: 68 },
+  { month: "2026-03", electricity: 640, water: 75 },
+  { month: "2026-04", electricity: 690, water: 80 },
+  { month: "2026-05", electricity: 710, water: 82 },
+  { month: "2026-06", electricity: 730, water: 85 },
 ];
 
-// Room Availability Donut data
 const roomAvailabilityData = [
-  { name: "Occupied", value: 460, color: "#1F5CA9" },
-  { name: "Available", value: 30, color: "#00AFEF" },
-  { name: "Maintenance", value: 10, color: "#FFB800" },
+  { name: "Occupied", value: 12, color: "#1F5CA9" },
+  { name: "Available", value: 8, color: "#00AFEF" },
+  { name: "Maintenance", value: 4, color: "#FFB800" },
 ];
 
-// Danh sách hoạt động gần đây
-const recentActivities = [
+const fallbackBillRows = [
   {
-    student: "Nguyễn Văn An",
-    studentId: "B2100001",
-    activity: "Thanh toán tiền điện nước (SP2)",
-    room: "P.101 - Tòa B1",
-    time: "Hôm nay, 10:42",
-    amount: "375.000 đ",
-    status: "paid",
+    key: "fallback-1",
+    roomNumber: "B1-101",
+    buildingName: "Tòa B1 (Nam)",
+    detail: "Điện: 250 kWh • Nước: 15 m³",
+    occupants: 2,
+    monthYear: "2026-10",
+    totalAmount: 750000,
+    paidAmount: 375000,
+    status: "PARTIALLY_PAID" as const,
   },
   {
-    student: "Trần Hoàng Bình",
-    studentId: "B2100002",
-    activity: "Gia hạn hợp đồng KTX",
-    room: "P.101 - Tòa B1",
-    time: "Hôm nay, 09:15",
-    amount: "—",
-    status: "completed",
+    key: "fallback-2",
+    roomNumber: "B1-102",
+    buildingName: "Tòa B1 (Nam)",
+    detail: "Điện: 550 kWh • Nước: 55 m³",
+    occupants: 2,
+    monthYear: "2026-10",
+    totalAmount: 2050000,
+    paidAmount: 0,
+    status: "UNPAID" as const,
   },
   {
-    student: "Lê Văn Cường",
-    studentId: "B2100003",
-    activity: "Báo hỏng vòi nước phòng tắm",
-    room: "P.201 - Tòa B2",
-    time: "Hôm nay, 08:30",
-    amount: "—",
-    status: "pending",
-  },
-  {
-    student: "Phạm Quốc Bảo",
-    studentId: "B2100005",
-    activity: "Nhận phòng đầu kỳ học",
-    room: "P.301 - Tòa B3",
-    time: "Hôm qua, 16:20",
-    amount: "1.200.000 đ",
-    status: "completed",
+    key: "fallback-3",
+    roomNumber: "B2-201",
+    buildingName: "Tòa B2 (Nữ)",
+    detail: "Điện: 180 kWh • Nước: 13 m³",
+    occupants: 2,
+    monthYear: "2026-10",
+    totalAmount: 530000,
+    paidAmount: 530000,
+    status: "PAID" as const,
   },
 ];
 
-// AI Forecast Data (Scikit-learn Regression model)
+// AI Forecast fallback when backend is unreachable
 const forecastData = [
-  { month: "T06", actual: 22100, forecast: null },
-  { month: "T07", actual: 15300, forecast: null },
-  { month: "T08", actual: 18900, forecast: null },
-  { month: "T09", actual: 21500, forecast: null },
-  { month: "T10", actual: 19800, forecast: 19800 },
-  { month: "T11 (AI)", actual: null, forecast: 20600 },
+  { month: "2026-06", actual: 640, forecast: null },
+  { month: "2026-07", actual: 660, forecast: null },
+  { month: "2026-08", actual: 650, forecast: null },
+  { month: "2026-09", actual: 630, forecast: null },
+  { month: "2026-10", actual: 620, forecast: 620 },
+  { month: "2026-11 (AI)", actual: null, forecast: 618 },
 ];
 
 export default function AdminDashboardPage() {
   const { isDemoMode } = useDemoMode();
   const [dashboard, setDashboard] = React.useState<DashboardSummary | null>(null);
+  const [rooms, setRooms] = React.useState<RoomItem[]>([]);
+  const [bills, setBills] = React.useState<AdminBillItem[]>([]);
+  const [forecastBuilding, setForecastBuilding] = React.useState<"B1" | "B2" | "B3">("B1");
   const [forecast, setForecast] = React.useState<ForecastData | null>(null);
   const [clusters, setClusters] = React.useState<ClusterSummary | null>(null);
 
@@ -120,16 +114,19 @@ export default function AdminDashboardPage() {
     let mounted = true;
     async function load() {
       try {
-        const [dRes, fRes, cRes] = await Promise.all([
+        const [dRes, rRes, bRes, cRes] = await Promise.all([
           api.getDashboard(),
-          api.getForecast("B1"),
+          api.getRooms(),
+          api.getBills({ limit: 100 }),
           api.getClusters(),
         ]);
-        if (mounted && dRes.success && dRes.data) setDashboard(dRes.data);
-        if (mounted && fRes.success && fRes.data) setForecast(fRes.data);
-        if (mounted && cRes.success && cRes.data) setClusters(cRes.data);
+        if (!mounted) return;
+        if (dRes.success && dRes.data) setDashboard(dRes.data);
+        if (rRes.success && rRes.data) setRooms(rRes.data);
+        if (bRes.success && bRes.data) setBills(bRes.data);
+        if (cRes.success && cRes.data) setClusters(cRes.data);
       } catch {
-        // Keep fallback data
+        // Keep fallback data when backend is offline
       }
     }
     load();
@@ -138,16 +135,55 @@ export default function AdminDashboardPage() {
     };
   }, []);
 
+  React.useEffect(() => {
+    let active = true;
+    api
+      .getForecast(forecastBuilding)
+      .then((res) => {
+        if (active && res.success && res.data) {
+          setForecast(res.data);
+        }
+      })
+      .catch(() => {
+        // Keep fallback forecast
+      });
+    return () => {
+      active = false;
+    };
+  }, [forecastBuilding]);
+
+  const maintenanceBeds = React.useMemo(
+    () => rooms.filter((r) => r.status === "MAINTENANCE").reduce((sum, r) => sum + r.capacity, 0),
+    [rooms]
+  );
+
+  const availableBeds = React.useMemo(() => {
+    if (!dashboard) return 8;
+    return Math.max(0, dashboard.total_capacity - dashboard.total_occupancy - maintenanceBeds);
+  }, [dashboard, maintenanceBeds]);
+
   const dynamicDonutData = React.useMemo(() => {
     if (!dashboard) return roomAvailabilityData;
-    const occupied = dashboard.total_occupancy;
-    const available = Math.max(0, dashboard.total_capacity - dashboard.total_occupancy);
     return [
-      { name: "Occupied", value: occupied, color: "#1F5CA9" },
-      { name: "Available", value: available, color: "#00AFEF" },
-      { name: "Maintenance", value: 0, color: "#FFB800" },
+      { name: "Occupied", value: dashboard.total_occupancy, color: "#1F5CA9" },
+      { name: "Available", value: availableBeds, color: "#00AFEF" },
+      { name: "Maintenance", value: maintenanceBeds, color: "#FFB800" },
     ];
-  }, [dashboard]);
+  }, [dashboard, availableBeds, maintenanceBeds]);
+
+  const monthlyConsumptionData = React.useMemo(() => {
+    if (bills.length === 0) return consumptionData;
+    const byMonth = new Map<string, { month: string; electricity: number; water: number }>();
+    for (const b of bills) {
+      const existing = byMonth.get(b.month_year) ?? { month: b.month_year, electricity: 0, water: 0 };
+      existing.electricity += Math.max(0, b.curr_electric - b.prev_electric);
+      existing.water += Math.max(0, b.curr_water - b.prev_water);
+      byMonth.set(b.month_year, existing);
+    }
+    return Array.from(byMonth.values())
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .slice(-10);
+  }, [bills]);
 
   const dynamicForecastChart = React.useMemo(() => {
     if (!forecast || !forecast.history || forecast.history.length === 0) {
@@ -170,6 +206,52 @@ export default function AdminDashboardPage() {
     return points;
   }, [forecast]);
 
+  const forecastDeltaLabel = React.useMemo(() => {
+    if (!forecast?.history?.length || !forecast?.predictions?.length) return "Kỳ tiếp theo";
+    const lastActual = forecast.history[forecast.history.length - 1].actual_kwh;
+    const nextPred = forecast.predictions[0].predicted_kwh;
+    const nextMonth = forecast.predictions[0].month_year;
+    if (!lastActual) return `Dự báo ${nextMonth}`;
+    const pct = (((nextPred - lastActual) / lastActual) * 100).toFixed(1);
+    const sign = Number(pct) >= 0 ? "+" : "";
+    return `Dự báo ${nextMonth} (${sign}${pct}%)`;
+  }, [forecast]);
+
+  const latestBillMonth = bills.length > 0 ? bills[0].month_year : "2026-10";
+
+  const liveBillRows = React.useMemo(() => {
+    if (bills.length === 0) return fallbackBillRows;
+    return bills.slice(0, 6).map((b) => ({
+      key: `bill-${b.bill_id}`,
+      roomNumber: b.room_number,
+      buildingName: b.building_name,
+      detail: `Điện: ${Math.max(0, b.curr_electric - b.prev_electric)} kWh • Nước: ${Math.max(0, b.curr_water - b.prev_water)} m³`,
+      occupants: b.occupants,
+      monthYear: b.month_year,
+      totalAmount: b.total_amount,
+      paidAmount: b.paid_amount,
+      status: b.bill_status,
+    }));
+  }, [bills]);
+
+  const handleExportReport = () => {
+    const payload = {
+      exported_at: new Date().toISOString(),
+      period: latestBillMonth,
+      dashboard,
+      forecast_building: forecastBuilding,
+      forecast,
+      clusters,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `smart-dorm-report-${latestBillMonth}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -191,16 +273,17 @@ export default function AdminDashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2.5">
-          <Button variant="outline" size="sm" className="h-9 gap-2 rounded-xl text-xs font-medium">
+          <div className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
             <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>Tháng 10, 2026</span>
-          </Button>
+            <span className="tabular-nums font-mono">Kỳ {latestBillMonth}</span>
+          </div>
           <Button
             size="sm"
-            className="h-9 gap-2 rounded-xl text-xs font-medium bg-[#1F5CA9] text-white hover:bg-[#1a4f91] shadow-sm"
+            onClick={handleExportReport}
+            className="h-9 gap-2 rounded-xl text-xs font-medium bg-[#1F5CA9] text-white hover:bg-[#1a4f91] shadow-sm cursor-pointer"
           >
             <Download className="h-3.5 w-3.5" />
-            <span>Xuất báo cáo</span>
+            <span>Xuất báo cáo JSON</span>
           </Button>
         </div>
       </div>
@@ -356,7 +439,7 @@ export default function AdminDashboardPage() {
           <CardContent className="pt-4">
             <div className="h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={consumptionData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                <BarChart data={monthlyConsumptionData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" opacity={0.6} />
                   <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={12} stroke="#64748B" />
                   <YAxis tickLine={false} axisLine={false} fontSize={12} stroke="#64748B" />
@@ -431,7 +514,7 @@ export default function AdminDashboardPage() {
                   <span className="text-slate-600 dark:text-slate-300">Còn trống</span>
                 </div>
                 <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums font-mono">
-                  {dashboard ? `${dashboard.total_capacity - dashboard.total_occupancy} chỗ` : "12 chỗ"}
+                  {dashboard ? `${availableBeds} chỗ` : "8 chỗ"}
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs">
@@ -439,7 +522,9 @@ export default function AdminDashboardPage() {
                   <span className="h-2.5 w-2.5 rounded-full bg-[#FFB800]" />
                   <span className="text-slate-600 dark:text-slate-300">Bảo trì</span>
                 </div>
-                <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums font-mono">0 chỗ</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums font-mono">
+                  {maintenanceBeds} chỗ
+                </span>
               </div>
             </div>
           </CardContent>
@@ -476,14 +561,30 @@ export default function AdminDashboardPage() {
                   Mô hình chuỗi thời gian hồi quy từ 24 tháng hóa đơn `utility_bills`
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-3 text-xs font-medium">
+              <div className="flex flex-wrap items-center gap-3 text-xs font-medium">
+                <div className="inline-flex rounded-lg bg-slate-100 dark:bg-slate-800 p-0.5">
+                  {(["B1", "B2", "B3"] as const).map((bId) => (
+                    <button
+                      key={bId}
+                      type="button"
+                      onClick={() => setForecastBuilding(bId)}
+                      className={`px-2 py-0.5 rounded-md text-[11px] font-semibold cursor-pointer transition-colors ${
+                        forecastBuilding === bId
+                          ? "bg-[#1F5CA9] text-white"
+                          : "text-slate-600 hover:text-slate-900 dark:text-slate-300"
+                      }`}
+                    >
+                      {bId}
+                    </button>
+                  ))}
+                </div>
                 <div className="flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-full bg-[#1F5CA9]" />
                   <span className="text-slate-600">Thực tế</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-full bg-[#00AFEF] border border-dashed border-[#00AFEF]" />
-                  <span className="text-[#00AFEF] font-bold">Dự báo T11 (+4.0%)</span>
+                  <span className="text-[#00AFEF] font-bold">{forecastDeltaLabel}</span>
                 </div>
               </div>
             </div>
@@ -516,7 +617,7 @@ export default function AdminDashboardPage() {
                 </>
               ) : (
                 <>
-                  * Dự báo tháng 11/2026: ~<strong>20.600 kWh</strong> (Độ tin cậy R² = 0.942). Giúp ban quản lý chuẩn bị ngân sách vận hành.
+                  * Đang dùng chuỗi tham chiếu ngoại tuyến cho tòa <strong>{forecastBuilding}</strong> khi chưa kết nối Backend.
                 </>
               )}
             </p>
@@ -680,47 +781,50 @@ export default function AdminDashboardPage() {
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 dark:bg-slate-800/50 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground border-y border-slate-200/80 dark:border-slate-800">
                 <tr>
-                  <th className="py-3 px-6">Sinh viên</th>
-                  <th className="py-3 px-6">Hoạt động</th>
-                  <th className="py-3 px-6">Phòng</th>
-                  <th className="py-3 px-6">Thời gian</th>
-                  <th className="py-3 px-6">Số tiền</th>
+                  <th className="py-3 px-6">Phòng / Tòa</th>
+                  <th className="py-3 px-6">Chỉ số tiêu thụ</th>
+                  <th className="py-3 px-6">Lưu trú</th>
+                  <th className="py-3 px-6">Kỳ thu</th>
+                  <th className="py-3 px-6">Tổng / Đã nộp</th>
                   <th className="py-3 px-6 text-right">Trạng thái</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {recentActivities.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                {liveBillRows.map((row) => (
+                  <tr key={row.key} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
                     <td className="py-3.5 px-6 font-medium text-slate-900 dark:text-slate-100">
-                      <div>{row.student}</div>
-                      <div className="text-[11px] text-muted-foreground font-mono">{row.studentId}</div>
+                      <div>P.{row.roomNumber}</div>
+                      <div className="text-[11px] text-muted-foreground">{row.buildingName}</div>
                     </td>
                     <td className="py-3.5 px-6 text-slate-600 dark:text-slate-300">
-                      {row.activity}
+                      {row.detail}
                     </td>
                     <td className="py-3.5 px-6 font-medium text-slate-800 dark:text-slate-200">
-                      {row.room}
+                      {row.occupants} sinh viên
                     </td>
-                    <td className="py-3.5 px-6 text-muted-foreground text-xs font-mono">
-                      {row.time}
+                    <td className="py-3.5 px-6 text-muted-foreground text-xs font-mono tabular-nums">
+                      {row.monthYear}
                     </td>
                     <td className="py-3.5 px-6 font-semibold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
-                      {row.amount}
+                      <div>{row.totalAmount.toLocaleString("vi-VN")} đ</div>
+                      <div className="text-[11px] font-normal text-muted-foreground">
+                        Đã thu: {row.paidAmount.toLocaleString("vi-VN")} đ
+                      </div>
                     </td>
                     <td className="py-3.5 px-6 text-right">
-                      {row.status === "paid" && (
+                      {row.status === "PAID" && (
                         <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-medium rounded-full px-2.5 py-0.5">
                           <CheckCircle2 className="h-3 w-3 mr-1" /> Đã nộp
                         </Badge>
                       )}
-                      {row.status === "completed" && (
+                      {row.status === "PARTIALLY_PAID" && (
                         <Badge className="bg-blue-50 text-[#1F5CA9] hover:bg-blue-100 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[11px] font-medium rounded-full px-2.5 py-0.5">
-                          <CheckCircle2 className="h-3 w-3 mr-1" /> Hoàn tất
+                          <Clock className="h-3 w-3 mr-1" /> Nộp 1 phần
                         </Badge>
                       )}
-                      {row.status === "pending" && (
+                      {row.status === "UNPAID" && (
                         <Badge className="bg-amber-50 text-[#B45309] hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-[11px] font-medium rounded-full px-2.5 py-0.5">
-                          <Clock className="h-3 w-3 mr-1" /> Chờ xử lý
+                          <Clock className="h-3 w-3 mr-1" /> Chưa nộp
                         </Badge>
                       )}
                     </td>
