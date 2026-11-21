@@ -38,11 +38,11 @@ export default function AdminMaintenancePage() {
       const res = await apiRequest<{
         items: MaintenanceItem[];
         total: number;
-        trang_thai_phong?: RoomMaintStatus[];
+        tinh_trang_phong?: RoomMaintStatus[];
       }>(`/api/admin/maintenance?${params.toString()}`);
       setTickets(res.items);
       setTotal(res.total);
-      if (res.trang_thai_phong) setRoomStatus(res.trang_thai_phong);
+      if (res.tinh_trang_phong) setRoomStatus(res.tinh_trang_phong);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Không thể tải danh sách bảo trì.");
     } finally {
@@ -57,8 +57,8 @@ export default function AdminMaintenancePage() {
   const handleUpdateStatus = async (id: number, status: "DANG_XU_LY" | "HOAN_TAT") => {
     setUpdatingId(id);
     try {
-      await apiRequest(`/api/admin/maintenance/${id}`, {
-        method: "PUT",
+      await apiRequest(`/api/admin/maintenance/${id}/status`, {
+        method: "PATCH",
         body: { trang_thai: status },
       });
       toast.success("Đã cập nhật trạng thái phiếu bảo trì.");

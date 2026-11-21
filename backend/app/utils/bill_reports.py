@@ -179,3 +179,206 @@ def build_utility_report_pdf(thang: str, rows: list[dict]) -> io.BytesIO:
         pdf.ln()
 
     return io.BytesIO(bytes(pdf.output()))
+
+
+def _fmt_dt_vn(val) -> str:
+    if val is None:
+        return ""
+    if isinstance(val, datetime):
+        return val.strftime("%d/%m/%Y %H:%M:%S")
+    try:
+        dt = datetime.fromisoformat(str(val).replace("Z", "+00:00"))
+        return dt.strftime("%d/%m/%Y %H:%M:%S")
+    except Exception:
+        return str(val)
+
+
+def build_cluster_list_xlsx(
+    nhom_code: str, students: list[dict], scope_label: str
+) -> io.BytesIO:
+    """Tạo file Excel (.xlsx) danh sách sinh viên theo từng nhóm quản lý nội trú."""
+    wb = openpyxl.Workbook()
+    ws = wb.active
+
+    if nhom_code == "GUONG_MAU":
+        ws.title = "SVGuongMau"
+        ws.append([f"DANH SÁCH SINH VIÊN GƯƠNG MẪU — {scope_label}"])
+        ws.merge_cells("A1:G1")
+        headers = ["STT", "MSSV", "Họ và tên", "Ngành học", "Phòng", "Khu", "Ghi chú / Đề xuất"]
+        widths = [7, 13, 24, 30, 10, 8, 42]
+        rows_data = [
+            [
+                idx,
+                s.get("mssv", ""),
+                s.get("ho_ten", ""),
+                s.get("nganh", ""),
+                s.get("ten_phong", ""),
+                s.get("ma_khu", ""),
+                "Đề xuất khen thưởng / cộng điểm rèn luyện",
+            ]
+            for idx, s in enumerate(students, start=1)
+        ]
+    elif nhom_code == "NHAC_THANH_TOAN":
+        ws.title = "SVTrePhiKTX"
+        ws.append([f"DANH SÁCH SINH VIÊN ĐÓNG PHÍ KTX TRỄ — {scope_label}"])
+        ws.merge_cells("A1:H1")
+        headers = [
+            "STT", "MSSV", "Họ và tên", "Ngành học", "Phòng", "Khu", "Số kỳ trễ phí KTX", "Ghi chú"
+        ]
+        widths = [7, 13, 24, 30, 10, 8, 20, 44]
+        rows_data = [
+            [
+                idx,
+                s.get("mssv", ""),
+                s.get("ho_ten", ""),
+                s.get("nganh", ""),
+                s.get("ten_phong", ""),
+                s.get("ma_khu", ""),
+                int(s.get("so_ky_dong_tre", 0)),
+                "Chưa đóng phí KTX từ 2 kỳ trở lên — cần nhắc nhở / cảnh cáo",
+            ]
+            for idx, s in enumerate(students, start=1)
+        ]
+    else:
+        ws.title = "DSRaVaoKhuya"
+        ws.append([f"DANH SÁCH SINH VIÊN RA VÀO KHUYA (23:00–05:00) — {scope_label}"])
+        ws.merge_cells("A1:H1")
+        headers = [
+            "STT", "MSSV", "Họ và tên", "Ngành học", "Phòng", "Khu", "Ra vào khuya 23h–5h (lượt)", "Ghi chú"
+        ]
+        widths = [7, 13, 24, 30, 10, 8, 26, 40]
+        rows_data = [
+            [
+                idx,
+                s.get("mssv", ""),
+                s.get("ho_ten", ""),
+                s.get("nganh", ""),
+                s.get("ten_phong", ""),
+                s.get("ma_khu", ""),
+                int(s.get("late_count", 0)),
+                "Lưu thông tin quét cổng khung giờ khuya",
+            ]
+            for idx, s in enumerate(students, start=1)
+        ]
+
+    ws["A1"].font = Font(bold=True, size=13, color="1F5CA9")
+    ws["A1"].alignment = Alignment(horizontal="center")
+
+    ws.append(headers)
+    for col_idx in range(1, len(headers) + 1):
+        c = ws.cell(row=2, column=col_idx)
+        c.font = Font(bold=True, color="FFFFFF")
+        c.fill = PatternFill(start_color="1F5CA9", end_color="1F5CA9", fill_type="solid")
+        c.alignment = Alignment(horizontal="center")
+
+    for r in rows_data:
+        ws.append(r)
+
+    for idx_col, width in enumerate(widths, start=1):
+        col_letter = openpyxl.utils.get_column_letter(idx_col)
+        ws.column_dimensions[col_letter].width = width
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf
+
+
+def build_stranger_scans_xlsx(alerts: list[dict], scope_label: str) -> io.BytesIO:
+    """Tạo file Excel (.xlsx) danh sách người lạ / lượt quét vân tay bị từ chối tại cổng KTX."""
+    ket_qua_map = {
+        "CHAN_NGUOI_LA": "Người lạ (Bị chặn)",
+        "CHAN_KHONG_CO_PHONG": "Không có phòng nội trú",
+        "CHAN_CHUA_DANG_KY_VT": "Chưa đăng ký vân tay",
+    }
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "DSNguoiLaQuetCong"
+    ws.append([f"DANH SÁCH NGƯỜI LẠ / TỪ CHỐI QUÉT VÂN TAY — {scope_label}"])
+    ws.merge_cells("A1:H1")
+    ws["A1"].font = Font(bold=True, size=13, color="B91C1C")
+    ws["A1"].alignment = Alignment(horizontal="center")
+
+    headers = [
+        "STT", "Thời gian", "Cổng kiểm soát", "Lượt", "Mã vân tay quét", "MSSV / Họ tên", "Kết quả", "Chi tiết"
+    ]
+    ws.append(headers)
+    for col_idx in range(1, len(headers) + 1):
+        c = ws.cell(row=2, column=col_idx)
+        c.font = Font(bold=True, color="FFFFFF")
+        c.fill = PatternFill(start_color="B91C1C", end_color="B91C1C", fill_type="solid")
+        c.alignment = Alignment(horizontal="center")
+
+    for idx, a in enumerate(alerts, start=1):
+        sv_info = f"{a.get('mssv')} - {a.get('ho_ten')}" if a.get("mssv") else "Không xác định (Người lạ)"
+        ws.append(
+            [
+                idx,
+                _fmt_dt_vn(a.get("thoi_gian")),
+                a.get("cong", ""),
+                "Ra" if a.get("loai_luot") == "RA" else "Vào",
+                a.get("ma_van_tay_quet", ""),
+                sv_info,
+                ket_qua_map.get(a.get("ket_qua") or "", a.get("ket_qua") or ""),
+                a.get("ly_do", ""),
+            ]
+        )
+
+    for col_letter, width in zip("ABCDEFGH", [7, 21, 22, 8, 22, 28, 24, 54]):
+        ws.column_dimensions[col_letter].width = width
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf
+
+
+def build_daily_attendance_xlsx(ngay_str: str, items: list[dict], scope_label: str) -> io.BytesIO:
+    """Tạo file Excel (.xlsx) danh sách điểm danh ra vào KTX theo ngày."""
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "DSRaVaoNgay"
+    ws.append([f"DANH SÁCH ĐIỂM DANH RA VÀO KTX NGÀY {ngay_str} — {scope_label}"])
+    ws.merge_cells("A1:I1")
+    ws["A1"].font = Font(bold=True, size=13, color="1F5CA9")
+    ws["A1"].alignment = Alignment(horizontal="center")
+
+    headers = [
+        "STT", "Phòng", "Khu", "MSSV", "Họ và tên", "Mã vân tay", "Điểm danh", "Trạng thái ra vào", "Thời gian quét gần nhất"
+    ]
+    ws.append(headers)
+    for col_idx in range(1, len(headers) + 1):
+        c = ws.cell(row=2, column=col_idx)
+        c.font = Font(bold=True, color="FFFFFF")
+        c.fill = PatternFill(start_color="1F5CA9", end_color="1F5CA9", fill_type="solid")
+        c.alignment = Alignment(horizontal="center")
+
+    for idx, r in enumerate(items, start=1):
+        loai = "Vào KTX" if r.get("loai_cuoi") == "VAO" else ("Ra ngoài" if r.get("loai_cuoi") == "RA" else "—")
+        ws.append(
+            [
+                idx,
+                r.get("ten_phong", ""),
+                r.get("ma_khu", ""),
+                r.get("mssv", ""),
+                r.get("ho_ten", ""),
+                r.get("ma_van_tay") or "Chưa ĐK",
+                "Đã điểm danh" if r.get("trang_thai_ngay") == "DA_DIEM_DANH" else "Chưa điểm danh",
+                loai,
+                _fmt_dt_vn(r.get("thoi_gian_quet")),
+            ]
+        )
+
+    for col_letter, width in zip("ABCDEFGHI", [7, 10, 8, 13, 24, 16, 18, 18, 22]):
+        ws.column_dimensions[col_letter].width = width
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf
+
+
+def build_commendation_xlsx(students: list[dict], scope_label: str) -> io.BytesIO:
+    """Tạo danh sách đề xuất khen thưởng sinh viên nội trú gương mẫu (.xlsx)."""
+    return build_cluster_list_xlsx("GUONG_MAU", students, scope_label)
+

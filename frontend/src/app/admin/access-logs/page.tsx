@@ -1,11 +1,12 @@
 "use client";
+
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-export default function RedirectAccessLogs() {
+export default function RedirectAccessLogsToAttendance() {
   const router = useRouter();
   useEffect(() => {
-    router.replace("/admin");
+    router.replace("/admin/attendance");
   }, [router]);
   return null;
 }

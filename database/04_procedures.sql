@@ -1026,3 +1026,89 @@ BEGIN
     );
 END;
 $$;
+
+-- =============================================================================
+-- 9. STORED PROCEDURES CHUẨN SQL (CREATE PROCEDURE VỚI THAM SỐ IN / OUT)
+-- Dùng cho ứng dụng web (CALL ...) và chứng minh trực tiếp trong HQTCSDL
+-- =============================================================================
+
+-- 9.1. Thủ tục nạp tiền ví nội trú (IN: p_mssv, p_so_tien | OUT: o_so_du_truoc, o_so_du_sau, o_ma_gd)
+CREATE OR REPLACE PROCEDURE pr_nap_tien_vi(
+    IN  p_mssv         VARCHAR(8),
+    IN  p_so_tien      NUMERIC,
+    OUT o_so_du_truoc  NUMERIC,
+    OUT o_so_du_sau    NUMERIC,
+    OUT o_ma_gd        INTEGER
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_mssv VARCHAR(8);
+BEGIN
+    IF p_so_tien IS NULL OR p_so_tien <= 0 THEN
+        RAISE EXCEPTION 'Số tiền nạp phải lớn hơn 0.' USING ERRCODE = 'P0001';
+    END IF;
+
+    SELECT mssv, so_du INTO v_mssv, o_so_du_truoc
+    FROM sinh_vien
+    WHERE mssv = upper(trim(p_mssv))
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Không tìm thấy sinh viên có MSSV %.', p_mssv USING ERRCODE = 'P0001';
+    END IF;
+
+    o_so_du_sau := o_so_du_truoc + p_so_tien;
+    UPDATE sinh_vien SET so_du = o_so_du_sau WHERE mssv = v_mssv;
+
+    INSERT INTO giao_dich_vi (mssv, loai, so_tien, so_du_truoc, so_du_sau, mo_ta)
+    VALUES (v_mssv, 'NAP_TIEN', p_so_tien, o_so_du_truoc, o_so_du_sau, 'Nạp tiền vào tài khoản nội trú KTX')
+    RETURNING ma_gd INTO o_ma_gd;
+END;
+$$;
+
+-- 9.2. Thủ tục thanh toán hóa đơn bằng số dư ví (Giao dịch cộng/trừ tiền 2 bên có tham số IN / OUT)
+CREATE OR REPLACE PROCEDURE pr_thanh_toan_bang_vi(
+    IN  p_ma_hoa_don   INTEGER,
+    IN  p_mssv         VARCHAR(8),
+    OUT o_so_du_truoc  NUMERIC,
+    OUT o_so_du_sau    NUMERIC,
+    OUT o_quy_ktx_moi  NUMERIC,
+    OUT o_ma_giao_dich VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_res JSONB;
+BEGIN
+    v_res := sp_thanh_toan_bang_vi(p_ma_hoa_don, p_mssv, FALSE);
+    o_so_du_truoc  := (v_res->>'so_du_truoc')::NUMERIC;
+    o_so_du_sau    := (v_res->>'so_du_sau')::NUMERIC;
+    o_quy_ktx_moi  := (v_res->>'quy_ktx_moi')::NUMERIC;
+    o_ma_giao_dich := v_res->>'ma_giao_dich';
+END;
+$$;
+
+-- 9.3. Thủ tục ghi chỉ số điện nước và tính hóa đơn tự động (IN / OUT)
+CREATE OR REPLACE PROCEDURE pr_ghi_chi_so_dien_nuoc(
+    IN  p_ma_phong    INTEGER,
+    IN  p_thang       VARCHAR(7),
+    IN  p_dien_cuoi   INTEGER,
+    IN  p_nuoc_cuoi   INTEGER,
+    OUT o_ma_hoa_don  INTEGER,
+    OUT o_luong_dien  INTEGER,
+    OUT o_luong_nuoc  INTEGER,
+    OUT o_tong_tien   NUMERIC
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_res JSONB;
+BEGIN
+    v_res := sp_nhap_chi_so_va_tao_hoa_don(p_ma_phong, p_thang, p_dien_cuoi, p_nuoc_cuoi, NULL);
+    o_ma_hoa_don := (v_res->>'ma_hoa_don')::INTEGER;
+    o_luong_dien := (v_res->>'luong_dien')::INTEGER;
+    o_luong_nuoc := (v_res->>'luong_nuoc')::INTEGER;
+    o_tong_tien  := (v_res->>'so_tien')::NUMERIC;
+END;
+$$;

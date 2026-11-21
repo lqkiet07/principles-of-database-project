@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, Eye, EyeOff, Loader2, Lock, LogIn, User } from "lucide-react";
-import { useAuth } from "@/lib/auth-context";
+import { isAdminRole, useAuth } from "@/lib/auth-context";
 
 export default function LoginPage() {
   const { user, loading, login } = useAuth();
@@ -17,7 +17,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace(user.vai_tro === "QUAN_LY" ? "/admin" : "/student");
+      router.replace(isAdminRole(user.vai_tro) ? "/admin" : "/student");
     }
   }, [user, loading, router]);
 
@@ -33,7 +33,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       const loggedUser = await login(u, password);
-      router.replace(loggedUser.vai_tro === "QUAN_LY" ? "/admin" : "/student");
+      router.replace(isAdminRole(loggedUser.vai_tro) ? "/admin" : "/student");
     } catch (err: any) {
       setError(err.message || "Đăng nhập không thành công.");
     } finally {

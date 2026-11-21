@@ -31,10 +31,11 @@ REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 REVOKE CREATE ON SCHEMA public FROM ktx_app_user;
 GRANT USAGE ON SCHEMA public TO ktx_app_user;
 
--- Chỉ cấp quyền thao tác dữ liệu cần thiết trên bảng/view/sequence/function
+-- Chỉ cấp quyền thao tác dữ liệu cần thiết trên bảng/view/sequence/routine
+REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM ktx_app_user;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ktx_app_user;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ktx_app_user;
-GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO ktx_app_user;
+GRANT EXECUTE ON ALL ROUTINES IN SCHEMA public TO ktx_app_user;
 
 -- Đảm bảo các đối tượng tương lai trong schema public kế thừa đúng quyền
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
@@ -42,4 +43,4 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
     GRANT USAGE, SELECT ON SEQUENCES TO ktx_app_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
-    GRANT EXECUTE ON FUNCTIONS TO ktx_app_user;
+    GRANT EXECUTE ON ROUTINES TO ktx_app_user;

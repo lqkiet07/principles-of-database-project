@@ -23,10 +23,6 @@ export function StructureSettingsTab({
   const { refreshUser } = useAuth();
   const [saving, setSaving] = useState(false);
 
-  // Add zone
-  const [newMaKhu, setNewMaKhu] = useState("");
-  const [newTenKhu, setNewTenKhu] = useState("");
-
   // Rooms & Beds
   const [rooms, setRooms] = useState<any[]>([]);
   const [roomTotal, setRoomTotal] = useState(0);
@@ -69,26 +65,6 @@ export function StructureSettingsTab({
   useEffect(() => {
     loadRooms();
   }, [loadRooms]);
-
-  const handleAddZone = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMaKhu.trim() || !newTenKhu.trim()) return;
-    setSaving(true);
-    try {
-      await apiRequest("/api/admin/rooms/zones", {
-        method: "POST",
-        body: { ma_khu: newMaKhu.trim().toUpperCase(), ten_khu: newTenKhu.trim() },
-      });
-      toast.success(`Đã thêm ${newTenKhu.trim()}.`);
-      setNewMaKhu("");
-      setNewTenKhu("");
-      onReloadSettings();
-    } catch (err: any) {
-      toast.error(err.message || "Không thể thêm khu.");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleAddRoom = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,7 +139,7 @@ export function StructureSettingsTab({
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
           <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
             <Building2 className="h-5 w-5 text-[#1F5CA9]" />
-            Khu ký túc xá
+            Khu ký túc xá (Cố định 2 khu A &amp; B)
           </h3>
 
           <div className="divide-y divide-slate-200 border border-slate-200 rounded-lg">
@@ -176,34 +152,9 @@ export function StructureSettingsTab({
               </div>
             ))}
           </div>
-
-          <form onSubmit={handleAddZone} className="flex flex-wrap gap-2">
-            <input
-              type="text"
-              required
-              maxLength={10}
-              value={newMaKhu}
-              onChange={(e) => setNewMaKhu(e.target.value)}
-              placeholder="Mã khu"
-              className="w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm uppercase"
-            />
-            <input
-              type="text"
-              required
-              value={newTenKhu}
-              onChange={(e) => setNewTenKhu(e.target.value)}
-              placeholder="Tên khu"
-              className="flex-1 min-w-36 rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            />
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-1 rounded-lg bg-[#1F5CA9] px-3.5 py-2 text-sm font-semibold text-white hover:bg-[#194B8B]"
-            >
-              <Plus className="h-4 w-4" />
-              Thêm khu
-            </button>
-          </form>
+          <p className="text-xs text-slate-500">
+            Hệ thống quản lý cố định 2 khu ký túc xá: Khu A và Khu B.
+          </p>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">

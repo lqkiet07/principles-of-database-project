@@ -4,7 +4,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from app.auth import require_admin
+from app.auth import assert_khu_access, get_scope_khu, require_admin, resolve_khu_filter
 from app.db import fetch_all, fetch_one, transaction
 
 router = APIRouter(prefix="/api/admin/maintenance", tags=["Quản lý - Bảo trì và sửa chữa"])
@@ -45,14 +45,15 @@ async def list_maintenance(
     search: str | None = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=10, le=50),
-    _admin=Depends(require_admin),
+    admin=Depends(require_admin),
 ):
-    conditions = ["1=1"]
+    effective_khu = resolve_khu_filter(admin, ma_khu)
+    conditions = ["COALESCE(yc.ma_khu, p.ma_khu) IN ('A', 'B')"]
     params: list = []
 
-    if ma_khu and ma_khu.strip():
+    if effective_khu:
         conditions.append("COALESCE(yc.ma_khu, p.ma_khu) = %s")
-        params.append(ma_khu.strip().upper())
+        params.append(effective_khu)
     if ma_phong is not None:
         conditions.append("yc.ma_phong = %s")
         params.append(ma_phong)
@@ -105,8 +106,11 @@ async def list_maintenance(
         [*params, page_size, offset],
     )
 
+    scope_khu = get_scope_khu(admin)
+    room_where = "ma_khu = %s" if scope_khu else "ma_khu IN ('A', 'B')"
+    room_params: list = [scope_khu] if scope_khu else []
     room_status = await fetch_all(
-        """
+        f"""
         SELECT ma_phong, ten_phong, ma_khu, trang_thai_phong, so_yc_bao_tri,
                CASE
                    WHEN trang_thai_phong = 'BAO_TRI' THEN 'DANG_BAO_TRI'
@@ -114,11 +118,14 @@ async def list_maintenance(
                    ELSE 'BINH_THUONG'
                END AS tinh_trang_bao_tri
         FROM v_phong_chi_tiet
+        WHERE {room_where}
         ORDER BY ten_phong ASC
-        """
+        """,
+        room_params,
     )
 
     return {
+        "pham_vi_khu": scope_khu,
         "items": items,
         "total": count_row["total"] if count_row else 0,
         "page": page,
@@ -129,14 +136,14 @@ async def list_maintenance(
 
 @router.post("", status_code=201)
 async def create_maintenance(
-    payload: CreateMaintenanceRequest, _admin=Depends(require_admin)
+    payload: CreateMaintenanceRequest, admin=Depends(require_admin)
 ):
     created_ids: list[int] = []
     async with transaction() as conn, conn.cursor() as cur:
         if payload.pham_vi == "KHU":
-            if not payload.ma_khu:
-                raise HTTPException(status_code=400, detail="Vui lòng chọn khu cần bảo trì.")
-            mk = payload.ma_khu.strip().upper()
+            mk = resolve_khu_filter(admin, payload.ma_khu)
+            if not mk:
+                raise HTTPException(status_code=400, detail="Vui lòng chọn khu cần bảo trì (Khu A hoặc Khu B).")
             await cur.execute(
                 """
                 INSERT INTO yeu_cau_bao_tri (ma_phong, ma_khu, mssv, nhom_su_co, mo_ta, trang_thai)
@@ -160,6 +167,7 @@ async def create_maintenance(
                 p = await cur.fetchone()
                 if not p:
                     raise HTTPException(status_code=404, detail=f"Không tìm thấy phòng mã {mp}.")
+                assert_khu_access(admin, p["ma_khu"])
                 await cur.execute(
                     """
                     INSERT INTO yeu_cau_bao_tri (ma_phong, ma_khu, mssv, nhom_su_co, mo_ta, trang_thai)
@@ -184,9 +192,22 @@ async def create_maintenance(
 
 @router.patch("/{ma_yc}/status")
 async def update_maintenance_status(
-    ma_yc: int, payload: UpdateMaintenanceStatusRequest, _admin=Depends(require_admin)
+    ma_yc: int, payload: UpdateMaintenanceStatusRequest, admin=Depends(require_admin)
 ):
     """Cập nhật trạng thái bảo trì (hỗ trợ lưu ghi chú, SĐT người sửa và ngày sửa khi tiếp nhận)."""
+    yc_check = await fetch_one(
+        """
+        SELECT COALESCE(yc.ma_khu, p.ma_khu) AS ma_khu
+        FROM yeu_cau_bao_tri yc
+        LEFT JOIN phong p ON p.ma_phong = yc.ma_phong
+        WHERE yc.ma_yc = %s
+        """,
+        (ma_yc,),
+    )
+    if not yc_check:
+        raise HTTPException(status_code=404, detail="Không tìm thấy yêu cầu bảo trì.")
+    assert_khu_access(admin, yc_check["ma_khu"])
+
     async with transaction() as conn, conn.cursor() as cur:
         await cur.execute(
             """
@@ -208,21 +229,29 @@ async def update_maintenance_status(
             ),
         )
         row = await cur.fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="Không tìm thấy yêu cầu bảo trì.")
     return row
 
 
 @router.post("/broadcast")
 async def broadcast_maintenance_notice(
-    payload: BroadcastMaintenanceRequest, _admin=Depends(require_admin)
+    payload: BroadcastMaintenanceRequest, admin=Depends(require_admin)
 ):
     sent = 0
+    scope_khu = get_scope_khu(admin)
+    effective_khu = resolve_khu_filter(admin, payload.ma_khu)
+
     async with transaction() as conn, conn.cursor() as cur:
         await cur.execute("SELECT fn_ky_hoc_hien_hanh() AS ma_ky")
         ky = (await cur.fetchone())["ma_ky"]
 
         if payload.ma_phong_list:
+            if scope_khu:
+                await cur.execute(
+                    "SELECT ma_khu FROM phong WHERE ma_phong = ANY(%s)",
+                    (payload.ma_phong_list,),
+                )
+                for r in await cur.fetchall():
+                    assert_khu_access(admin, r["ma_khu"])
             await cur.execute(
                 """
                 INSERT INTO thong_bao (mssv, ma_phong, ma_khu, loai, tieu_de, noi_dung)
@@ -235,8 +264,7 @@ async def broadcast_maintenance_notice(
                 (payload.tieu_de.strip(), payload.noi_dung.strip(), ky, payload.ma_phong_list),
             )
             sent = cur.rowcount
-        elif payload.ma_khu:
-            mk = payload.ma_khu.strip().upper()
+        elif effective_khu:
             await cur.execute(
                 """
                 INSERT INTO thong_bao (mssv, ma_phong, ma_khu, loai, tieu_de, noi_dung)
@@ -246,7 +274,7 @@ async def broadcast_maintenance_notice(
                 WHERE lt.ma_ky = %s AND lt.ngay_ra IS NULL
                   AND p.ma_khu = %s
                 """,
-                (payload.tieu_de.strip(), payload.noi_dung.strip(), ky, mk),
+                (payload.tieu_de.strip(), payload.noi_dung.strip(), ky, effective_khu),
             )
             sent = cur.rowcount
         else:
@@ -257,6 +285,7 @@ async def broadcast_maintenance_notice(
                 FROM luu_tru lt
                 JOIN phong p ON p.ma_phong = lt.ma_phong
                 WHERE lt.ma_ky = %s AND lt.ngay_ra IS NULL
+                  AND p.ma_khu IN ('A', 'B')
                 """,
                 (payload.tieu_de.strip(), payload.noi_dung.strip(), ky),
             )

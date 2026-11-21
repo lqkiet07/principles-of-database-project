@@ -16,7 +16,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 
 const STUDENT_NAV = [
-  { href: "/student", label: "Hóa đơn & Ví", icon: Receipt, exact: true },
+  { href: "/student", label: "Hóa đơn & Thanh toán", icon: Receipt, exact: true },
   { href: "/student/room", label: "Phòng ở & Đổi phòng", icon: BedDouble },
   { href: "/student/maintenance", label: "Báo hỏng & Thông báo", icon: Wrench },
 ];

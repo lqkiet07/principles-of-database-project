@@ -10,19 +10,25 @@ import {
   Search,
   Send,
   TrendingUp,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiDownload, apiRequest } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { formatDate, formatMonthLabel, formatNumber, formatVND } from "@/lib/format";
 import { PaginationBar } from "@/components/shared/pagination-bar";
 import { SectionCard } from "@/components/shared/section-card";
 import { BillStatusBadge } from "@/components/shared/status-badge";
 import { BillRow } from "@/features/admin/bills/types";
+import { ImportMetersModal } from "@/features/admin/bills/import-meters-modal";
 import { ManualMeterModal } from "@/features/admin/bills/manual-meter-modal";
 import { SendBillsModal } from "@/features/admin/bills/send-bills-modal";
 import { UtilityForecastTab } from "@/features/admin/bills/utility-forecast-tab";
 
 export default function AdminBillsPage() {
+  const { user } = useAuth();
+  const scopeKhu = user?.ma_khu_phu_trach || null;
+
   const [tab, setTab] = useState<"bills" | "forecast">("bills");
 
   const [thang, setThang] = useState("");
@@ -31,7 +37,7 @@ export default function AdminBillsPage() {
   const [donGiaDien, setDonGiaDien] = useState(3500);
   const [donGiaNuoc, setDonGiaNuoc] = useState(15000);
 
-  const [maKhu, setMaKhu] = useState("");
+  const [maKhu, setMaKhu] = useState(scopeKhu || "");
   const [trangThai, setTrangThai] = useState<"TAT_CA" | "DA_NOP" | "CHUA_NOP" | "CHUA_NHAP">("TAT_CA");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -41,7 +47,33 @@ export default function AdminBillsPage() {
   const [loading, setLoading] = useState(true);
 
   const [manualRoom, setManualRoom] = useState<BillRow | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
+  const [remindingUnpaid, setRemindingUnpaid] = useState(false);
+
+  const handleRemindUnpaid = async () => {
+    if (!thang) return;
+    setRemindingUnpaid(true);
+    try {
+      const res = await apiRequest<any>("/api/admin/bills/remind-unpaid", {
+        method: "POST",
+        body: {
+          thang,
+          ma_khu: scopeKhu || maKhu || null,
+        },
+      });
+      toast.success(res.thong_bao || "Đã gửi thông báo nhắc các phòng chưa nộp.");
+      fetchBills();
+    } catch (err: any) {
+      toast.error(err.message || "Không thể gửi thông báo nhắc đóng tiền.");
+    } finally {
+      setRemindingUnpaid(false);
+    }
+  };
+
+  useEffect(() => {
+    if (scopeKhu) setMaKhu(scopeKhu);
+  }, [scopeKhu]);
 
   const fetchBills = useCallback(async () => {
     setLoading(true);
@@ -52,7 +84,8 @@ export default function AdminBillsPage() {
         trang_thai: trangThai,
       });
       if (thang) params.set("thang", thang);
-      if (maKhu) params.set("ma_khu", maKhu);
+      const effectiveKhu = scopeKhu || maKhu;
+      if (effectiveKhu) params.set("ma_khu", effectiveKhu);
       if (search.trim()) params.set("search", search.trim());
 
       const res = await apiRequest<{
@@ -77,7 +110,7 @@ export default function AdminBillsPage() {
     } finally {
       setLoading(false);
     }
-  }, [thang, maKhu, trangThai, search, page, pageSize]);
+  }, [thang, scopeKhu, maKhu, trangThai, search, page, pageSize]);
 
   useEffect(() => {
     fetchBills();
@@ -119,8 +152,7 @@ export default function AdminBillsPage() {
               tab === "forecast" ? "bg-[#1F5CA9] text-white" : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <TrendingUp className="h-4 w-4" />
-            Dự báo tiêu thụ (AI)
+            Dự báo tiêu thụ
           </button>
         </div>
 
@@ -128,11 +160,28 @@ export default function AdminBillsPage() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => setSendOpen(true)}
+              onClick={() => setImportOpen(true)}
               className="inline-flex items-center gap-1.5 rounded-xl bg-[#1F5CA9] px-3.5 py-2 text-sm font-semibold text-white hover:bg-[#194B8B]"
             >
-              <Send className="h-3.5 w-3.5" />
+              <Upload className="h-3.5 w-3.5" />
+              Nhập từ Excel
+            </button>
+            <button
+              type="button"
+              onClick={() => setSendOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              <Send className="h-3.5 w-3.5 text-[#1F5CA9]" />
               Gửi hóa đơn
+            </button>
+            <button
+              type="button"
+              disabled={remindingUnpaid}
+              onClick={handleRemindUnpaid}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-60"
+            >
+              <Send className="h-3.5 w-3.5" />
+              {remindingUnpaid ? "Đang nhắc..." : "Nhắc phòng chưa nộp"}
             </button>
             <button
               type="button"
@@ -182,17 +231,17 @@ export default function AdminBillsPage() {
               </select>
 
               <select
-                value={maKhu}
+                value={scopeKhu || maKhu}
+                disabled={Boolean(scopeKhu)}
                 onChange={(e) => {
                   setMaKhu(e.target.value);
                   setPage(1);
                 }}
-                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#1F5CA9]"
+                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#1F5CA9] disabled:bg-slate-100"
               >
-                <option value="">Tất cả khu</option>
-                <option value="A">Khu A</option>
-                <option value="B">Khu B</option>
-                <option value="C">Khu C</option>
+                {!scopeKhu && <option value="">Tất cả (Khu A &amp; B)</option>}
+                {(!scopeKhu || scopeKhu === "A") && <option value="A">Khu A</option>}
+                {(!scopeKhu || scopeKhu === "B") && <option value="B">Khu B</option>}
               </select>
 
               <select
@@ -331,6 +380,16 @@ export default function AdminBillsPage() {
         thang={thang}
         onClose={() => setManualRoom(null)}
         onSuccess={fetchBills}
+      />
+
+      <ImportMetersModal
+        open={importOpen}
+        defaultMonth={thang || new Date().toISOString().slice(0, 7)}
+        onClose={() => setImportOpen(false)}
+        onSuccess={(importedMonth) => {
+          setThang(importedMonth);
+          fetchBills();
+        }}
       />
 
       <SendBillsModal

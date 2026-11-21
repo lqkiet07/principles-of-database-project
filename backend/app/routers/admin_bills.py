@@ -6,7 +6,13 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.ai.forecasting import forecast_utility_consumption
-from app.auth import require_admin
+from app.auth import (
+    assert_khu_access,
+    get_scope_khu,
+    require_admin,
+    require_super_admin,
+    resolve_khu_filter,
+)
 from app.db import fetch_all, fetch_one, transaction
 from app.utils.bill_reports import (
     build_meter_template_xlsx,
@@ -45,6 +51,16 @@ class SendBillsRequest(BaseModel):
     gui_email_ctu: bool = False
 
 
+class RemindUnpaidRequest(BaseModel):
+    thang: str = Field(..., pattern=r"^[0-9]{4}-(0[1-9]|1[0-2])$")
+    ma_khu: str | None = None
+
+
+class ForecastNotifyRequest(BaseModel):
+    ma_khu: str | None = None
+    noi_dung: str | None = Field(default=None, max_length=1500)
+
+
 @router.get("")
 async def list_utility_bills(
     thang: str | None = None,
@@ -55,8 +71,10 @@ async def list_utility_bills(
     page_size: int = Query(20, ge=10, le=50),
     sort_by: Literal["ten_phong", "so_tien", "trang_thai"] = "ten_phong",
     sort_dir: Literal["asc", "desc"] = "asc",
-    _admin=Depends(require_admin),
+    admin=Depends(require_admin),
 ):
+    effective_khu = resolve_khu_filter(admin, ma_khu)
+
     months_rows = await fetch_all(
         """
         SELECT DISTINCT thang FROM hoa_don WHERE loai = 'DIEN_NUOC'
@@ -74,12 +92,12 @@ async def list_utility_bills(
     dg_dien = await fetch_one("SELECT don_gia FROM don_gia WHERE loai = 'DIEN' ORDER BY ap_dung_tu DESC, ma_dg DESC LIMIT 1")
     dg_nuoc = await fetch_one("SELECT don_gia FROM don_gia WHERE loai = 'NUOC' ORDER BY ap_dung_tu DESC, ma_dg DESC LIMIT 1")
 
-    conditions = ["1=1"]
+    conditions = ["p.ma_khu IN ('A', 'B')"]
     params: list = [current_month, current_month]
 
-    if ma_khu and ma_khu.strip():
+    if effective_khu:
         conditions.append("p.ma_khu = %s")
-        params.append(ma_khu.strip().upper())
+        params.append(effective_khu)
     if trang_thai == "DA_NOP":
         conditions.append("hd.trang_thai = 'DA_NOP'")
     elif trang_thai == "CHUA_NOP":
@@ -141,6 +159,7 @@ async def list_utility_bills(
     )
 
     return {
+        "pham_vi_khu": get_scope_khu(admin),
         "thang": current_month,
         "available_months": available_months,
         "han_nop_dien_nuoc": cfg_han["gia_tri"] if cfg_han else None,
@@ -156,12 +175,19 @@ async def list_utility_bills(
 @router.get("/template")
 async def download_import_template(
     thang: str | None = None,
-    _admin=Depends(require_admin),
+    ma_khu: str | None = None,
+    admin=Depends(require_admin),
 ):
-    """Tải file mẫu Excel (.xlsx) nhập chỉ số điện nước theo tên phòng."""
+    """Tải file mẫu Excel (.xlsx) nhập chỉ số điện nước theo tên phòng (đúng khu được phân quyền)."""
     target_month = thang or datetime.now().strftime("%Y-%m")
+    effective_khu = resolve_khu_filter(admin, ma_khu)
+    khu_clause = "AND p.ma_khu = %s" if effective_khu else "AND p.ma_khu IN ('A', 'B')"
+    params: list = [target_month, target_month]
+    if effective_khu:
+        params.append(effective_khu)
+
     rooms = await fetch_all(
-        """
+        f"""
         SELECT p.ten_phong,
                COALESCE((
                    SELECT cs.chi_so_dien_cuoi FROM chi_so cs
@@ -174,10 +200,10 @@ async def download_import_template(
                    ORDER BY cs.thang DESC LIMIT 1
                ), 0) AS nuoc_ky_truoc
         FROM v_phong_chi_tiet p
-        WHERE p.so_nguoi_o > 0
+        WHERE p.so_nguoi_o > 0 {khu_clause}
         ORDER BY p.ten_phong ASC
         """,
-        (target_month, target_month),
+        params,
     )
 
     buf = build_meter_template_xlsx(rooms)
@@ -193,9 +219,10 @@ async def download_import_template(
 async def preview_import_meters(
     thang: str = Form(...),
     file: UploadFile = File(...),
-    _admin=Depends(require_admin),
+    admin=Depends(require_admin),
 ):
-    """Đọc file Excel/CSV, khớp tên phòng, tính lượng tiêu thụ & tiền, kiểm tra lỗi và cảnh báo bất thường."""
+    """Đọc file Excel/CSV, khớp tên phòng trong phạm vi khu quản lý, tính tiêu thụ & cảnh báo bất thường."""
+    scope_khu = get_scope_khu(admin)
     content = await file.read()
     try:
         raw_rows = parse_meter_upload(file.filename or "", content)
@@ -210,8 +237,13 @@ async def preview_import_meters(
     gia_dien = int(dg_dien_row["don_gia"]) if dg_dien_row else 3500
     gia_nuoc = int(dg_nuoc_row["don_gia"]) if dg_nuoc_row else 15000
 
+    khu_where = "WHERE p.ma_khu = %s" if scope_khu else "WHERE p.ma_khu IN ('A', 'B')"
+    params: list = [thang, thang, thang, thang, thang]
+    if scope_khu:
+        params.append(scope_khu)
+
     rooms_db = await fetch_all(
-        """
+        f"""
         SELECT p.ma_phong, p.ten_phong, p.ma_khu, p.so_nguoi_o,
                COALESCE((
                    SELECT cs.chi_so_dien_cuoi FROM chi_so cs
@@ -237,8 +269,9 @@ async def preview_import_meters(
                      AND hd.loai = 'DIEN_NUOC' AND hd.trang_thai = 'DA_NOP'
                ) AS da_nop
         FROM v_phong_chi_tiet p
+        {khu_where}
         """,
-        (thang, thang, thang, thang, thang),
+        params,
     )
     room_map = {r["ten_phong"].upper(): r for r in rooms_db}
 
@@ -254,7 +287,10 @@ async def preview_import_meters(
 
         room = room_map.get(ten_phong)
         if not room:
-            errs.append(f"Tên phòng '{ten_phong_raw}' không tồn tại trong hệ thống.")
+            errs.append(
+                f"Phòng '{ten_phong_raw}' không tồn tại hoặc không thuộc phạm vi quản lý"
+                + (f" Khu {scope_khu}." if scope_khu else ".")
+            )
         elif ten_phong in seen_rooms:
             errs.append(f"Phòng '{ten_phong}' bị trùng lặp trong file.")
         else:
@@ -349,9 +385,14 @@ async def preview_import_meters(
 
 @router.post("/import/confirm")
 async def confirm_import_meters(
-    payload: ImportConfirmRequest, _admin=Depends(require_admin)
+    payload: ImportConfirmRequest, admin=Depends(require_admin)
 ):
     """Lưu toàn bộ chỉ số & tạo hóa đơn trong 1 giao dịch ACID (lỗi giữa chừng tự ROLLBACK)."""
+    room_ids = list({r.ma_phong for r in payload.rows})
+    rooms = await fetch_all("SELECT ma_phong, ma_khu FROM phong WHERE ma_phong = ANY(%s)", (room_ids,))
+    for rm in rooms:
+        assert_khu_access(admin, rm["ma_khu"])
+
     results = []
     async with transaction() as conn, conn.cursor() as cur:
         for row in payload.rows:
@@ -372,8 +413,13 @@ async def confirm_import_meters(
 
 @router.post("/manual")
 async def manual_meter_entry(
-    payload: ManualMeterRequest, _admin=Depends(require_admin)
+    payload: ManualMeterRequest, admin=Depends(require_admin)
 ):
+    room = await fetch_one("SELECT ma_khu FROM phong WHERE ma_phong = %s", (payload.ma_phong,))
+    if not room:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phòng.")
+    assert_khu_access(admin, room["ma_khu"])
+
     async with transaction() as conn, conn.cursor() as cur:
         await cur.execute(
             "SELECT sp_nhap_chi_so_va_tao_hoa_don(%s, %s, %s, %s, NULL) AS res",
@@ -385,11 +431,12 @@ async def manual_meter_entry(
 
 @router.post("/send")
 async def send_utility_bills(
-    payload: SendBillsRequest, _admin=Depends(require_admin)
+    payload: SendBillsRequest, admin=Depends(require_admin)
 ):
-    """Gửi thông báo hóa đơn cho tất cả phòng, các phòng được chọn hoặc gửi riêng 1 sinh viên."""
+    """Gửi thông báo hóa đơn cho tất cả phòng, các phòng được chọn hoặc gửi riêng 1 sinh viên (đúng phạm vi khu)."""
     sent_count = 0
     emails_simulated: list[str] = []
+    scope_khu = get_scope_khu(admin)
 
     async with transaction() as conn, conn.cursor() as cur:
         await cur.execute("SELECT fn_ky_hoc_hien_hanh() AS ma_ky")
@@ -417,6 +464,8 @@ async def send_utility_bills(
                     status_code=404,
                     detail=f"Không tìm thấy hóa đơn tháng {payload.thang} cho sinh viên {mssv_u}.",
                 )
+            assert_khu_access(admin, target["ma_khu"])
+
             await cur.execute(
                 """
                 INSERT INTO thong_bao (mssv, ma_phong, ma_khu, loai, tieu_de, noi_dung)
@@ -450,18 +499,26 @@ async def send_utility_bills(
                     """,
                     (payload.thang, payload.ma_phong_list),
                 )
+                bills = await cur.fetchall()
+                for b in bills:
+                    assert_khu_access(admin, b["ma_khu"])
             else:
+                khu_clause = "AND p.ma_khu = %s" if scope_khu else "AND p.ma_khu IN ('A', 'B')"
+                b_params: list = [payload.thang]
+                if scope_khu:
+                    b_params.append(scope_khu)
                 await cur.execute(
-                    """
+                    f"""
                     SELECT hd.ma_hoa_don, hd.ma_phong, hd.so_tien, hd.han_nop,
                            p.ten_phong, p.ma_khu
                     FROM hoa_don hd
                     JOIN phong p ON p.ma_phong = hd.ma_phong
-                    WHERE hd.thang = %s AND hd.loai = 'DIEN_NUOC'
+                    WHERE hd.thang = %s AND hd.loai = 'DIEN_NUOC' {khu_clause}
                     """,
-                    (payload.thang,),
+                    b_params,
                 )
-            bills = await cur.fetchall()
+                bills = await cur.fetchall()
+
             if not bills:
                 raise HTTPException(
                     status_code=400,
@@ -510,15 +567,125 @@ async def send_utility_bills(
     }
 
 
+@router.post("/remind-unpaid")
+async def remind_unpaid_utility_bills(
+    payload: RemindUnpaidRequest, admin=Depends(require_admin)
+):
+    """Nhắc nhở / cảnh báo quá hạn đến sinh viên các phòng chưa nộp hóa đơn điện nước."""
+    effective_khu = resolve_khu_filter(admin, payload.ma_khu)
+    khu_clause = "AND p.ma_khu = %s" if effective_khu else "AND p.ma_khu IN ('A', 'B')"
+    params: list = [payload.thang]
+    if effective_khu:
+        params.append(effective_khu)
+
+    sent = 0
+    overdue_rooms = 0
+    async with transaction() as conn, conn.cursor() as cur:
+        await cur.execute("SELECT fn_ky_hoc_hien_hanh() AS ma_ky")
+        ky = (await cur.fetchone())["ma_ky"]
+
+        await cur.execute(
+            f"""
+            SELECT hd.ma_hoa_don, hd.ma_phong, hd.so_tien, hd.han_nop,
+                   p.ten_phong, p.ma_khu,
+                   (hd.han_nop IS NOT NULL AND hd.han_nop < CURRENT_DATE) AS qua_han
+            FROM hoa_don hd
+            JOIN phong p ON p.ma_phong = hd.ma_phong
+            WHERE hd.thang = %s AND hd.loai = 'DIEN_NUOC'
+              AND hd.trang_thai = 'CHUA_NOP'
+              {khu_clause}
+            """,
+            params,
+        )
+        unpaid_bills = await cur.fetchall()
+        if not unpaid_bills:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Tất cả các phòng trong tháng {payload.thang} đã hoàn tất thanh toán điện nước.",
+            )
+
+        for b in unpaid_bills:
+            if b["qua_han"]:
+                overdue_rooms += 1
+            loai_tb = "CANH_CAO" if b["qua_han"] else "HOA_DON"
+            han_str = b["han_nop"].strftime("%d/%m/%Y") if b["han_nop"] else "quy định"
+            if b["qua_han"]:
+                tieu_de = f"Quá hạn đóng tiền điện nước tháng {payload.thang} - Phòng {b['ten_phong']}"
+                noi_dung = (
+                    f"Hóa đơn điện nước tháng {payload.thang} của phòng {b['ten_phong']} ({fmt_vnd(b['so_tien'])}) "
+                    f"đã quá hạn nộp ({han_str}). Đề nghị sinh viên hoàn tất thanh toán ngay để tránh bị lập biên bản chậm nộp."
+                )
+            else:
+                tieu_de = f"Nhắc nộp tiền điện nước tháng {payload.thang} - Phòng {b['ten_phong']}"
+                noi_dung = (
+                    f"Phòng {b['ten_phong']} vẫn chưa thanh toán hóa đơn điện nước tháng {payload.thang} ({fmt_vnd(b['so_tien'])}). "
+                    f"Vui lòng hoàn tất trước hạn {han_str}."
+                )
+
+            await cur.execute(
+                """
+                INSERT INTO thong_bao (mssv, ma_phong, ma_khu, loai, tieu_de, noi_dung)
+                SELECT lt.mssv, %s, %s, %s, %s, %s
+                FROM luu_tru lt
+                WHERE lt.ma_phong = %s AND lt.ma_ky = %s AND lt.ngay_ra IS NULL
+                """,
+                (b["ma_phong"], b["ma_khu"], loai_tb, tieu_de, noi_dung, b["ma_phong"], ky),
+            )
+            sent += cur.rowcount
+            await cur.execute(
+                "UPDATE hoa_don SET da_gui_thong_bao = TRUE WHERE ma_hoa_don = %s",
+                (b["ma_hoa_don"],),
+            )
+
+    return {
+        "thanh_cong": True,
+        "so_phong": len(unpaid_bills),
+        "so_phong_qua_han": overdue_rooms,
+        "so_sinh_vien_nhan": sent,
+        "thong_bao": f"Đã gửi thông báo nhắc đóng điện nước cho {len(unpaid_bills)} phòng chưa nộp ({sent} sinh viên).",
+    }
+
+
 @router.post("/generate-ktx")
-async def generate_ktx_semester_bills(_admin=Depends(require_admin)):
+async def generate_ktx_semester_bills(_admin=Depends(require_super_admin)):
     async with transaction() as conn, conn.cursor() as cur:
         await cur.execute("SELECT sp_tao_hoa_don_ktx_ky(NULL) AS created")
         r = await cur.fetchone()
+        created = int(r["created"] or 0)
+
+        await cur.execute(
+            """
+            INSERT INTO thong_bao (mssv, ma_phong, ma_khu, loai, tieu_de, noi_dung)
+            SELECT lt.mssv, hd.ma_phong, p.ma_khu, 'HOA_DON',
+                   format('Thông báo đóng tiền phòng KTX %s - Phòng %s', hd.ma_ky, p.ten_phong),
+                   format('Hóa đơn tiền phòng KTX kỳ %s cho phòng %s đã được phát hành (%s). Hạn nộp: %s.',
+                       hd.ma_ky, p.ten_phong, to_char(hd.so_tien, 'FM999,999,999') || ' đ', to_char(hd.han_nop, 'DD/MM/YYYY'))
+            FROM hoa_don hd
+            JOIN phong p ON p.ma_phong = hd.ma_phong
+            JOIN luu_tru lt ON lt.ma_phong = hd.ma_phong AND lt.ma_ky = hd.ma_ky AND lt.ngay_ra IS NULL
+            WHERE hd.ma_ky = fn_ky_hoc_hien_hanh()
+              AND hd.loai = 'KTX'
+              AND hd.trang_thai = 'CHUA_NOP'
+              AND hd.da_gui_thong_bao = FALSE
+            """
+        )
+        notified = cur.rowcount
+        await cur.execute(
+            """
+            UPDATE hoa_don
+            SET da_gui_thong_bao = TRUE
+            WHERE ma_ky = fn_ky_hoc_hien_hanh()
+              AND loai = 'KTX'
+              AND trang_thai = 'CHUA_NOP'
+              AND da_gui_thong_bao = FALSE
+            """
+        )
+
     return {
         "thanh_cong": True,
-        "so_hoa_don_moi": r["created"],
-        "thong_bao": f"Đã phát hành thêm {r['created']} hóa đơn tiền KTX cho các phòng đang lưu trú.",
+        "so_hoa_don_moi": created,
+        "so_sinh_vien_nhan": notified,
+        "thong_bao": f"Đã phát hành thêm {created} hóa đơn tiền KTX và gửi thông báo đến {notified} lượt sinh viên.",
     }
 
 
@@ -527,13 +694,14 @@ async def export_utility_report(
     thang: str = Query(..., pattern=r"^[0-9]{4}-(0[1-9]|1[0-2])$"),
     format: Literal["excel", "pdf"] = "excel",
     ma_khu: str | None = None,
-    _admin=Depends(require_admin),
+    admin=Depends(require_admin),
 ):
-    conditions = ["thang = %s"]
+    effective_khu = resolve_khu_filter(admin, ma_khu)
+    conditions = ["thang = %s", "ma_khu IN ('A', 'B')"]
     params: list = [thang]
-    if ma_khu and ma_khu.strip():
+    if effective_khu:
         conditions.append("ma_khu = %s")
-        params.append(ma_khu.strip().upper())
+        params.append(effective_khu)
 
     rows = await fetch_all(
         f"""
@@ -564,7 +732,61 @@ async def export_utility_report(
 @router.get("/forecast")
 async def get_utility_forecast(
     ma_khu: str | None = None,
-    _admin=Depends(require_admin),
+    admin=Depends(require_admin),
 ):
     """Dự báo tiêu thụ điện nước 3 tháng tới bằng RandomForestRegressor."""
-    return await forecast_utility_consumption(ma_khu or None)
+    effective_khu = resolve_khu_filter(admin, ma_khu)
+    return await forecast_utility_consumption(effective_khu)
+
+
+@router.post("/forecast/notify-saving")
+async def notify_utility_saving_from_forecast(
+    payload: ForecastNotifyRequest | None = None,
+    admin=Depends(require_admin),
+):
+    """Từ kết quả dự báo RandomForest, gửi khuyến cáo tiết kiệm điện nước đến sinh viên."""
+    req_khu = payload.ma_khu if payload else None
+    effective_khu = resolve_khu_filter(admin, req_khu)
+    forecast = await forecast_utility_consumption(effective_khu)
+    next_month = (forecast.get("du_bao") or [None])[0]
+
+    scope_label = f"Khu {effective_khu}" if effective_khu else "toàn KTX (Khu A & B)"
+    custom_body = (payload.noi_dung or "").strip() if payload else ""
+    if custom_body:
+        noi_dung = custom_body
+    elif next_month:
+        noi_dung = (
+            f"Theo mô hình dự báo tiêu thụ tháng {next_month['thang']} tại {scope_label}, "
+            f"sản lượng ước tính đạt {int(next_month['dien_kwh_du_bao']):,} kWh điện và {int(next_month['nuoc_m3_du_bao']):,} m³ nước. "
+            f"Ban Quản lý KTX đề nghị sinh viên chủ động tắt thiết bị khi rời phòng và sử dụng điện nước tiết kiệm để giảm chi phí hóa đơn."
+        ).replace(",", ".")
+    else:
+        noi_dung = (
+            f"Ban Quản lý KTX khuyến cáo sinh viên {scope_label} chủ động sử dụng điện, nước tiết kiệm và tắt các thiết bị khi không sử dụng."
+        )
+
+    khu_clause = "AND p.ma_khu = %s" if effective_khu else "AND p.ma_khu IN ('A', 'B')"
+    params: list = ["Khuyến cáo tiết kiệm điện nước tháng tới", noi_dung]
+    if effective_khu:
+        params.append(effective_khu)
+
+    async with transaction() as conn, conn.cursor() as cur:
+        await cur.execute(
+            f"""
+            INSERT INTO thong_bao (mssv, ma_phong, ma_khu, loai, tieu_de, noi_dung)
+            SELECT lt.mssv, lt.ma_phong, p.ma_khu, 'HE_THONG', %s, %s
+            FROM luu_tru lt
+            JOIN phong p ON p.ma_phong = lt.ma_phong
+            WHERE lt.ma_ky = fn_ky_hoc_hien_hanh()
+              AND lt.ngay_ra IS NULL
+              {khu_clause}
+            """,
+            params,
+        )
+        sent = cur.rowcount
+
+    return {
+        "thanh_cong": True,
+        "so_sinh_vien_nhan": sent,
+        "thong_bao": f"Đã gửi khuyến cáo tiết kiệm điện nước đến {sent} sinh viên ({scope_label}).",
+    }

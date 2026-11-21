@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   BedDouble,
   Building2,
+  Fingerprint,
   GraduationCap,
   LayoutDashboard,
   LogOut,
@@ -15,15 +16,16 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import { useAuth } from "@/lib/auth-context";
+import { getRoleLabel, useAuth } from "@/lib/auth-context";
 
-const NAV_ITEMS = [
-  { href: "/admin", label: "Tổng quan", icon: LayoutDashboard, exact: true },
-  { href: "/admin/rooms", label: "Phòng ở", icon: BedDouble },
-  { href: "/admin/students", label: "Sinh viên", icon: GraduationCap },
-  { href: "/admin/bills", label: "Hóa đơn điện nước", icon: Receipt },
-  { href: "/admin/maintenance", label: "Bảo trì", icon: Wrench },
-  { href: "/admin/settings", label: "Cài đặt", icon: Settings },
+const ALL_NAV_ITEMS = [
+  { href: "/admin", label: "Tổng quan", icon: LayoutDashboard, exact: true, superOnly: false },
+  { href: "/admin/rooms", label: "Phòng ở", icon: BedDouble, superOnly: false },
+  { href: "/admin/students", label: "Sinh viên", icon: GraduationCap, superOnly: false },
+  { href: "/admin/attendance", label: "Điểm danh cổng KTX", icon: Fingerprint, superOnly: false },
+  { href: "/admin/bills", label: "Hóa đơn điện nước", icon: Receipt, superOnly: false },
+  { href: "/admin/maintenance", label: "Bảo trì", icon: Wrench, superOnly: false },
+  { href: "/admin/settings", label: "Cài đặt", icon: Settings, superOnly: true },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
@@ -31,14 +33,20 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const { user, kyHoc, maintenanceMode, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const navItems = ALL_NAV_ITEMS.filter(
+    (item) => !item.superOnly || user?.vai_tro === "QUAN_LY"
+  );
+
   const currentNav =
-    NAV_ITEMS.find((item) =>
+    navItems.find((item) =>
       item.exact ? pathname === item.href : pathname.startsWith(item.href)
-    ) || NAV_ITEMS[0];
+    ) || navItems[0];
+
+  const roleLabel = getRoleLabel(user?.vai_tro);
 
   const renderNavLinks = (onClickItem?: () => void) => (
     <nav className="flex-1 space-y-1 px-3 py-4" aria-label="Điều hướng quản lý">
-      {NAV_ITEMS.map((item) => {
+      {navItems.map((item) => {
         const active = item.exact
           ? pathname === item.href
           : pathname.startsWith(item.href);
@@ -71,16 +79,24 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="min-w-0">
             <p className="text-sm font-bold text-slate-900 truncate">KTX ĐH Cần Thơ</p>
-            <p className="text-xs text-slate-500 truncate">Phân hệ Quản lý</p>
+            <p className="text-xs text-slate-500 truncate">{roleLabel}</p>
           </div>
         </div>
 
         {renderNavLinks()}
 
         {kyHoc && (
-          <div className="m-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-600">
-            <p className="text-slate-400">Học kỳ hiện hành</p>
-            <p className="mt-0.5 font-semibold text-slate-800">{kyHoc.ten_ky}</p>
+          <div className="m-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-600 space-y-1">
+            <div>
+              <p className="text-slate-400">Phạm vi quản lý</p>
+              <p className="font-semibold text-[#1F5CA9]">
+                {user?.ma_khu_phu_trach ? `Khu ${user.ma_khu_phu_trach}` : "Khu A & Khu B"}
+              </p>
+            </div>
+            <div className="pt-1 border-t border-slate-200">
+              <p className="text-slate-400">Học kỳ hiện hành</p>
+              <p className="mt-0.5 font-semibold text-slate-800">{kyHoc.ten_ky}</p>
+            </div>
           </div>
         )}
       </aside>
@@ -132,6 +148,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 Đang bảo trì
               </span>
             )}
+
+            <span className="hidden sm:inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-[#1F5CA9]">
+              {user?.ma_khu_phu_trach ? `Khu ${user.ma_khu_phu_trach}` : "Khu A & B"}
+            </span>
 
             <span className="hidden md:inline text-sm font-medium text-slate-700">
               {user?.ho_ten_hien_thi}

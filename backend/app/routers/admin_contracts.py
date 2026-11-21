@@ -3,7 +3,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from app.auth import require_admin
+from app.auth import assert_khu_access, get_scope_khu, require_admin, resolve_khu_filter
 from app.db import fetch_all, fetch_one, transaction
 
 router = APIRouter(prefix="/api/admin/contracts", tags=["Quản lý - Hợp đồng nội trú"])
@@ -23,37 +23,44 @@ async def list_student_contracts(
     search: str | None = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=10, le=50),
-    _admin=Depends(require_admin),
+    admin=Depends(require_admin),
 ):
     """
-    Hợp đồng được ký ngoài thực tế.
-    Hiển thị số lượng đã ký / chưa ký và danh sách sinh viên nội trú kèm trạng thái hợp đồng.
+    Hợp đồng được ký ngoài thực tế (phân quyền theo Khu A / Khu B).
     """
     ky_row = await fetch_one("SELECT fn_ky_hoc_hien_hanh() AS ma_ky")
     target_ky = ma_ky or (ky_row["ma_ky"] if ky_row else "HK1_2026_2027")
+    scope_khu = get_scope_khu(admin)
+    effective_khu = resolve_khu_filter(admin, ma_khu)
+
+    stats_conds = ["lt.ma_ky = %s", "lt.ngay_ra IS NULL", "p.ma_khu IN ('A', 'B')"]
+    stats_params: list = [target_ky]
+    if scope_khu:
+        stats_conds.append("p.ma_khu = %s")
+        stats_params.append(scope_khu)
 
     stats = await fetch_one(
-        """
+        f"""
         SELECT
             COUNT(*) FILTER (WHERE hd.ma_hd IS NOT NULL)::INT AS so_da_ky,
             COUNT(*) FILTER (WHERE hd.ma_hd IS NULL)::INT AS so_chua_ky
         FROM luu_tru lt
+        JOIN phong p ON p.ma_phong = lt.ma_phong
         LEFT JOIN hop_dong hd
             ON hd.ma_phong = lt.ma_phong
            AND hd.ma_ky = lt.ma_ky
            AND hd.trang_thai = 'HIEU_LUC'
-        WHERE lt.ma_ky = %s
-          AND lt.ngay_ra IS NULL
+        WHERE {' AND '.join(stats_conds)}
         """,
-        (target_ky,),
+        stats_params,
     )
 
-    conditions = ["lt.ma_ky = %s", "lt.ngay_ra IS NULL"]
+    conditions = ["lt.ma_ky = %s", "lt.ngay_ra IS NULL", "p.ma_khu IN ('A', 'B')"]
     params: list = [target_ky]
 
-    if ma_khu and ma_khu.strip():
+    if effective_khu:
         conditions.append("p.ma_khu = %s")
-        params.append(ma_khu.strip().upper())
+        params.append(effective_khu)
     if trang_thai == "DA_KY":
         conditions.append("hd.ma_hd IS NOT NULL")
     elif trang_thai == "CHUA_KY":
@@ -115,6 +122,7 @@ async def list_student_contracts(
 
     return {
         "ma_ky": target_ky,
+        "pham_vi_khu": scope_khu,
         "thong_ke": stats or {"so_da_ky": 0, "so_chua_ky": 0},
         "ky_hoc_list": semesters,
         "items": items,
@@ -126,9 +134,14 @@ async def list_student_contracts(
 
 @router.post("/confirm-signed")
 async def confirm_contract_signed(
-    payload: MarkSignedRequest, _admin=Depends(require_admin)
+    payload: MarkSignedRequest, admin=Depends(require_admin)
 ):
     """Cập nhật trạng thái đã ký hợp đồng ngoài thực tế cho phòng."""
+    room = await fetch_one("SELECT ma_khu FROM phong WHERE ma_phong = %s", (payload.ma_phong,))
+    if not room:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phòng.")
+    assert_khu_access(admin, room["ma_khu"])
+
     mssv_u = payload.mssv_dai_dien.strip().upper()
     async with transaction() as conn, conn.cursor() as cur:
         await cur.execute("SELECT fn_ky_hoc_hien_hanh() AS ma_ky")

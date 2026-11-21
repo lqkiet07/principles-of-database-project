@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@/lib/auth-context";
+import { isAdminRole, useAuth } from "@/lib/auth-context";
 
 export default function HomeRedirectPage() {
   const { user, loading } = useAuth();
@@ -13,7 +13,7 @@ export default function HomeRedirectPage() {
     if (loading) return;
     if (!user) {
       router.replace("/login");
-    } else if (user.vai_tro === "QUAN_LY") {
+    } else if (isAdminRole(user.vai_tro)) {
       router.replace("/admin");
     } else {
       router.replace("/student");

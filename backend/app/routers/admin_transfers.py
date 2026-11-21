@@ -3,7 +3,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from app.auth import require_admin
+from app.auth import assert_khu_access, get_scope_khu, require_admin
 from app.db import fetch_all, fetch_one, transaction
 
 router = APIRouter(prefix="/api/admin/room-transfers", tags=["Quản lý - Yêu cầu đổi phòng"])
@@ -24,11 +24,15 @@ async def list_room_transfers(
     search: str | None = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=10, le=50),
-    _admin=Depends(require_admin),
+    admin=Depends(require_admin),
 ):
-    conditions = ["1=1"]
+    scope_khu = get_scope_khu(admin)
+    conditions = ["p1.ma_khu IN ('A', 'B')"]
     params: list = []
 
+    if scope_khu:
+        conditions.append("p1.ma_khu = %s")
+        params.append(scope_khu)
     if trang_thai != "TAT_CA":
         conditions.append("yc.trang_thai = %s")
         params.append(trang_thai)
@@ -70,10 +74,23 @@ async def list_room_transfers(
         """,
         [*params, page_size, offset],
     )
+    pending_cond = "yc.trang_thai = 'CHO_XU_LY' AND p1.ma_khu IN ('A', 'B')"
+    pending_params: list = []
+    if scope_khu:
+        pending_cond += " AND p1.ma_khu = %s"
+        pending_params.append(scope_khu)
+
     pending_row = await fetch_one(
-        "SELECT COUNT(*)::INT AS cho_xu_ly FROM yeu_cau_doi_phong WHERE trang_thai = 'CHO_XU_LY'"
+        f"""
+        SELECT COUNT(*)::INT AS cho_xu_ly
+        FROM yeu_cau_doi_phong yc
+        JOIN phong p1 ON p1.ma_phong = yc.phong_hien_tai
+        WHERE {pending_cond}
+        """,
+        pending_params,
     )
     return {
+        "pham_vi_khu": scope_khu,
         "items": items,
         "total": count_row["total"] if count_row else 0,
         "cho_xu_ly": pending_row["cho_xu_ly"] if pending_row else 0,
@@ -83,21 +100,27 @@ async def list_room_transfers(
 
 
 @router.get("/{ma_yc}/suggested-rooms")
-async def get_suggested_rooms(ma_yc: int, _admin=Depends(require_admin)):
+async def get_suggested_rooms(ma_yc: int, admin=Depends(require_admin)):
     yc = await fetch_one(
         """
-        SELECT yc.*, sv.gioi_tinh
+        SELECT yc.*, sv.gioi_tinh, p1.ma_khu AS khu_hien_tai
         FROM yeu_cau_doi_phong yc
         JOIN sinh_vien sv ON sv.mssv = yc.mssv
+        JOIN phong p1 ON p1.ma_phong = yc.phong_hien_tai
         WHERE yc.ma_yc = %s
         """,
         (ma_yc,),
     )
     if not yc:
         raise HTTPException(status_code=404, detail="Không tìm thấy yêu cầu đổi phòng.")
+    assert_khu_access(admin, yc["khu_hien_tai"])
+
+    scope_khu = get_scope_khu(admin)
+    khu_clause = "AND ma_khu = %s" if scope_khu else "AND ma_khu IN ('A', 'B')"
+    extra_params: list = [scope_khu] if scope_khu else []
 
     rooms = await fetch_all(
-        """
+        f"""
         SELECT ma_phong, ten_phong, ma_khu, suc_chua, co_nau_an, gioi_tinh,
                so_nguoi_o, so_giuong_trong, gia_phong, trang_thai_phong
         FROM v_phong_chi_tiet
@@ -105,28 +128,48 @@ async def get_suggested_rooms(ma_yc: int, _admin=Depends(require_admin)):
           AND ma_phong <> %s
           AND trang_thai_phong IN ('TRONG', 'CON_CHO')
           AND so_giuong_trong > 0
+          {khu_clause}
         ORDER BY
             CASE WHEN %s::VARCHAR IS NOT NULL AND ma_khu = %s THEN 0 ELSE 1 END ASC,
             CASE WHEN %s::INT IS NOT NULL AND suc_chua = %s THEN 0 ELSE 1 END ASC,
             CASE WHEN trang_thai_phong = 'CON_CHO' THEN 0 ELSE 1 END ASC,
             ten_phong ASC
         """,
-        (
+        [
             yc["gioi_tinh"],
             yc["phong_hien_tai"],
+            *extra_params,
             yc["nguyen_vong_khu"],
             yc["nguyen_vong_khu"],
             yc["nguyen_vong_loai"],
             yc["nguyen_vong_loai"],
-        ),
+        ],
     )
     return {"yeu_cau": yc, "phong_goi_y": rooms}
 
 
 @router.post("/{ma_yc}/approve")
 async def approve_transfer(
-    ma_yc: int, payload: ApproveTransferRequest, _admin=Depends(require_admin)
+    ma_yc: int, payload: ApproveTransferRequest, admin=Depends(require_admin)
 ):
+    yc = await fetch_one(
+        """
+        SELECT p1.ma_khu AS khu_cu
+        FROM yeu_cau_doi_phong yc
+        JOIN phong p1 ON p1.ma_phong = yc.phong_hien_tai
+        WHERE yc.ma_yc = %s
+        """,
+        (ma_yc,),
+    )
+    if not yc:
+        raise HTTPException(status_code=404, detail="Không tìm thấy yêu cầu đổi phòng.")
+    assert_khu_access(admin, yc["khu_cu"])
+
+    new_room = await fetch_one("SELECT ma_khu FROM phong WHERE ma_phong = %s", (payload.ma_phong_moi,))
+    if not new_room:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phòng mới.")
+    assert_khu_access(admin, new_room["ma_khu"])
+
     async with transaction() as conn, conn.cursor() as cur:
         await cur.execute(
             "SELECT sp_duyet_doi_phong(%s, %s, %s) AS res",
@@ -138,8 +181,21 @@ async def approve_transfer(
 
 @router.post("/{ma_yc}/reject")
 async def reject_transfer(
-    ma_yc: int, payload: RejectTransferRequest, _admin=Depends(require_admin)
+    ma_yc: int, payload: RejectTransferRequest, admin=Depends(require_admin)
 ):
+    yc_check = await fetch_one(
+        """
+        SELECT p1.ma_khu
+        FROM yeu_cau_doi_phong yc
+        JOIN phong p1 ON p1.ma_phong = yc.phong_hien_tai
+        WHERE yc.ma_yc = %s
+        """,
+        (ma_yc,),
+    )
+    if not yc_check:
+        raise HTTPException(status_code=404, detail="Không tìm thấy yêu cầu đổi phòng.")
+    assert_khu_access(admin, yc_check["ma_khu"])
+
     reason = payload.ly_do_tu_choi.strip()
     async with transaction() as conn, conn.cursor() as cur:
         await cur.execute(

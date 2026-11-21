@@ -1,3 +1,4 @@
+import re
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -10,12 +11,12 @@ from app.db import execute, fetch_all, fetch_one, transaction
 router = APIRouter(prefix="/api/student", tags=["Sinh viên"])
 
 
-class TopupWalletRequest(BaseModel):
-    so_tien: int = Field(..., ge=10000, le=50000000)
-
-
-class PayWalletRequest(BaseModel):
-    gia_lap_loi: bool = False
+class LinkBankAccountRequest(BaseModel):
+    ngan_hang: str = Field(..., min_length=2, max_length=80)
+    ma_bin: str = Field(default="970436", min_length=6, max_length=10)
+    so_tai_khoan: str = Field(..., min_length=8, max_length=24)
+    ten_chu_tk: str = Field(..., min_length=2, max_length=120)
+    mac_dinh: bool = True
 
 
 class SubmitTransferRequest(BaseModel):
@@ -30,10 +31,18 @@ class SubmitMaintenanceRequest(BaseModel):
     anh_url: str | None = None
 
 
+def _mask_bank_no(raw: str) -> str:
+    digits = re.sub(r"\s+", "", raw or "")
+    if len(digits) <= 4:
+        return digits
+    return f"**** **** {digits[-4:]}"
+
+
 async def _get_student_context(mssv: str):
     sv = await fetch_one(
         """
-        SELECT sv.mssv, sv.ho_ten, sv.gioi_tinh, sv.nganh, sv.sdt, sv.email, sv.so_du,
+        SELECT sv.mssv, sv.ho_ten, sv.gioi_tinh, sv.nganh, sv.sdt, sv.email,
+               sv.so_ky_dong_tre,
                lt.ma_phong, lt.ma_ky, lt.ngay_vao,
                p.ten_phong, p.ma_khu, k.ten_khu, p.suc_chua, p.co_nau_an,
                p.gioi_tinh AS gioi_tinh_phong, p.gia_phong,
@@ -56,9 +65,127 @@ async def _get_student_context(mssv: str):
     return sv
 
 
+@router.get("/bank-accounts")
+async def list_linked_bank_accounts(user=Depends(require_student)):
+    rows = await fetch_all(
+        """
+        SELECT ma_lk, ngan_hang, ma_bin, so_tai_khoan, ten_chu_tk,
+               so_du_sandbox, mac_dinh, ngay_lien_ket
+        FROM tai_khoan_ngan_hang_sv
+        WHERE mssv = %s
+        ORDER BY mac_dinh DESC, ma_lk ASC
+        """,
+        (user["mssv"],),
+    )
+    for r in rows:
+        r["so_tai_khoan_che"] = _mask_bank_no(r["so_tai_khoan"])
+        r["so_du_sandbox"] = int(r["so_du_sandbox"] or 0)
+    return {"items": rows}
+
+
+@router.post("/bank-accounts", status_code=201)
+async def link_bank_account(
+    payload: LinkBankAccountRequest, user=Depends(require_student)
+):
+    digits = re.sub(r"\D", "", payload.so_tai_khoan)
+    if not (8 <= len(digits) <= 19):
+        raise HTTPException(
+            status_code=400,
+            detail="Số tài khoản / số thẻ ngân hàng phải gồm 8 đến 19 chữ số.",
+        )
+
+    async with transaction() as conn, conn.cursor() as cur:
+        if payload.mac_dinh:
+            await cur.execute(
+                "UPDATE tai_khoan_ngan_hang_sv SET mac_dinh = FALSE WHERE mssv = %s",
+                (user["mssv"],),
+            )
+        await cur.execute(
+            """
+            INSERT INTO tai_khoan_ngan_hang_sv (
+                mssv, ngan_hang, ma_bin, so_tai_khoan, ten_chu_tk, so_du_sandbox, mac_dinh
+            )
+            VALUES (%s, %s, %s, %s, %s, 15000000, %s)
+            ON CONFLICT (mssv, so_tai_khoan) DO UPDATE SET
+                ngan_hang  = EXCLUDED.ngan_hang,
+                ma_bin     = EXCLUDED.ma_bin,
+                ten_chu_tk = EXCLUDED.ten_chu_tk,
+                mac_dinh   = EXCLUDED.mac_dinh
+            RETURNING ma_lk, ngan_hang, ma_bin, so_tai_khoan, ten_chu_tk,
+                      so_du_sandbox, mac_dinh, ngay_lien_ket
+            """,
+            (
+                user["mssv"],
+                payload.ngan_hang.strip(),
+                payload.ma_bin.strip(),
+                digits,
+                payload.ten_chu_tk.strip().upper(),
+                payload.mac_dinh,
+            ),
+        )
+        row = await cur.fetchone()
+
+    row["so_tai_khoan_che"] = _mask_bank_no(row["so_tai_khoan"])
+    row["so_du_sandbox"] = int(row["so_du_sandbox"] or 0)
+    return {
+        "thanh_cong": True,
+        "tai_khoan": row,
+        "thong_bao": f"Đã liên kết tài khoản {row['ngan_hang']} ({row['so_tai_khoan_che']}).",
+    }
+
+
+@router.patch("/bank-accounts/{ma_lk}/default")
+async def set_default_bank_account(ma_lk: int, user=Depends(require_student)):
+    async with transaction() as conn, conn.cursor() as cur:
+        await cur.execute(
+            "SELECT ma_lk FROM tai_khoan_ngan_hang_sv WHERE ma_lk = %s AND mssv = %s",
+            (ma_lk, user["mssv"]),
+        )
+        if not await cur.fetchone():
+            raise HTTPException(status_code=404, detail="Không tìm thấy tài khoản ngân hàng liên kết.")
+        await cur.execute(
+            "UPDATE tai_khoan_ngan_hang_sv SET mac_dinh = FALSE WHERE mssv = %s",
+            (user["mssv"],),
+        )
+        await cur.execute(
+            "UPDATE tai_khoan_ngan_hang_sv SET mac_dinh = TRUE WHERE ma_lk = %s AND mssv = %s",
+            (ma_lk, user["mssv"]),
+        )
+    return {"thanh_cong": True, "thong_bao": "Đã đặt tài khoản ngân hàng mặc định."}
+
+
+@router.delete("/bank-accounts/{ma_lk}")
+async def unlink_bank_account(ma_lk: int, user=Depends(require_student)):
+    async with transaction() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            DELETE FROM tai_khoan_ngan_hang_sv
+            WHERE ma_lk = %s AND mssv = %s
+            RETURNING mac_dinh
+            """,
+            (ma_lk, user["mssv"]),
+        )
+        deleted = await cur.fetchone()
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Không tìm thấy tài khoản ngân hàng.")
+        if deleted["mac_dinh"]:
+            await cur.execute(
+                """
+                UPDATE tai_khoan_ngan_hang_sv
+                SET mac_dinh = TRUE
+                WHERE ma_lk = (
+                    SELECT ma_lk FROM tai_khoan_ngan_hang_sv
+                    WHERE mssv = %s ORDER BY ma_lk ASC LIMIT 1
+                )
+                """,
+                (user["mssv"],),
+            )
+    return {"thanh_cong": True, "thong_bao": "Đã hủy liên kết tài khoản ngân hàng."}
+
+
 @router.get("/bills")
 async def get_student_bills(user=Depends(require_student)):
-    """Mục 5.1: Tiền KTX kỳ này + Tiền điện nước tháng này của cả phòng (KHÔNG ví, KHÔNG lịch sử thanh toán)."""
+    """Tiền KTX kỳ này, tiền điện nước tháng này, tài khoản ngân hàng liên kết & biên lai điện tử."""
     ctx = await _get_student_context(user["mssv"])
     if not ctx:
         raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ sinh viên.")
@@ -66,13 +193,17 @@ async def get_student_bills(user=Depends(require_student)):
     la_dai_dien = bool(ctx["mssv_dai_dien"] and ctx["mssv_dai_dien"] == ctx["mssv"])
     hoa_don_ktx = None
     hoa_don_dien_nuoc = None
+    bien_lai_list = []
 
     if ctx["ma_phong"]:
         hoa_don_ktx = await fetch_one(
             """
-            SELECT ma_hoa_don, ma_ky, loai, so_tien, han_nop, trang_thai
-            FROM hoa_don
-            WHERE ma_phong = %s AND ma_ky = %s AND loai = 'KTX'
+            SELECT hd.ma_hoa_don, hd.ma_ky, hd.loai, hd.so_tien, hd.han_nop, hd.trang_thai,
+                   tt.ma_tt, tt.ma_giao_dich, tt.thoi_gian AS thoi_gian_thanh_toan,
+                   tt.phuong_thuc, tt.ngan_hang, tt.mssv_nguoi_nop
+            FROM hoa_don hd
+            LEFT JOIN thanh_toan tt ON tt.ma_hoa_don = hd.ma_hoa_don
+            WHERE hd.ma_phong = %s AND hd.ma_ky = %s AND hd.loai = 'KTX'
             LIMIT 1
             """,
             (ctx["ma_phong"], ctx["ma_ky"]),
@@ -84,32 +215,69 @@ async def get_student_bills(user=Depends(require_student)):
                    cs.chi_so_dien_dau, cs.chi_so_dien_cuoi,
                    (cs.chi_so_dien_cuoi - cs.chi_so_dien_dau) AS luong_dien,
                    cs.chi_so_nuoc_dau, cs.chi_so_nuoc_cuoi,
-                   (cs.chi_so_nuoc_cuoi - cs.chi_so_nuoc_dau) AS luong_nuoc
+                   (cs.chi_so_nuoc_cuoi - cs.chi_so_nuoc_dau) AS luong_nuoc,
+                   tt.ma_tt, tt.ma_giao_dich, tt.thoi_gian AS thoi_gian_thanh_toan,
+                   tt.phuong_thuc, tt.ngan_hang, tt.mssv_nguoi_nop
             FROM hoa_don hd
             LEFT JOIN chi_so cs ON cs.ma_phong = hd.ma_phong AND cs.thang = hd.thang
+            LEFT JOIN thanh_toan tt ON tt.ma_hoa_don = hd.ma_hoa_don
             WHERE hd.ma_phong = %s AND hd.loai = 'DIEN_NUOC'
             ORDER BY hd.thang DESC
             LIMIT 1
             """,
             (ctx["ma_phong"],),
         )
+        bien_lai_list = await fetch_all(
+            """
+            SELECT tt.ma_tt, tt.ma_hoa_don, tt.ma_giao_dich, tt.so_tien, tt.thoi_gian,
+                   tt.phuong_thuc, tt.ngan_hang, tt.noi_dung_ck,
+                   tt.mssv_nguoi_nop, sv.ho_ten AS ten_nguoi_nop,
+                   hd.loai, hd.ma_ky, hd.thang
+            FROM thanh_toan tt
+            JOIN hoa_don hd ON hd.ma_hoa_don = tt.ma_hoa_don
+            JOIN sinh_vien sv ON sv.mssv = tt.mssv_nguoi_nop
+            WHERE hd.ma_phong = %s
+            ORDER BY tt.thoi_gian DESC
+            LIMIT 10
+            """,
+            (ctx["ma_phong"],),
+        )
 
-    giao_dich_vi = await fetch_all(
+    bank_accounts = await fetch_all(
         """
-        SELECT ma_gd, loai, so_tien, so_du_truoc, so_du_sau, ma_hoa_don, mo_ta, thoi_gian
-        FROM giao_dich_vi
+        SELECT ma_lk, ngan_hang, ma_bin, so_tai_khoan, ten_chu_tk,
+               so_du_sandbox, mac_dinh, ngay_lien_ket
+        FROM tai_khoan_ngan_hang_sv
         WHERE mssv = %s
-        ORDER BY thoi_gian DESC, ma_gd DESC
+        ORDER BY mac_dinh DESC, ma_lk ASC
+        """,
+        (user["mssv"],),
+    )
+    for b in bank_accounts:
+        b["so_tai_khoan_che"] = _mask_bank_no(b["so_tai_khoan"])
+        b["so_du_sandbox"] = int(b["so_du_sandbox"] or 0)
+
+    bank_txs = await fetch_all(
+        """
+        SELECT ma_gd_nh, ma_hoa_don, ma_giao_dich, ngan_hang, so_tai_khoan,
+               so_tien, so_du_truoc, so_du_sau, phuong_thuc, noi_dung, thoi_gian
+        FROM giao_dich_ngan_hang
+        WHERE mssv = %s
+        ORDER BY thoi_gian DESC, ma_gd_nh DESC
         LIMIT 10
         """,
         (user["mssv"],),
     )
+    for tx in bank_txs:
+        tx["so_tai_khoan_che"] = _mask_bank_no(tx["so_tai_khoan"])
+        tx["so_tien"] = int(tx["so_tien"])
+        tx["so_du_truoc"] = int(tx["so_du_truoc"])
+        tx["so_du_sau"] = int(tx["so_du_sau"])
 
     return {
         "sinh_vien": {
             "mssv": ctx["mssv"],
             "ho_ten": ctx["ho_ten"],
-            "so_du": int(ctx["so_du"] or 0),
             "ten_phong": ctx["ten_phong"],
             "ten_khu": ctx["ten_khu"],
             "ten_ky": ctx["ten_ky"],
@@ -117,36 +285,55 @@ async def get_student_bills(user=Depends(require_student)):
             "mssv_dai_dien": ctx["mssv_dai_dien"],
             "ten_dai_dien": ctx["ten_dai_dien"],
         },
+        "tai_khoan_ngan_hang": bank_accounts,
+        "giao_dich_ngan_hang": bank_txs,
         "hoa_don_ktx": hoa_don_ktx,
         "hoa_don_dien_nuoc": hoa_don_dien_nuoc,
-        "giao_dich_vi": giao_dich_vi,
+        "bien_lai_list": bien_lai_list,
     }
 
 
-@router.post("/wallet/topup")
-async def topup_student_wallet(payload: TopupWalletRequest, user=Depends(require_student)):
-    """Nạp tiền vào tài khoản nội trú (ACID + khóa dòng)."""
-    async with transaction() as conn, conn.cursor() as cur:
-        await cur.execute("SELECT sp_nap_tien_vi(%s, %s) AS res", (user["mssv"], payload.so_tien))
-        r = await cur.fetchone()
-    return r["res"]
+@router.get("/bills/{ma_hoa_don}/receipt")
+async def get_bill_receipt(ma_hoa_don: int, user=Depends(require_student)):
+    """Xuất biên lai thu tiền điện tử chính thức cho hóa đơn đã thanh toán của phòng sinh viên."""
+    ctx = await _get_student_context(user["mssv"])
+    if not ctx or not ctx["ma_phong"]:
+        raise HTTPException(status_code=403, detail="Bạn chưa có phòng lưu trú trong kỳ hiện tại.")
 
-
-@router.post("/bills/{ma_hoa_don}/pay-wallet")
-async def pay_bill_via_wallet(
-    ma_hoa_don: int,
-    payload: PayWalletRequest | None = None,
-    user=Depends(require_student),
-):
-    """Thanh toán hóa đơn bằng số dư ví (giao dịch ACID trừ tiền SV + cộng quỹ KTX)."""
-    gia_lap_loi = bool(payload and payload.gia_lap_loi)
-    async with transaction() as conn, conn.cursor() as cur:
-        await cur.execute(
-            "SELECT sp_thanh_toan_bang_vi(%s, %s, %s) AS res",
-            (ma_hoa_don, user["mssv"], gia_lap_loi),
+    receipt = await fetch_one(
+        """
+        SELECT tt.ma_tt, tt.ma_hoa_don, tt.ma_giao_dich, tt.so_tien, tt.thoi_gian,
+               tt.phuong_thuc, tt.ngan_hang, tt.noi_dung_ck,
+               tt.mssv_nguoi_nop, sv.ho_ten AS ten_nguoi_nop,
+               hd.loai, hd.ma_ky, hd.thang, hd.ma_phong,
+               p.ten_phong, p.ma_khu, k.ten_khu
+        FROM thanh_toan tt
+        JOIN hoa_don hd ON hd.ma_hoa_don = tt.ma_hoa_don
+        JOIN phong p ON p.ma_phong = hd.ma_phong
+        JOIN khu k ON k.ma_khu = p.ma_khu
+        JOIN sinh_vien sv ON sv.mssv = tt.mssv_nguoi_nop
+        WHERE tt.ma_hoa_don = %s AND hd.ma_phong = %s
+        """,
+        (ma_hoa_don, ctx["ma_phong"]),
+    )
+    if not receipt:
+        raise HTTPException(
+            status_code=404,
+            detail="Không tìm thấy biên lai thanh toán cho hóa đơn này.",
         )
-        r = await cur.fetchone()
-    return r["res"]
+
+    bank_rows = await fetch_all(
+        "SELECT khoa, gia_tri FROM cau_hinh WHERE khoa LIKE 'ngan_hang_%'"
+    )
+    bank_cfg = {r["khoa"]: r["gia_tri"] for r in bank_rows}
+
+    return {
+        **receipt,
+        "so_bien_lai": f"BL-CTU-{receipt['ma_tt']:06d}",
+        "don_vi_thu": "Ban Quản lý Ký túc xá - Trường Đại học Cần Thơ",
+        "tai_khoan_thu": bank_cfg.get("ngan_hang_stk", "1026889966"),
+        "ten_tk_thu": bank_cfg.get("ngan_hang_chu_tk", "TRUONG DAI HOC CAN THO - KTX"),
+    }
 
 
 @router.get("/rooms/semantic-search")
@@ -161,10 +348,14 @@ async def semantic_search_student_rooms(
 
 @router.post("/bills/{ma_hoa_don}/pay-qr")
 async def pay_bill_via_qr(ma_hoa_don: int, user=Depends(require_student)):
-    """Xác nhận thanh toán mã QR giả lập — gọi thủ tục khóa dòng chống thanh toán trùng."""
+    """Xác nhận thanh toán trực tuyến qua tài khoản ngân hàng liên kết mặc định (ACID)."""
     async with transaction() as conn, conn.cursor() as cur:
         await cur.execute(
-            "SELECT sp_thanh_toan_hoa_don(%s, %s, NULL) AS res",
+            """
+            SELECT sp_thanh_toan_ngan_hang_sandbox(
+                %s, %s, NULL, NULL, 'QR_NGAN_HANG', NULL, NULL, NULL, NULL, FALSE
+            ) AS res
+            """,
             (ma_hoa_don, user["mssv"]),
         )
         r = await cur.fetchone()
@@ -173,7 +364,7 @@ async def pay_bill_via_qr(ma_hoa_don: int, user=Depends(require_student)):
 
 @router.get("/room")
 async def get_student_room(user=Depends(require_student)):
-    """Mục 5.2: Thông tin phòng, bạn cùng phòng (KHÔNG tài sản thiết bị) & yêu cầu đổi phòng."""
+    """Thông tin phòng, bạn cùng phòng & yêu cầu đổi phòng."""
     ctx = await _get_student_context(user["mssv"])
     roommates = []
     if ctx and ctx["ma_phong"]:
@@ -204,7 +395,7 @@ async def get_student_room(user=Depends(require_student)):
         """,
         (user["mssv"],),
     )
-    zones = await fetch_all("SELECT ma_khu, ten_khu FROM khu ORDER BY ma_khu")
+    zones = await fetch_all("SELECT ma_khu, ten_khu FROM khu WHERE ma_khu IN ('A', 'B') ORDER BY ma_khu")
 
     return {
         "phong": {
@@ -218,6 +409,9 @@ async def get_student_room(user=Depends(require_student)):
             "gia_phong": ctx["gia_phong"],
             "so_nguoi_o": len(roommates),
         } if ctx and ctx["ma_phong"] else None,
+        "ky_luat": {
+            "so_ky_dong_tre": ctx["so_ky_dong_tre"] if ctx else 0,
+        },
         "ban_cung_phong": roommates,
         "yeu_cau_doi_phong": transfers,
         "co_yeu_cau_dang_cho": any(t["trang_thai"] == "CHO_XU_LY" for t in transfers),
@@ -237,7 +431,6 @@ async def submit_room_transfer(
         )
 
     async with transaction() as conn, conn.cursor() as cur:
-        # Partial unique index uq_doi_phong_dang_cho chặn gửi 2 yêu cầu chờ cùng lúc
         await cur.execute(
             """
             INSERT INTO yeu_cau_doi_phong (
@@ -265,7 +458,7 @@ async def submit_room_transfer(
 
 @router.get("/maintenance")
 async def get_student_maintenance(user=Depends(require_student)):
-    """Mục 5.3: Đơn sửa chữa của phòng/khu + thông báo bảo trì từ quản lý."""
+    """Đơn sửa chữa của phòng/khu + thông báo bảo trì từ quản lý."""
     ctx = await _get_student_context(user["mssv"])
     tickets = []
     if ctx and ctx["ma_phong"]:
@@ -342,7 +535,7 @@ async def submit_student_maintenance(
 
 @router.get("/contract")
 async def get_student_contract(user=Depends(require_student)):
-    """Mục 5.4: Chỉ hiển thị thông tin hợp đồng (phòng, kỳ hiệu lực, người đứng tên đại diện, trạng thái). BỎ lịch sử ra vào."""
+    """Thông tin hợp đồng nội trú."""
     ctx = await _get_student_context(user["mssv"])
     if not ctx:
         raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ sinh viên.")

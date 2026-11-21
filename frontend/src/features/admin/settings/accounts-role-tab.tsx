@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Search } from "lucide-react";
 import { toast } from "sonner";
 import { apiRequest } from "@/lib/api";
+import type { UserRole } from "@/lib/auth-context";
 import { PaginationBar } from "@/components/shared/pagination-bar";
 
 export function AccountsRoleTab() {
@@ -34,17 +35,17 @@ export function AccountsRoleTab() {
     loadAccounts();
   }, [loadAccounts]);
 
-  const handleChangeRole = async (acc: any, newRole: "QUAN_LY" | "SINH_VIEN") => {
+  const handleChangeRole = async (acc: any, newRole: UserRole) => {
     if (acc.vai_tro === newRole) return;
     try {
       const res = await apiRequest<any>(`/api/admin/settings/accounts/${acc.ma_tk}/role`, {
         method: "PATCH",
         body: { vai_tro: newRole },
       });
-      toast.success(res.thong_bao || "Đã cập nhật vai trò.");
+      toast.success(res.thong_bao || "Đã cập nhật phân quyền.");
       loadAccounts();
     } catch (err: any) {
-      toast.error(err.message || "Không thể cập nhật vai trò.");
+      toast.error(err.message || "Không thể cập nhật phân quyền.");
     }
   };
 
@@ -73,7 +74,9 @@ export function AccountsRoleTab() {
           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
         >
           <option value="TAT_CA">Tất cả vai trò</option>
-          <option value="QUAN_LY">Quản lý</option>
+          <option value="QUAN_LY">Ban Quản lý KTX (Khu A &amp; B)</option>
+          <option value="QUAN_LY_KHU_A">Quản lý Khu A</option>
+          <option value="QUAN_LY_KHU_B">Quản lý Khu B</option>
           <option value="SINH_VIEN">Sinh viên</option>
         </select>
       </div>
@@ -85,6 +88,7 @@ export function AccountsRoleTab() {
               <tr className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-600">
                 <th className="px-4 py-3.5">Tên đăng nhập</th>
                 <th className="px-4 py-3.5">Họ tên</th>
+                <th className="px-4 py-3.5 text-center">Phạm vi</th>
                 <th className="px-4 py-3.5 text-right">Vai trò</th>
               </tr>
             </thead>
@@ -95,16 +99,33 @@ export function AccountsRoleTab() {
                     {acc.ten_dang_nhap}
                   </td>
                   <td className="px-4 py-3 text-slate-800">{acc.ho_ten_hien_thi}</td>
+                  <td className="px-4 py-3 text-center text-xs">
+                    {acc.vai_tro === "QUAN_LY_KHU_A" ? (
+                      <span className="rounded bg-blue-50 border border-blue-200 px-2 py-0.5 font-semibold text-[#1F5CA9]">
+                        Khu A
+                      </span>
+                    ) : acc.vai_tro === "QUAN_LY_KHU_B" ? (
+                      <span className="rounded bg-indigo-50 border border-indigo-200 px-2 py-0.5 font-semibold text-indigo-700">
+                        Khu B
+                      </span>
+                    ) : acc.vai_tro === "QUAN_LY" ? (
+                      <span className="rounded bg-emerald-50 border border-emerald-200 px-2 py-0.5 font-semibold text-emerald-700">
+                        Khu A &amp; B
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">Cá nhân SV</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <select
                       value={acc.vai_tro}
-                      onChange={(e) =>
-                        handleChangeRole(acc, e.target.value as "QUAN_LY" | "SINH_VIEN")
-                      }
+                      onChange={(e) => handleChangeRole(acc, e.target.value as UserRole)}
                       aria-label={`Vai trò của ${acc.ten_dang_nhap}`}
                       className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-800"
                     >
-                      <option value="QUAN_LY">Quản lý</option>
+                      <option value="QUAN_LY">Ban Quản lý KTX (Khu A &amp; B)</option>
+                      <option value="QUAN_LY_KHU_A">Quản lý Khu A</option>
+                      <option value="QUAN_LY_KHU_B">Quản lý Khu B</option>
                       <option value="SINH_VIEN">Sinh viên</option>
                     </select>
                   </td>

@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@/lib/auth-context";
+import { isAdminRole, useAuth } from "@/lib/auth-context";
 import { AdminShell } from "@/components/layout/admin-shell";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -14,12 +14,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (loading) return;
     if (!user) {
       router.replace("/login");
-    } else if (user.vai_tro !== "QUAN_LY") {
+    } else if (!isAdminRole(user.vai_tro)) {
       router.replace("/student");
     }
   }, [user, loading, router]);
 
-  if (loading || !user || user.vai_tro !== "QUAN_LY") {
+  if (loading || !user || !isAdminRole(user.vai_tro)) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8FAFC] gap-3 text-slate-600">
         <Loader2 className="h-7 w-7 animate-spin text-[#1F5CA9]" />

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from app.auth import (
+    ADMIN_ROLES,
     check_login_rate_limit,
     clear_failed_logins,
     create_access_token,
@@ -55,7 +56,7 @@ async def login(payload: LoginRequest, request: Request):
 
     account = await fetch_one(
         """
-        SELECT ma_tk, ten_dang_nhap, mat_khau_bam, vai_tro, mssv, ho_ten_hien_thi,
+        SELECT ma_tk, ten_dang_nhap, mat_khau_bam, vai_tro, ma_khu_phu_trach, mssv, ho_ten_hien_thi,
                trang_thai
         FROM tai_khoan
         WHERE lower(ten_dang_nhap) = lower(%s)
@@ -76,6 +77,13 @@ async def login(payload: LoginRequest, request: Request):
             detail="Tài khoản của bạn đã bị khóa.",
         )
 
+    if account["vai_tro"] == "QUAN_LY_KHU_A":
+        account["ma_khu_phu_trach"] = "A"
+    elif account["vai_tro"] == "QUAN_LY_KHU_B":
+        account["ma_khu_phu_trach"] = "B"
+    elif account["vai_tro"] in ("QUAN_LY", "SINH_VIEN"):
+        account["ma_khu_phu_trach"] = None
+
     clear_failed_logins(username, client_ip)
     token, _ = create_access_token(account)
 
@@ -85,7 +93,7 @@ async def login(payload: LoginRequest, request: Request):
         (
             account["ma_tk"],
             account["vai_tro"],
-            "/admin" if account["vai_tro"] == "QUAN_LY" else "/student",
+            "/admin" if account["vai_tro"] in ADMIN_ROLES else "/student",
         ),
     )
 
@@ -101,6 +109,7 @@ async def login(payload: LoginRequest, request: Request):
             "ma_tk": account["ma_tk"],
             "ten_dang_nhap": account["ten_dang_nhap"],
             "vai_tro": account["vai_tro"],
+            "ma_khu_phu_trach": account["ma_khu_phu_trach"],
             "mssv": account["mssv"],
             "ho_ten_hien_thi": account["ho_ten_hien_thi"],
         },
@@ -147,6 +156,7 @@ async def me(user: dict[str, Any] = Depends(get_current_user)):
             "ma_tk": user["ma_tk"],
             "ten_dang_nhap": user["ten_dang_nhap"],
             "vai_tro": user["vai_tro"],
+            "ma_khu_phu_trach": user.get("ma_khu_phu_trach"),
             "mssv": user["mssv"],
             "ho_ten_hien_thi": user["ho_ten_hien_thi"],
         },

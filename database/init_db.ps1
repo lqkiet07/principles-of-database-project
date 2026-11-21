@@ -28,8 +28,18 @@ Write-Host ">>> Seeding sample CTU data (07_seed_data.py)..." -ForegroundColor C
 $env:ADMIN_DATABASE_URL = "postgresql://${DbUser}:${DbPassword}@${DbHost}:${DbPort}/${DbName}"
 python (Join-Path $PSScriptRoot "07_seed_data.py")
 
-Write-Host ">>> Re-applying least-privilege grants (06_roles_security.sql)..." -ForegroundColor Cyan
-& "$PgBinDir\psql.exe" -h $DbHost -p $DbPort -U $DbUser -d $DbName -v ON_ERROR_STOP=1 -f (Join-Path $PSScriptRoot "06_roles_security.sql")
+$UpgradeFiles = @(
+    "10_nang_cap_phan_quyen_canh_cao_thanh_toan.sql",
+    "11_lien_ket_ngan_hang_acid.sql",
+    "12_don_sach_bang_cu_va_phan_quyen.sql",
+    "06_roles_security.sql"
+)
+
+foreach ($file in $UpgradeFiles) {
+    $path = Join-Path $PSScriptRoot $file
+    Write-Host ">>> Executing $file..." -ForegroundColor Cyan
+    & "$PgBinDir\psql.exe" -h $DbHost -p $DbPort -U $DbUser -d $DbName -v ON_ERROR_STOP=1 -f $path
+}
 
 Write-Host ">>> Running DB test suite (08_test_db.sql)..." -ForegroundColor Cyan
 & "$PgBinDir\psql.exe" -h $DbHost -p $DbPort -U $DbUser -d $DbName -v ON_ERROR_STOP=1 -f (Join-Path $PSScriptRoot "08_test_db.sql")

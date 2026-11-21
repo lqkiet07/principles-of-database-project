@@ -6,6 +6,7 @@
 # Databases & Docker volumes (local)
 postgres_data/
 pgadmin_data/
+database/backups/*.sql
 
 # Python
 __pycache__/

@@ -1,6 +1,6 @@
 """
 Xác thực bcrypt + JWT, hết hạn sau 30 phút không hoạt động,
-giới hạn đăng nhập sai và kiểm tra phân quyền phía máy chủ (Mục 2.1 & 8.4).
+giới hạn đăng nhập sai và kiểm tra phân quyền theo vai trò & khu vực phía máy chủ.
 """
 from __future__ import annotations
 
@@ -19,6 +19,9 @@ from app.config import settings
 from app.db import fetch_one
 
 security = HTTPBearer(auto_error=False)
+
+ADMIN_ROLES = {"QUAN_LY", "QUAN_LY_KHU_A", "QUAN_LY_KHU_B"}
+VALID_ZONES = {"A", "B"}
 
 # Bộ nhớ phiên đăng nhập để hỗ trợ:
 # 1. Thu hồi token ngay khi đăng xuất (logout)
@@ -67,11 +70,11 @@ def clear_failed_logins(username: str, ip: str) -> None:
 def create_access_token(user: dict[str, Any]) -> tuple[str, str]:
     jti = secrets.token_urlsafe(16)
     now_dt = datetime.now(timezone.utc)
-    # Token có hạn tối đa 12 giờ, nhưng server kiểm tra inactivity 30 phút nghiêm ngặt
     payload = {
         "sub": str(user["ma_tk"]),
         "username": user["ten_dang_nhap"],
         "role": user["vai_tro"],
+        "ma_khu_phu_trach": user.get("ma_khu_phu_trach"),
         "mssv": user.get("mssv"),
         "jti": jti,
         "iat": int(now_dt.timestamp()),
@@ -101,7 +104,6 @@ async def get_current_user(
     if credentials and credentials.credentials:
         token = credentials.credentials
     elif "token" in request.query_params:
-        # Hỗ trợ link tải file (Excel/PDF) truyền token qua query param nếu cần
         token = request.query_params["token"]
 
     if not token:
@@ -127,13 +129,13 @@ async def get_current_user(
             status_code=401,
             detail=f"Phiên đăng nhập đã hết hạn do không hoạt động quá {settings.session_timeout_minutes} phút.",
         )
-    # Cập nhật thời điểm hoạt động mới nhất
     _last_activity[jti] = now
 
     ma_tk = int(payload["sub"])
     user = await fetch_one(
         """
-        SELECT ma_tk, ten_dang_nhap, vai_tro, mssv, ho_ten_hien_thi, trang_thai, phai_doi_mat_khau
+        SELECT ma_tk, ten_dang_nhap, vai_tro, ma_khu_phu_trach, mssv, ho_ten_hien_thi,
+               trang_thai, phai_doi_mat_khau
         FROM tai_khoan
         WHERE ma_tk = %s
         """,
@@ -144,15 +146,77 @@ async def get_current_user(
     if user["trang_thai"] != "HOAT_DONG":
         raise HTTPException(status_code=403, detail="Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Ban Quản lý KTX.")
 
+    # Chuẩn hóa khu phụ trách nhất quán với vai trò
+    if user["vai_tro"] == "QUAN_LY_KHU_A":
+        user["ma_khu_phu_trach"] = "A"
+    elif user["vai_tro"] == "QUAN_LY_KHU_B":
+        user["ma_khu_phu_trach"] = "B"
+    elif user["vai_tro"] in ("QUAN_LY", "SINH_VIEN"):
+        user["ma_khu_phu_trach"] = None
+
     user["jti"] = jti
     response.headers["X-Session-Timeout-Minutes"] = str(settings.session_timeout_minutes)
     return user
 
 
 async def require_admin(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-    if user["vai_tro"] != "QUAN_LY":
+    if user["vai_tro"] not in ADMIN_ROLES:
         raise HTTPException(status_code=403, detail="Bạn không có quyền truy cập phân hệ Quản lý.")
     return user
+
+
+async def require_super_admin(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    if user["vai_tro"] != "QUAN_LY":
+        raise HTTPException(
+            status_code=403,
+            detail="Chức năng này chỉ dành cho Ban Quản lý toàn KTX.",
+        )
+    return user
+
+
+def get_scope_khu(admin: dict[str, Any]) -> str | None:
+    role = admin.get("vai_tro")
+    if role == "QUAN_LY_KHU_A":
+        return "A"
+    if role == "QUAN_LY_KHU_B":
+        return "B"
+    khu = admin.get("ma_khu_phu_trach")
+    if khu and str(khu).strip().upper() in VALID_ZONES:
+        return str(khu).strip().upper()
+    return None
+
+
+def resolve_khu_filter(admin: dict[str, Any], requested_khu: str | None) -> str | None:
+    req = requested_khu.strip().upper() if requested_khu and requested_khu.strip() else None
+    if req is not None and req not in VALID_ZONES:
+        raise HTTPException(
+            status_code=400,
+            detail="Hệ thống chỉ quản lý 2 khu: Khu A và Khu B.",
+        )
+    scope = get_scope_khu(admin)
+    if scope is not None:
+        if req is not None and req != scope:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Tài khoản của bạn chỉ được phép quản lý Khu {scope}.",
+            )
+        return scope
+    return req
+
+
+def assert_khu_access(admin: dict[str, Any], target_khu: str | None) -> None:
+    target = (target_khu or "").strip().upper()
+    if target and target not in VALID_ZONES:
+        raise HTTPException(
+            status_code=400,
+            detail="Hệ thống chỉ quản lý 2 khu: Khu A và Khu B.",
+        )
+    scope = get_scope_khu(admin)
+    if scope is not None and target != scope:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Bạn chỉ có quyền thao tác dữ liệu thuộc Khu {scope}.",
+        )
 
 
 async def require_student(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:

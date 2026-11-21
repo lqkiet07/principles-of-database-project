@@ -6,7 +6,12 @@ from app.ai.embeddings import embed_texts
 from app.db import fetch_all
 
 
-async def search_rooms_semantic(query: str, limit: int = 8, include_full: bool = True) -> list[dict[str, Any]]:
+async def search_rooms_semantic(
+    query: str,
+    limit: int = 8,
+    include_full: bool = True,
+    ma_khu: str | None = None,
+) -> list[dict[str, Any]]:
     q = (query or "").strip()
     if not q:
         return []
@@ -14,6 +19,12 @@ async def search_rooms_semantic(query: str, limit: int = 8, include_full: bool =
     query_vec = np.array(embed_texts([q])[0], dtype=np.float32)
 
     where_extra = "" if include_full else "AND v.trang_thai_phong IN ('TRONG', 'CON_CHO')"
+    params: list[Any] = []
+    khu_clause = ""
+    if ma_khu and ma_khu.strip().upper() in ("A", "B"):
+        khu_clause = "AND v.ma_khu = %s"
+        params.append(ma_khu.strip().upper())
+
     rows = await fetch_all(
         f"""
         SELECT v.ma_phong, v.ten_phong, v.ma_khu, v.ten_khu, v.suc_chua, v.co_nau_an,
@@ -22,9 +33,12 @@ async def search_rooms_semantic(query: str, limit: int = 8, include_full: bool =
         FROM v_phong_chi_tiet v
         JOIN phong p ON p.ma_phong = v.ma_phong
         WHERE v.trang_thai_phong <> 'BAO_TRI'
+          AND v.ma_khu IN ('A', 'B')
           AND p.embedding IS NOT NULL
           {where_extra}
-        """
+          {khu_clause}
+        """,
+        params,
     )
 
     scored: list[dict[str, Any]] = []

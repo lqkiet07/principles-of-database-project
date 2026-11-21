@@ -44,12 +44,15 @@ CREATE INDEX idx_luot_truy_cap_web_thoi_gian ON luot_truy_cap_web (thoi_gian DES
 -- Tra cứu phiên thanh toán QR theo hóa đơn & trạng thái
 CREATE INDEX idx_phien_qr_hoa_don_trang_thai ON phien_thanh_toan_qr (ma_hoa_don, trang_thai);
 
--- Chỉ mục tổng hợp (Composite Index) trên bảng lớn luot_ra_vao (1.000.000+ dòng) cho demo EXPLAIN ANALYZE
+-- Chỉ mục tổng hợp (Composite Index) trên bảng lớn luot_ra_vao (2.000.000+ dòng) cho demo EXPLAIN ANALYZE
 CREATE INDEX idx_luot_ra_vao_loai_thoi_gian ON luot_ra_vao (loai, thoi_gian DESC);
+CREATE INDEX idx_luot_ra_vao_mssv_loai_tg ON luot_ra_vao (mssv, loai, thoi_gian DESC);
 
--- Chỉ mục GIN Trigram tìm kiếm mờ họ tên sinh viên (pg_trgm)
+-- Chỉ mục GIN Trigram & B-Tree tìm kiếm trên bảng sinh_vien (50.000+ hồ sơ)
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE INDEX idx_sinh_vien_ho_ten_trgm ON sinh_vien USING gin (ho_ten gin_trgm_ops);
+CREATE INDEX idx_sinh_vien_mssv_trgm ON sinh_vien USING gin (mssv gin_trgm_ops);
+CREATE INDEX idx_sinh_vien_sdt ON sinh_vien (sdt);
 
 -- Chỉ mục nhật ký kiểm toán Trigger
 CREATE INDEX idx_nhat_ky_bang_thoi_gian ON nhat_ky_du_lieu (bang_tac_dong, thoi_gian DESC);

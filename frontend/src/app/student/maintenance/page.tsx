@@ -253,29 +253,67 @@ export default function StudentMaintenanceAndNoticesPage() {
             </div>
           ) : (
             <div className="divide-y divide-slate-100">
-              {notifications.map((n: any) => (
-                <div
-                  key={n.ma_tb}
-                  onClick={() => markRead(n.ma_tb, n.da_doc)}
-                  className={`p-4 sm:px-5 cursor-pointer hover:bg-slate-50 ${
-                    !n.da_doc ? "bg-blue-50/40" : ""
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
+              {notifications.map((n: any) => {
+                const isWarning = n.loai === "CANH_CAO";
+                const isRevocation = n.loai === "THU_HOI_PHONG";
+                return (
+                  <div
+                    key={n.ma_tb}
+                    onClick={() => markRead(n.ma_tb, n.da_doc)}
+                    className={`p-4 sm:px-5 cursor-pointer hover:bg-slate-50 ${
+                      isRevocation
+                        ? "bg-red-50/70 border-l-4 border-l-red-600"
+                        : isWarning
+                        ? "bg-amber-50/70 border-l-4 border-l-amber-500"
+                        : !n.da_doc
+                        ? "bg-blue-50/40"
+                        : ""
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {isRevocation && (
+                          <span className="rounded bg-red-100 border border-red-300 px-2 py-0.5 text-[11px] font-bold text-red-800">
+                            Thông báo thu hồi phòng
+                          </span>
+                        )}
+                        {isWarning && (
+                          <span className="rounded bg-amber-100 border border-amber-300 px-2 py-0.5 text-[11px] font-bold text-amber-800">
+                            Cảnh cáo vi phạm
+                          </span>
+                        )}
+                        <p
+                          className={`text-sm ${
+                            isRevocation
+                              ? "font-bold text-red-900"
+                              : isWarning
+                              ? "font-bold text-amber-900"
+                              : !n.da_doc
+                              ? "font-semibold text-slate-900"
+                              : "font-medium text-slate-700"
+                          }`}
+                        >
+                          {n.tieu_de}
+                        </p>
+                      </div>
+                      <span className="text-xs text-slate-400 shrink-0">
+                        {formatDateTime(n.thoi_gian)}
+                      </span>
+                    </div>
                     <p
-                      className={`text-sm ${
-                        !n.da_doc ? "font-semibold text-slate-900" : "font-medium text-slate-700"
+                      className={`mt-1.5 text-sm ${
+                        isRevocation
+                          ? "text-red-900 font-medium"
+                          : isWarning
+                          ? "text-amber-900"
+                          : "text-slate-600"
                       }`}
                     >
-                      {n.tieu_de}
+                      {n.noi_dung}
                     </p>
-                    <span className="text-xs text-slate-400 shrink-0">
-                      {formatDateTime(n.thoi_gian)}
-                    </span>
                   </div>
-                  <p className="mt-1 text-sm text-slate-600">{n.noi_dung}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </SectionCard>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { ArrowLeftRight, BedDouble, Loader2, Search, Send, Users } from "lucide-react";
+import { Loader2, Search, Send } from "lucide-react";
 import { toast } from "sonner";
 import { apiRequest } from "@/lib/api";
 import { formatDateTime, formatVND } from "@/lib/format";
@@ -80,7 +80,7 @@ export default function StudentRoomPage() {
       );
       setSemanticResults(res.items || []);
     } catch (err: any) {
-      toast.error(err.message || "Không thể tìm kiếm ngữ nghĩa.");
+      toast.error(err.message || "Không thể tìm kiếm.");
     } finally {
       setSearchingSemantic(false);
     }
@@ -107,12 +107,10 @@ export default function StudentRoomPage() {
       {/* Khung bao 1: Thông tin phòng & hợp đồng */}
       <SectionCard
         title="Thông tin phòng ở hiện tại"
-        subtitle={phong ? `${phong.ten_khu} · Phòng ${phong.ten_phong}` : "Chưa xếp phòng"}
-        icon={BedDouble}
         right={
           phong ? (
             <span
-              className={`rounded-lg border px-2.5 py-1 text-xs font-semibold ${
+              className={`rounded border px-2.5 py-0.5 text-xs font-medium ${
                 daKyHopDong
                   ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                   : "border-amber-200 bg-amber-50 text-amber-700"
@@ -124,24 +122,26 @@ export default function StudentRoomPage() {
         }
       >
         {!phong ? (
-          <p className="text-sm text-slate-500">Bạn chưa được xếp phòng trong kỳ này.</p>
+          <p className="text-sm text-slate-500">
+            Bạn hiện chưa có phòng ở trong kỳ này (hoặc đã bị thu hồi chỗ ở).
+          </p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
               <p className="text-xs text-slate-500">Phòng</p>
               <p className="mt-1 text-lg font-bold text-[#1F5CA9]">{phong.ten_phong}</p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
               <p className="text-xs text-slate-500">Khu</p>
               <p className="mt-1 font-semibold text-slate-900">{phong.ten_khu}</p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
               <p className="text-xs text-slate-500">Sĩ số</p>
               <p className="mt-1 font-semibold text-slate-900">
                 {phong.so_nguoi_o} / {phong.suc_chua} người
               </p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
               <p className="text-xs text-slate-500">Nấu ăn</p>
               <p className="mt-1 font-semibold text-slate-900">
                 {phong.co_nau_an ? "Có nấu ăn" : "Không nấu ăn"}
@@ -153,12 +153,7 @@ export default function StudentRoomPage() {
 
       {/* Khung bao 2: Thành viên cùng phòng */}
       {roommates.length > 0 && (
-        <SectionCard
-          title="Thành viên trong phòng"
-          subtitle={`${roommates.length} sinh viên đang lưu trú`}
-          icon={Users}
-          noPadding
-        >
+        <SectionCard title={`Thành viên trong phòng (${roommates.length})`} noPadding>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600">
@@ -177,7 +172,7 @@ export default function StudentRoomPage() {
                       {m.ho_ten}
                       {m.la_dai_dien && (
                         <span className="ml-1.5 rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-semibold text-[#1F5CA9]">
-                          Đại diện
+                          Trưởng phòng
                         </span>
                       )}
                     </td>
@@ -191,19 +186,13 @@ export default function StudentRoomPage() {
         </SectionCard>
       )}
 
-      {/* Khung bao 3: Tìm phòng phù hợp theo mô tả + Gửi yêu cầu đổi phòng */}
+      {/* Khung bao 3: Tìm phòng còn chỗ + Gửi yêu cầu đổi phòng */}
       {phong && (
-        <SectionCard
-          title="Đổi phòng & Gợi ý phòng còn chỗ"
-          subtitle="Tìm phòng theo nhu cầu và gửi yêu cầu đến Ban Quản lý"
-          icon={ArrowLeftRight}
-          iconBg="bg-indigo-50 text-indigo-700"
-        >
+        <SectionCard title="Yêu cầu đổi phòng">
           <div className="space-y-5">
-            {/* Tìm kiếm ngữ nghĩa phòng còn chỗ */}
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
               <p className="text-xs font-semibold text-slate-700">
-                Tìm phòng gợi ý theo nhu cầu (Tìm kiếm ngữ nghĩa AI)
+                Tra cứu phòng còn chỗ theo nhu cầu
               </p>
               <form onSubmit={handleSemanticSearch} className="flex gap-2">
                 <div className="relative flex-1">
@@ -255,7 +244,7 @@ export default function StudentRoomPage() {
             </div>
 
             {hasPending ? (
-              <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3.5">
+              <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3.5">
                 Bạn đang có yêu cầu đổi phòng chờ Ban Quản lý duyệt.
               </p>
             ) : (
@@ -264,7 +253,7 @@ export default function StudentRoomPage() {
                   <select
                     value={nvKhu}
                     onChange={(e) => setNvKhu(e.target.value)}
-                    className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#1F5CA9]"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#1F5CA9]"
                   >
                     <option value="">Nguyện vọng khu (tùy chọn)</option>
                     {zones.map((z: any) => (
@@ -276,7 +265,7 @@ export default function StudentRoomPage() {
                   <select
                     value={nvLoai}
                     onChange={(e) => setNvLoai(e.target.value)}
-                    className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#1F5CA9]"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#1F5CA9]"
                   >
                     <option value="">Nguyện vọng loại phòng (tùy chọn)</option>
                     <option value="4">Phòng 4 người</option>
@@ -289,13 +278,13 @@ export default function StudentRoomPage() {
                   value={lyDo}
                   onChange={(e) => setLyDo(e.target.value)}
                   placeholder="Nhập lý do muốn đổi phòng..."
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#1F5CA9]"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#1F5CA9]"
                 />
                 <div className="flex justify-end">
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#1F5CA9] px-4 py-2 text-sm font-semibold text-white hover:bg-[#194B8B] disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-[#1F5CA9] px-4 py-2 text-sm font-semibold text-white hover:bg-[#194B8B] disabled:opacity-60"
                   >
                     <Send className="h-3.5 w-3.5" />
                     {submitting ? "Đang gửi..." : "Gửi yêu cầu"}
@@ -310,7 +299,7 @@ export default function StudentRoomPage() {
                 {transfers.map((tr: any) => (
                   <div
                     key={tr.ma_yc}
-                    className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                    className="rounded-lg border border-slate-200 bg-slate-50 p-3.5 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2"
                   >
                     <div>
                       <p className="text-slate-900">{tr.ly_do}</p>

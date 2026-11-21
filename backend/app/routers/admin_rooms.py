@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 
 from app.ai.semantic_search import search_rooms_semantic
-from app.auth import require_admin
+from app.auth import assert_khu_access, get_scope_khu, require_admin, resolve_khu_filter
 from app.db import fetch_all, fetch_one, transaction
 
 router = APIRouter(prefix="/api/admin/rooms", tags=["Quản lý - Phòng và giường ở"])
@@ -61,31 +61,31 @@ class MergeConfirmRequest(BaseModel):
 
 
 @router.get("/zones")
-async def list_zones(_admin=Depends(require_admin)):
+async def list_zones(admin=Depends(require_admin)):
+    scope_khu = get_scope_khu(admin)
+    where_sql = "WHERE k.ma_khu = %s" if scope_khu else "WHERE k.ma_khu IN ('A', 'B')"
+    params: list = [scope_khu] if scope_khu else []
     rows = await fetch_all(
-        """
+        f"""
         SELECT k.ma_khu, k.ten_khu,
                COUNT(p.ma_phong)::INT AS so_phong
         FROM khu k
         LEFT JOIN phong p ON p.ma_khu = k.ma_khu
+        {where_sql}
         GROUP BY k.ma_khu, k.ten_khu
         ORDER BY k.ma_khu
-        """
+        """,
+        params,
     )
-    return {"items": rows}
+    return {"items": rows, "pham_vi_khu": scope_khu}
 
 
 @router.post("/zones", status_code=201)
-async def create_zone(payload: CreateZoneRequest, _admin=Depends(require_admin)):
-    ma_khu = payload.ma_khu.strip().upper()
-    ten_khu = payload.ten_khu.strip()
-    async with transaction() as conn, conn.cursor() as cur:
-        await cur.execute(
-            "INSERT INTO khu (ma_khu, ten_khu) VALUES (%s, %s) RETURNING ma_khu, ten_khu",
-            (ma_khu, ten_khu),
-        )
-        row = await cur.fetchone()
-    return row
+async def create_zone(_payload: CreateZoneRequest, _admin=Depends(require_admin)):
+    raise HTTPException(
+        status_code=400,
+        detail="Hệ thống KTX chỉ quản lý cố định 2 khu: Khu A và Khu B.",
+    )
 
 
 @router.get("")
@@ -100,14 +100,15 @@ async def list_rooms(
     search: str | None = None,
     sort_by: Literal["ten_phong", "so_nguoi_o", "gia_phong", "trang_thai_phong"] = "ten_phong",
     sort_dir: Literal["asc", "desc"] = "asc",
-    _admin=Depends(require_admin),
+    admin=Depends(require_admin),
 ):
-    conditions: list[str] = ["1=1"]
+    effective_khu = resolve_khu_filter(admin, ma_khu)
+    conditions: list[str] = ["ma_khu IN ('A', 'B')"]
     params: list = []
 
-    if ma_khu:
+    if effective_khu:
         conditions.append("ma_khu = %s")
-        params.append(ma_khu.strip().upper())
+        params.append(effective_khu)
     if suc_chua in (4, 6, 8):
         conditions.append("suc_chua = %s")
         params.append(suc_chua)
@@ -151,6 +152,7 @@ async def list_rooms(
         [*params, page_size, offset],
     )
     return {
+        "pham_vi_khu": get_scope_khu(admin),
         "items": items,
         "total": count_row["total"] if count_row else 0,
         "page": page,
@@ -162,21 +164,23 @@ async def list_rooms(
 async def semantic_search_admin_rooms(
     q: str = Query(..., min_length=2),
     limit: int = Query(12, ge=1, le=30),
-    _admin=Depends(require_admin),
+    admin=Depends(require_admin),
 ):
-    """Tìm kiếm phòng theo ngữ nghĩa tiếng Việt (SentenceTransformer cosine similarity)."""
-    items = await search_rooms_semantic(q, limit=limit, include_full=True)
-    return {"query": q, "items": items}
+    """Tìm kiếm phòng theo ngữ nghĩa tiếng Việt (giới hạn trong phạm vi khu được phân quyền)."""
+    scope_khu = get_scope_khu(admin)
+    items = await search_rooms_semantic(q, limit=limit, include_full=True, ma_khu=scope_khu)
+    return {"query": q, "items": items, "pham_vi_khu": scope_khu}
 
 
 @router.get("/{ma_phong}/residents")
-async def get_room_residents(ma_phong: int, _admin=Depends(require_admin)):
+async def get_room_residents(ma_phong: int, admin=Depends(require_admin)):
     room = await fetch_one(
         "SELECT * FROM v_phong_chi_tiet WHERE ma_phong = %s",
         (ma_phong,),
     )
     if not room:
         raise HTTPException(status_code=404, detail="Không tìm thấy phòng.")
+    assert_khu_access(admin, room["ma_khu"])
 
     residents = await fetch_all(
         """
@@ -197,7 +201,12 @@ async def get_room_residents(ma_phong: int, _admin=Depends(require_admin)):
 
 
 @router.post("", status_code=201)
-async def create_room(payload: CreateRoomRequest, _admin=Depends(require_admin)):
+async def create_room(payload: CreateRoomRequest, admin=Depends(require_admin)):
+    ma_khu = payload.ma_khu.strip().upper()
+    assert_khu_access(admin, ma_khu)
+    if ma_khu not in ("A", "B"):
+        raise HTTPException(status_code=400, detail="Hệ thống chỉ quản lý 2 khu: Khu A và Khu B.")
+
     async with transaction() as conn, conn.cursor() as cur:
         await cur.execute(
             """
@@ -207,7 +216,7 @@ async def create_room(payload: CreateRoomRequest, _admin=Depends(require_admin))
             """,
             (
                 payload.ten_phong.strip().upper(),
-                payload.ma_khu.strip().upper(),
+                ma_khu,
                 payload.suc_chua,
                 payload.co_nau_an,
                 payload.gioi_tinh,
@@ -220,8 +229,13 @@ async def create_room(payload: CreateRoomRequest, _admin=Depends(require_admin))
 
 @router.put("/{ma_phong}")
 async def update_room(
-    ma_phong: int, payload: UpdateRoomRequest, _admin=Depends(require_admin)
+    ma_phong: int, payload: UpdateRoomRequest, admin=Depends(require_admin)
 ):
+    existing = await fetch_one("SELECT ma_khu FROM phong WHERE ma_phong = %s", (ma_phong,))
+    if not existing:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phòng.")
+    assert_khu_access(admin, existing["ma_khu"])
+
     fields = payload.model_dump(exclude_none=True)
     if not fields:
         raise HTTPException(status_code=400, detail="Không có thông tin nào để cập nhật.")
@@ -234,8 +248,6 @@ async def update_room(
             vals,
         )
         row = await cur.fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="Không tìm thấy phòng.")
     return row
 
 
@@ -277,8 +289,9 @@ async def parse_mssv_file(
 
 @router.post("/auto-assign/preview")
 async def preview_auto_assign(
-    payload: AutoAssignRequest, _admin=Depends(require_admin)
+    payload: AutoAssignRequest, admin=Depends(require_admin)
 ):
+    effective_khu = resolve_khu_filter(admin, payload.ma_khu)
     row = await fetch_one(
         """
         SELECT sp_xep_phong_tu_dong(%s::VARCHAR[], %s, %s, %s, %s, TRUE, NULL) AS result
@@ -286,7 +299,7 @@ async def preview_auto_assign(
         (
             [m.strip().upper() for m in payload.mssv_list if m.strip()],
             payload.suc_chua,
-            payload.ma_khu.strip().upper() if payload.ma_khu else None,
+            effective_khu,
             payload.co_nau_an,
             payload.cho_phep_chua_day,
         ),
@@ -296,8 +309,9 @@ async def preview_auto_assign(
 
 @router.post("/auto-assign/confirm")
 async def confirm_auto_assign(
-    payload: AutoAssignRequest, _admin=Depends(require_admin)
+    payload: AutoAssignRequest, admin=Depends(require_admin)
 ):
+    effective_khu = resolve_khu_filter(admin, payload.ma_khu)
     async with transaction() as conn, conn.cursor() as cur:
         await cur.execute(
             """
@@ -306,7 +320,7 @@ async def confirm_auto_assign(
             (
                 [m.strip().upper() for m in payload.mssv_list if m.strip()],
                 payload.suc_chua,
-                payload.ma_khu.strip().upper() if payload.ma_khu else None,
+                effective_khu,
                 payload.co_nau_an,
                 payload.cho_phep_chua_day,
             ),
@@ -317,7 +331,7 @@ async def confirm_auto_assign(
 
 @router.post("/manual-assign")
 async def manual_assign_student(
-    payload: ManualAssignRequest, _admin=Depends(require_admin)
+    payload: ManualAssignRequest, admin=Depends(require_admin)
 ):
     mssv = payload.mssv.strip().upper()
     async with transaction() as conn, conn.cursor() as cur:
@@ -331,9 +345,8 @@ async def manual_assign_student(
         phong = await cur.fetchone()
         if not phong:
             raise HTTPException(status_code=404, detail="Không tìm thấy phòng.")
+        assert_khu_access(admin, phong["ma_khu"])
 
-        # Trigger trg_kiem_tra_luu_tru kiểm tra sức chứa, giới tính, trạng thái bảo trì
-        # PK (mssv, ma_ky) chặn sinh viên ở trùng 2 phòng trong cùng kỳ
         await cur.execute(
             """
             INSERT INTO luu_tru (mssv, ma_phong, ma_ky, ngay_vao)
@@ -362,14 +375,18 @@ async def manual_assign_student(
 
 @router.delete("/{ma_phong}/residents/{mssv}")
 async def checkout_resident(
-    ma_phong: int, mssv: str, _admin=Depends(require_admin)
+    ma_phong: int, mssv: str, admin=Depends(require_admin)
 ):
+    room = await fetch_one("SELECT ma_khu FROM phong WHERE ma_phong = %s", (ma_phong,))
+    if not room:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phòng.")
+    assert_khu_access(admin, room["ma_khu"])
+
     mssv_u = mssv.strip().upper()
     async with transaction() as conn, conn.cursor() as cur:
         await cur.execute("SELECT fn_ky_hoc_hien_hanh() AS ma_ky")
         ky = (await cur.fetchone())["ma_ky"]
 
-        # Nếu là đại diện hợp đồng thì chuyển đại diện hoặc chấm dứt hợp đồng trước khi cho rời phòng
         await cur.execute(
             """
             SELECT ma_hd FROM hop_dong
@@ -417,16 +434,38 @@ async def checkout_resident(
 
 
 @router.get("/merge-proposals")
-async def get_merge_proposals(_admin=Depends(require_admin)):
+async def get_merge_proposals(admin=Depends(require_admin)):
+    scope_khu = get_scope_khu(admin)
     row = await fetch_one("SELECT fn_de_xuat_gop_phong(NULL) AS items")
     items = row["items"] if row and row["items"] else []
-    return {"items": items, "total": len(items)}
+    if scope_khu and items:
+        rooms = await fetch_all(
+            "SELECT ma_phong, ma_khu FROM phong WHERE ma_khu IN ('A', 'B')"
+        )
+        zone_map = {r["ma_phong"]: r["ma_khu"] for r in rooms}
+        items = [
+            it
+            for it in items
+            if zone_map.get(it.get("ma_phong_cu")) == scope_khu
+            and zone_map.get(it.get("ma_phong_moi")) == scope_khu
+        ]
+    return {"items": items, "total": len(items), "pham_vi_khu": scope_khu}
 
 
 @router.post("/merge-confirm")
 async def confirm_merge_rooms(
-    payload: MergeConfirmRequest, _admin=Depends(require_admin)
+    payload: MergeConfirmRequest, admin=Depends(require_admin)
 ):
+    room_ids = {item.ma_phong_cu for item in payload.de_xuat} | {
+        item.ma_phong_moi for item in payload.de_xuat
+    }
+    rooms = await fetch_all(
+        "SELECT ma_phong, ma_khu FROM phong WHERE ma_phong = ANY(%s)",
+        (list(room_ids),),
+    )
+    for r in rooms:
+        assert_khu_access(admin, r["ma_khu"])
+
     data_json = json.dumps([item.model_dump() for item in payload.de_xuat])
     async with transaction() as conn, conn.cursor() as cur:
         await cur.execute(

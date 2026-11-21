@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiRequest } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { formatVND } from "@/lib/format";
 import { PaginationBar } from "@/components/shared/pagination-bar";
 import { SectionCard } from "@/components/shared/section-card";
@@ -30,6 +31,9 @@ import { RoomTransfersTab } from "@/features/admin/rooms/room-transfers-tab";
 import type { RoomItem, ZoneItem } from "@/features/admin/rooms/types";
 
 function RoomsPageContent() {
+  const { user } = useAuth();
+  const scopeKhu = user?.ma_khu_phu_trach || null;
+
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<"rooms" | "transfers">(
     searchParams.get("tab") === "transfers" ? "transfers" : "rooms"
@@ -43,7 +47,7 @@ function RoomsPageContent() {
   const [pageSize, setPageSize] = useState(20);
   const [loading, setLoading] = useState(true);
 
-  const [filterKhu, setFilterKhu] = useState("");
+  const [filterKhu, setFilterKhu] = useState(scopeKhu || "");
   const [filterSucChua, setFilterSucChua] = useState("");
   const [filterNauAn, setFilterNauAn] = useState("");
   const [filterTrangThai, setFilterTrangThai] = useState("");
@@ -65,6 +69,10 @@ function RoomsPageContent() {
   const [roomFormOpen, setRoomFormOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<RoomItem | null>(null);
 
+  useEffect(() => {
+    if (scopeKhu) setFilterKhu(scopeKhu);
+  }, [scopeKhu]);
+
   const loadRooms = useCallback(async () => {
     setLoading(true);
     try {
@@ -74,7 +82,8 @@ function RoomsPageContent() {
         sort_by: sortBy,
         sort_dir: sortDir,
       });
-      if (filterKhu) qs.set("ma_khu", filterKhu);
+      const effectiveKhu = scopeKhu || filterKhu;
+      if (effectiveKhu) qs.set("ma_khu", effectiveKhu);
       if (filterSucChua) qs.set("suc_chua", filterSucChua);
       if (filterNauAn) qs.set("co_nau_an", filterNauAn);
       if (filterTrangThai) qs.set("trang_thai", filterTrangThai);
@@ -88,7 +97,7 @@ function RoomsPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, filterKhu, filterSucChua, filterNauAn, filterTrangThai, search, sortBy, sortDir]);
+  }, [page, pageSize, scopeKhu, filterKhu, filterSucChua, filterNauAn, filterTrangThai, search, sortBy, sortDir]);
 
   useEffect(() => {
     apiRequest<{ items: ZoneItem[] }>("/api/admin/rooms/zones")
@@ -221,13 +230,13 @@ function RoomsPageContent() {
                   setSemanticMode((m) => !m);
                   setSemanticResults(null);
                 }}
-                className={`rounded-xl border px-3 py-1.5 text-xs font-semibold ${
+                className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${
                   semanticMode
                     ? "border-[#1F5CA9] bg-blue-50 text-[#1F5CA9]"
                     : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
                 }`}
               >
-                {semanticMode ? "Đang bật: Tìm ngữ nghĩa (AI)" : "Chuyển sang Tìm ngữ nghĩa (AI)"}
+                {semanticMode ? "Tìm theo mã phòng" : "Tìm theo mô tả"}
               </button>
             }
           >
@@ -268,14 +277,15 @@ function RoomsPageContent() {
                 </div>
 
                 <select
-                  value={filterKhu}
+                  value={scopeKhu || filterKhu}
+                  disabled={Boolean(scopeKhu)}
                   onChange={(e) => {
                     setFilterKhu(e.target.value);
                     setPage(1);
                   }}
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm disabled:bg-slate-100"
                 >
-                  <option value="">Tất cả khu</option>
+                  {!scopeKhu && <option value="">Tất cả (Khu A &amp; B)</option>}
                   {zones.map((z) => (
                     <option key={z.ma_khu} value={z.ma_khu}>
                       {z.ten_khu}

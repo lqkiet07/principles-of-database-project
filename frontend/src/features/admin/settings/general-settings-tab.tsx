@@ -44,11 +44,11 @@ export function GeneralSettingsTab({
     e.preventDefault();
     setSaving(true);
     try {
-      await apiRequest("/api/admin/settings/prices", {
+      const res = await apiRequest<any>("/api/admin/settings/prices", {
         method: "PUT",
         body: { don_gia_dien: Number(donGiaDien), don_gia_nuoc: Number(donGiaNuoc) },
       });
-      toast.success("Đã lưu đơn giá điện nước.");
+      toast.success(res.thong_bao || "Đã lưu đơn giá điện nước.");
       onReload();
     } catch (err: any) {
       toast.error(err.message || "Không thể lưu đơn giá.");
@@ -61,7 +61,7 @@ export function GeneralSettingsTab({
     e.preventDefault();
     setSaving(true);
     try {
-      await apiRequest("/api/admin/settings/config", {
+      const res = await apiRequest<any>("/api/admin/settings/config", {
         method: "PUT",
         body: {
           han_nop_ktx: hanNopKtx || null,
@@ -70,7 +70,7 @@ export function GeneralSettingsTab({
           ky_hoc_hien_tai: kyHocHienTai || null,
         },
       });
-      toast.success("Đã lưu cấu hình.");
+      toast.success(res.thong_bao || "Đã lưu cấu hình.");
       await refreshUser();
       onReload();
     } catch (err: any) {
@@ -287,6 +287,9 @@ export function GeneralSettingsTab({
               Phát hành hóa đơn KTX kỳ này
             </button>
           </div>
+          <p className="text-xs text-slate-500">
+            Khi thay đổi hạn đóng tiền hoặc đơn giá điện nước, hệ thống tự động đồng bộ các hóa đơn chưa nộp và gửi thông báo đến sinh viên.
+          </p>
         </form>
       </div>
     </div>

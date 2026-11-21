@@ -4,10 +4,12 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, BarChart3, CheckSquare, Globe, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { formatMonthLabel, formatNumber } from "@/lib/format";
 import { SectionCard } from "@/components/shared/section-card";
 
 interface OverviewData {
+  pham_vi_khu?: string | null;
   tong_quan: {
     thang_hien_tai: string;
     tong_sv_dang_o: number;
@@ -28,6 +30,7 @@ interface OverviewData {
 }
 
 export default function AdminOverviewPage() {
+  const { user } = useAuth();
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -61,6 +64,10 @@ export default function AdminOverviewPage() {
   const web = data.luot_truy_cap_web;
   const cb = data.canh_bao_nhanh;
   const thangLabel = formatMonthLabel(tq.thang_hien_tai);
+  const scopeText =
+    data.pham_vi_khu || user?.ma_khu_phu_trach
+      ? `Khu ${data.pham_vi_khu || user?.ma_khu_phu_trach}`
+      : "Toàn KTX (Khu A & Khu B)";
 
   const stats = [
     { label: "Sinh viên đang ở", value: formatNumber(tq.tong_sv_dang_o), href: "/admin/students" },
@@ -77,7 +84,7 @@ export default function AdminOverviewPage() {
     <div className="space-y-5">
       <SectionCard
         title="Thống kê ký túc xá"
-        subtitle={`Số liệu tổng hợp kỳ hiện tại · ${thangLabel}`}
+        subtitle={`Phạm vi: ${scopeText} · ${thangLabel}`}
         icon={BarChart3}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">

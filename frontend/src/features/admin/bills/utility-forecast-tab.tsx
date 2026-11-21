@@ -1,21 +1,31 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Loader2, TrendingUp } from "lucide-react";
+import { BellRing, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiRequest } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { formatMonthLabel, formatNumber, formatVND } from "@/lib/format";
 import { SectionCard } from "@/components/shared/section-card";
 
 export function UtilityForecastTab() {
-  const [maKhu, setMaKhu] = useState("");
+  const { user } = useAuth();
+  const scopeKhu = user?.ma_khu_phu_trach || null;
+
+  const [maKhu, setMaKhu] = useState(scopeKhu || "");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [notifying, setNotifying] = useState(false);
+
+  useEffect(() => {
+    if (scopeKhu) setMaKhu(scopeKhu);
+  }, [scopeKhu]);
 
   const loadForecast = useCallback(async () => {
     setLoading(true);
     try {
-      const qs = maKhu ? `?ma_khu=${maKhu}` : "";
+      const effectiveKhu = scopeKhu || maKhu;
+      const qs = effectiveKhu ? `?ma_khu=${effectiveKhu}` : "";
       const res = await apiRequest<any>(`/api/admin/bills/forecast${qs}`);
       setData(res);
     } catch (err: any) {
@@ -23,28 +33,53 @@ export function UtilityForecastTab() {
     } finally {
       setLoading(false);
     }
-  }, [maKhu]);
+  }, [scopeKhu, maKhu]);
 
   useEffect(() => {
     loadForecast();
   }, [loadForecast]);
 
+  const handleSendSavingAdvice = async () => {
+    setNotifying(true);
+    try {
+      const res = await apiRequest<any>("/api/admin/bills/forecast/notify-saving", {
+        method: "POST",
+        body: { ma_khu: scopeKhu || maKhu || null },
+      });
+      toast.success(res.thong_bao || "Đã gửi khuyến cáo tiết kiệm điện nước.");
+    } catch (err: any) {
+      toast.error(err.message || "Không thể gửi khuyến cáo.");
+    } finally {
+      setNotifying(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <SectionCard
-        title="Dự báo tiêu thụ điện nước 3 tháng tới"
-        subtitle={data?.model || "RandomForestRegressor (scikit-learn)"}
-        icon={TrendingUp}
+        title="Dự báo sản lượng tiêu thụ điện nước 3 tháng tới"
         right={
-          <select
-            value={maKhu}
-            onChange={(e) => setMaKhu(e.target.value)}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-[#1F5CA9]"
-          >
-            <option value="">Toàn KTX</option>
-            <option value="A">Khu A</option>
-            <option value="B">Khu B</option>
-          </select>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={scopeKhu || maKhu}
+              disabled={Boolean(scopeKhu)}
+              onChange={(e) => setMaKhu(e.target.value)}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-[#1F5CA9] disabled:bg-slate-100"
+            >
+              {!scopeKhu && <option value="">Toàn KTX (Khu A &amp; B)</option>}
+              {(!scopeKhu || scopeKhu === "A") && <option value="A">Khu A</option>}
+              {(!scopeKhu || scopeKhu === "B") && <option value="B">Khu B</option>}
+            </select>
+            <button
+              type="button"
+              disabled={loading || notifying}
+              onClick={handleSendSavingAdvice}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#1F5CA9] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#194B8B] disabled:opacity-60"
+            >
+              <BellRing className="h-3.5 w-3.5" />
+              {notifying ? "Đang gửi..." : "Gửi khuyến cáo tiết kiệm"}
+            </button>
+          </div>
         }
       >
         {loading ? (

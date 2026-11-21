@@ -1,20 +1,27 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { apiRequest } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { AccountsRoleTab } from "@/features/admin/settings/accounts-role-tab";
-import { DbFeaturesTab } from "@/features/admin/settings/db-features-tab";
 import { GeneralSettingsTab } from "@/features/admin/settings/general-settings-tab";
 import { StructureSettingsTab } from "@/features/admin/settings/structure-settings-tab";
 
 export default function AdminSettingsPage() {
-  const [tab, setTab] = useState<"general" | "structure" | "accounts" | "db">("general");
+  const { user } = useAuth();
+  const isSuperAdmin = user?.vai_tro === "QUAN_LY";
+
+  const [tab, setTab] = useState<"general" | "structure" | "accounts">("general");
   const [settingsData, setSettingsData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const loadSettings = useCallback(async () => {
+    if (!isSuperAdmin) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const res = await apiRequest<any>("/api/admin/settings");
@@ -24,11 +31,25 @@ export default function AdminSettingsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isSuperAdmin]);
 
   useEffect(() => {
     loadSettings();
   }, [loadSettings]);
+
+  if (!isSuperAdmin) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-900 flex items-start gap-3">
+        <ShieldAlert className="h-5 w-5 text-amber-700 shrink-0 mt-0.5" />
+        <div>
+          <h2 className="text-base font-bold">Không đủ thẩm quyền truy cập</h2>
+          <p className="mt-1 text-sm text-amber-800">
+            Chỉ Ban Quản lý toàn KTX mới có quyền cài đặt hệ thống và phân quyền tài khoản Khu A / Khu B.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading && !settingsData) {
     return (
@@ -41,42 +62,33 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="inline-flex flex-wrap rounded-xl border border-slate-200 bg-white p-1">
+      <div className="inline-flex flex-wrap rounded-lg border border-slate-200 bg-white p-1">
         <button
           type="button"
           onClick={() => setTab("general")}
-          className={`rounded-lg px-3.5 py-1.5 text-sm font-semibold ${
+          className={`rounded-md px-3.5 py-1.5 text-sm font-medium ${
             tab === "general" ? "bg-[#1F5CA9] text-white" : "text-slate-600 hover:text-slate-900"
           }`}
         >
-          Đơn giá, Hạn nộp &amp; Bảo trì
+          Đơn giá &amp; Hạn nộp
         </button>
         <button
           type="button"
           onClick={() => setTab("structure")}
-          className={`rounded-lg px-3.5 py-1.5 text-sm font-semibold ${
+          className={`rounded-md px-3.5 py-1.5 text-sm font-medium ${
             tab === "structure" ? "bg-[#1F5CA9] text-white" : "text-slate-600 hover:text-slate-900"
           }`}
         >
-          Khu, Phòng, Số giường &amp; Kỳ học
+          Khu, Phòng &amp; Kỳ học
         </button>
         <button
           type="button"
           onClick={() => setTab("accounts")}
-          className={`rounded-lg px-3.5 py-1.5 text-sm font-semibold ${
+          className={`rounded-md px-3.5 py-1.5 text-sm font-medium ${
             tab === "accounts" ? "bg-[#1F5CA9] text-white" : "text-slate-600 hover:text-slate-900"
           }`}
         >
           Phân quyền tài khoản
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab("db")}
-          className={`rounded-lg px-3.5 py-1.5 text-sm font-semibold ${
-            tab === "db" ? "bg-[#1F5CA9] text-white" : "text-slate-600 hover:text-slate-900"
-          }`}
-        >
-          Giao dịch, Trigger &amp; Chỉ mục
         </button>
       </div>
 
@@ -91,7 +103,6 @@ export default function AdminSettingsPage() {
         />
       )}
       {tab === "accounts" && <AccountsRoleTab />}
-      {tab === "db" && <DbFeaturesTab />}
     </div>
   );
 }
