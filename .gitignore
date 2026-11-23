@@ -20,7 +20,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+/lib/
 lib64/
 parts/
 sdist/
@@ -54,9 +54,11 @@ dist-ssr/
 *.swp
 *.swo
 
-# OS
+# OS & Office Temp
 .DS_Store
 Thumbs.db
+~$*
+*.tmp
 
 # Internal Project Documentation & Personal Markdown Files
 CHOT_QUYET_DINH_KY_THUAT.md
