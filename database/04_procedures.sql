@@ -887,45 +887,18 @@ CREATE OR REPLACE FUNCTION sp_nap_tien_vi(
 )
 RETURNS JSONB
 LANGUAGE plpgsql
-AS $$
-DECLARE
-    v_mssv       VARCHAR(8);
-    v_cu         NUMERIC(12, 0);
-    v_moi        NUMERIC(12, 0);
-BEGIN
-    IF p_so_tien IS NULL OR p_so_tien <= 0 THEN
-        RAISE EXCEPTION 'Số tiền nạp phải lớn hơn 0.' USING ERRCODE = 'P0001';
-    END IF;
-
-    SELECT mssv, so_du INTO v_mssv, v_cu
-    FROM sinh_vien
-    WHERE mssv = upper(trim(p_mssv))
-    FOR UPDATE;
-
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'Không tìm thấy sinh viên có MSSV %.', p_mssv USING ERRCODE = 'P0001';
-    END IF;
-
-    v_moi := v_cu + p_so_tien;
-    UPDATE sinh_vien SET so_du = v_moi WHERE mssv = v_mssv;
-
-    INSERT INTO giao_dich_vi (mssv, loai, so_tien, so_du_truoc, so_du_sau, mo_ta)
-    VALUES (v_mssv, 'NAP_TIEN', p_so_tien, v_cu, v_moi, 'Nạp tiền vào tài khoản nội trú KTX');
-
-    RETURN jsonb_build_object(
-        'thanh_cong', TRUE,
-        'mssv', v_mssv,
-        'so_du_truoc', v_cu,
-        'so_du_sau', v_moi,
-        'so_tien_nap', p_so_tien
-    );
-END;
-$$;
-
--- 8. Thanh toán hóa đơn bằng số dư ví sinh viên (ACID Transaction: trừ ví SV + gạch nợ HĐ + cộng quỹ KTX)
-CREATE OR REPLACE FUNCTION sp_thanh_toan_bang_vi(
+-- 8. Thanh toán hóa đơn qua tài khoản ngân hàng liên kết (ACID Transaction hai chiều)
+-- (Trừ số dư Sandbox ngân hàng SV + gạch nợ HĐ + cộng quỹ KTX + lập biên lai thanh toán)
+CREATE OR REPLACE FUNCTION sp_thanh_toan_ngan_hang_sandbox(
     p_ma_hoa_don   INTEGER,
     p_mssv         VARCHAR(8),
+    p_ma_lk        INTEGER DEFAULT NULL,
+    p_ma_giao_dich VARCHAR(64) DEFAULT NULL,
+    p_phuong_thuc  VARCHAR(30) DEFAULT 'QR_NGAN_HANG',
+    p_ngan_hang    VARCHAR(80) DEFAULT NULL,
+    p_so_tai_khoan VARCHAR(30) DEFAULT NULL,
+    p_ten_chu_tk   VARCHAR(120) DEFAULT NULL,
+    p_noi_dung_ck  VARCHAR(200) DEFAULT NULL,
     p_gia_lap_loi  BOOLEAN DEFAULT FALSE
 )
 RETURNS JSONB
@@ -933,18 +906,23 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
     v_hd          RECORD;
-    v_sv          RECORD;
-    v_dai_dien    VARCHAR(8);
+    v_tk          RECORD;
+    v_mssv        VARCHAR(8);
     v_ten_phong   VARCHAR(20);
     v_ma_khu      VARCHAR(10);
+    v_o_phong     BOOLEAN;
+    v_stk_clean   VARCHAR(30);
+    v_ho_ten_sv   VARCHAR(120);
     v_so_du_sau   NUMERIC(12, 0);
     v_quy_cu      NUMERIC(12, 0);
     v_quy_moi     NUMERIC(12, 0);
     v_ma_gd       VARCHAR(64);
     v_ma_tt       INTEGER;
+    v_thoi_gian   TIMESTAMPTZ;
     v_loai_label  TEXT;
+    v_pt          VARCHAR(30);
+    v_nd_ck       VARCHAR(200);
 BEGIN
-    -- Khóa hóa đơn và tài khoản sinh viên theo thứ tự cố định
     SELECT * INTO v_hd FROM hoa_don WHERE ma_hoa_don = p_ma_hoa_don FOR UPDATE;
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Không tìm thấy hóa đơn mã #%.', p_ma_hoa_don USING ERRCODE = 'P0001';
@@ -954,39 +932,101 @@ BEGIN
         RAISE EXCEPTION 'Hóa đơn #% đã được thanh toán trước đó.', p_ma_hoa_don USING ERRCODE = 'P0001';
     END IF;
 
-    SELECT mssv_dai_dien INTO v_dai_dien
-    FROM hop_dong
-    WHERE ma_phong = v_hd.ma_phong AND ma_ky = v_hd.ma_ky AND trang_thai = 'HIEU_LUC'
-    LIMIT 1;
+    v_mssv := upper(trim(p_mssv));
+    SELECT EXISTS (
+        SELECT 1 FROM luu_tru
+        WHERE mssv = v_mssv AND ma_phong = v_hd.ma_phong AND ma_ky = v_hd.ma_ky AND ngay_ra IS NULL
+    ) INTO v_o_phong;
 
-    IF v_dai_dien IS NULL OR upper(trim(p_mssv)) <> v_dai_dien THEN
-        RAISE EXCEPTION 'Chỉ sinh viên đại diện phòng mới được thanh toán hóa đơn.' USING ERRCODE = 'P0001';
-    END IF;
-
-    SELECT mssv, so_du INTO v_sv FROM sinh_vien WHERE mssv = v_dai_dien FOR UPDATE;
-    IF v_sv.so_du < v_hd.so_tien THEN
-        RAISE EXCEPTION 'Số dư ví (% đ) không đủ để thanh toán hóa đơn (% đ).',
-            to_char(v_sv.so_du, 'FM999,999,999'), to_char(v_hd.so_tien, 'FM999,999,999')
+    IF NOT v_o_phong THEN
+        RAISE EXCEPTION 'Sinh viên % không thuộc danh sách lưu trú hiện tại của phòng này.', v_mssv
             USING ERRCODE = 'P0001';
     END IF;
 
-    -- Bước 1: Trừ tiền ví sinh viên
-    v_so_du_sau := v_sv.so_du - v_hd.so_tien;
-    UPDATE sinh_vien SET so_du = v_so_du_sau WHERE mssv = v_dai_dien;
+    SELECT ten_phong, ma_khu INTO v_ten_phong, v_ma_khu FROM phong WHERE ma_phong = v_hd.ma_phong;
+    SELECT ho_ten INTO v_ho_ten_sv FROM sinh_vien WHERE mssv = v_mssv;
 
-    INSERT INTO giao_dich_vi (mssv, loai, so_tien, so_du_truoc, so_du_sau, ma_hoa_don, mo_ta)
-    VALUES (
-        v_dai_dien, 'THANH_TOAN', v_hd.so_tien, v_sv.so_du, v_so_du_sau, p_ma_hoa_don,
-        format('Thanh toán hóa đơn #%s (%s)', p_ma_hoa_don, v_hd.loai)
+    -- Định vị và khóa tài khoản ngân hàng nguồn của sinh viên
+    IF p_ma_lk IS NOT NULL THEN
+        SELECT * INTO v_tk
+        FROM tai_khoan_ngan_hang_sv
+        WHERE ma_lk = p_ma_lk AND mssv = v_mssv
+        FOR UPDATE;
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'Không tìm thấy tài khoản ngân hàng liên kết hợp lệ.' USING ERRCODE = 'P0001';
+        END IF;
+    ELSIF NULLIF(trim(COALESCE(p_so_tai_khoan, '')), '') IS NOT NULL THEN
+        v_stk_clean := regexp_replace(trim(p_so_tai_khoan), '\s+', '', 'g');
+        SELECT * INTO v_tk
+        FROM tai_khoan_ngan_hang_sv
+        WHERE mssv = v_mssv AND so_tai_khoan = v_stk_clean
+        FOR UPDATE;
+
+        IF NOT FOUND THEN
+            INSERT INTO tai_khoan_ngan_hang_sv (
+                mssv, ngan_hang, ma_bin, so_tai_khoan, ten_chu_tk, so_du_sandbox, mac_dinh
+            )
+            VALUES (
+                v_mssv,
+                COALESCE(NULLIF(trim(p_ngan_hang), ''), 'Ngân hàng nội địa'),
+                '970436',
+                v_stk_clean,
+                COALESCE(NULLIF(upper(trim(p_ten_chu_tk)), ''), upper(COALESCE(v_ho_ten_sv, v_mssv))),
+                15000000,
+                FALSE
+            )
+            RETURNING * INTO v_tk;
+        END IF;
+    ELSE
+        SELECT * INTO v_tk
+        FROM tai_khoan_ngan_hang_sv
+        WHERE mssv = v_mssv
+        ORDER BY mac_dinh DESC, ma_lk ASC
+        LIMIT 1
+        FOR UPDATE;
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'Bạn chưa liên kết tài khoản ngân hàng. Vui lòng liên kết ngân hàng hoặc nhập thông tin tài khoản để thanh toán.'
+                USING ERRCODE = 'P0001';
+        END IF;
+    END IF;
+
+    IF v_tk.so_du_sandbox < v_hd.so_tien THEN
+        RAISE EXCEPTION 'Số dư tài khoản % (% · % đ) không đủ để thanh toán hóa đơn (% đ).',
+            v_tk.ngan_hang, v_tk.so_tai_khoan,
+            to_char(v_tk.so_du_sandbox, 'FM999,999,999'),
+            to_char(v_hd.so_tien, 'FM999,999,999')
+            USING ERRCODE = 'P0001';
+    END IF;
+
+    v_pt := COALESCE(NULLIF(upper(trim(p_phuong_thuc)), ''), 'QR_NGAN_HANG');
+    v_nd_ck := COALESCE(NULLIF(trim(p_noi_dung_ck), ''), format('KTXCTU HD%s %s %s', p_ma_hoa_don, v_ten_phong, v_mssv));
+    v_ma_gd := COALESCE(
+        NULLIF(trim(p_ma_giao_dich), ''),
+        'SBX-NH-' || p_ma_hoa_don || '-' || to_char(clock_timestamp(), 'YYYYMMDDHH24MISSMS')
     );
 
-    -- Nếu kiểm thử kịch bản lỗi giữa chừng -> ROLLBACK toàn bộ Bước 1 (tiền ví SV không bị mất)
+    -- BƯỚC 1: Trừ tiền tài khoản ngân hàng liên kết (Sandbox) của sinh viên
+    v_so_du_sau := v_tk.so_du_sandbox - v_hd.so_tien;
+    UPDATE tai_khoan_ngan_hang_sv
+    SET so_du_sandbox = v_so_du_sau
+    WHERE ma_lk = v_tk.ma_lk;
+
+    INSERT INTO giao_dich_ngan_hang (
+        ma_lk, mssv, ma_hoa_don, ma_giao_dich, ngan_hang, so_tai_khoan,
+        so_tien, so_du_truoc, so_du_sau, phuong_thuc, noi_dung
+    )
+    VALUES (
+        v_tk.ma_lk, v_mssv, p_ma_hoa_don, v_ma_gd, v_tk.ngan_hang, v_tk.so_tai_khoan,
+        v_hd.so_tien, v_tk.so_du_sandbox, v_so_du_sau, v_pt, v_nd_ck
+    );
+
+    -- Kiểm thử tính toàn vẹn ACID: lỗi ở bước ghi quỹ KTX -> ROLLBACK bước 1
     IF p_gia_lap_loi THEN
-        RAISE EXCEPTION 'Lỗi kết nối khi cập nhật quỹ KTX: PostgreSQL đã ROLLBACK bước trừ tiền ví sinh viên.'
+        RAISE EXCEPTION 'Lỗi kết nối khi ghi nhận quỹ KTX: PostgreSQL đã ROLLBACK tự động bước trừ tiền tài khoản ngân hàng sinh viên.'
             USING ERRCODE = 'P0001';
     END IF;
 
-    -- Bước 2: Gạch nợ hóa đơn & ghi biên lai & cộng quỹ thu KTX
+    -- BƯỚC 2: Cộng quỹ thu KTX, lập biên lai thanh toán & gạch nợ hóa đơn
     SELECT COALESCE(NULLIF(gia_tri, ''), '0')::NUMERIC INTO v_quy_cu
     FROM cau_hinh WHERE khoa = 'quy_thu_ktx' FOR UPDATE;
     v_quy_moi := COALESCE(v_quy_cu, 0) + v_hd.so_tien;
@@ -994,24 +1034,26 @@ BEGIN
     VALUES ('quy_thu_ktx', v_quy_moi::TEXT, 'Tổng quỹ thu KTX từ thanh toán trực tuyến')
     ON CONFLICT (khoa) DO UPDATE SET gia_tri = EXCLUDED.gia_tri;
 
-    v_ma_gd := 'VI-CTU-' || p_ma_hoa_don || '-' || to_char(clock_timestamp(), 'YYYYMMDDHH24MISSMS');
-    INSERT INTO thanh_toan (ma_hoa_don, mssv_nguoi_nop, so_tien, ma_giao_dich)
-    VALUES (p_ma_hoa_don, v_dai_dien, v_hd.so_tien, v_ma_gd)
-    RETURNING ma_tt INTO v_ma_tt;
+    INSERT INTO thanh_toan (ma_hoa_don, mssv_nguoi_nop, so_tien, ma_giao_dich, phuong_thuc, ngan_hang, noi_dung_ck)
+    VALUES (
+        p_ma_hoa_don, v_mssv, v_hd.so_tien, v_ma_gd,
+        v_pt, format('%s (TK ****%s)', v_tk.ngan_hang, right(v_tk.so_tai_khoan, 4)), v_nd_ck
+    )
+    RETURNING ma_tt, thoi_gian INTO v_ma_tt, v_thoi_gian;
 
     UPDATE hoa_don SET trang_thai = 'DA_NOP' WHERE ma_hoa_don = p_ma_hoa_don;
 
-    SELECT ten_phong, ma_khu INTO v_ten_phong, v_ma_khu FROM phong WHERE ma_phong = v_hd.ma_phong;
     v_loai_label := CASE WHEN v_hd.loai = 'KTX'
-        THEN format('Tiền KTX kỳ %s', v_hd.ma_ky)
+        THEN format('Tiền phòng KTX kỳ %s', v_hd.ma_ky)
         ELSE format('Tiền điện nước tháng %s', v_hd.thang)
     END;
 
     INSERT INTO thong_bao (mssv, ma_phong, ma_khu, loai, tieu_de, noi_dung)
     SELECT lt.mssv, v_hd.ma_phong, v_ma_khu, 'HOA_DON',
         format('Đã thanh toán %s - Phòng %s', v_loai_label, v_ten_phong),
-        format('Sinh viên %s đã thanh toán %s qua số dư ví (%s đ). Mã GD: %s.',
-            v_dai_dien, v_loai_label, to_char(v_hd.so_tien, 'FM999,999,999'), v_ma_gd)
+        format('Sinh viên %s đã thanh toán %s qua tài khoản %s (****%s · %s đ). Mã GD: %s.',
+            v_mssv, v_loai_label, v_tk.ngan_hang, right(v_tk.so_tai_khoan, 4),
+            to_char(v_hd.so_tien, 'FM999,999,999'), v_ma_gd)
     FROM luu_tru lt
     WHERE lt.ma_phong = v_hd.ma_phong AND lt.ma_ky = v_hd.ma_ky AND lt.ngay_ra IS NULL;
 
@@ -1020,9 +1062,16 @@ BEGIN
         'ma_tt', v_ma_tt,
         'ma_hoa_don', p_ma_hoa_don,
         'ma_giao_dich', v_ma_gd,
-        'so_du_truoc', v_sv.so_du,
+        'phuong_thuc', v_pt,
+        'ngan_hang', format('%s (TK ****%s)', v_tk.ngan_hang, right(v_tk.so_tai_khoan, 4)),
+        'so_tai_khoan', v_tk.so_tai_khoan,
+        'noi_dung_ck', v_nd_ck,
+        'thoi_gian', v_thoi_gian,
+        'so_tien', v_hd.so_tien,
+        'so_du_truoc', v_tk.so_du_sandbox,
         'so_du_sau', v_so_du_sau,
-        'quy_ktx_moi', v_quy_moi
+        'quy_ktx_moi', v_quy_moi,
+        'trang_thai', 'DA_NOP'
     );
 END;
 $$;
@@ -1032,56 +1081,24 @@ $$;
 -- Dùng cho ứng dụng web (CALL ...) và chứng minh trực tiếp trong HQTCSDL
 -- =============================================================================
 
--- 9.1. Thủ tục nạp tiền ví nội trú (IN: p_mssv, p_so_tien | OUT: o_so_du_truoc, o_so_du_sau, o_ma_gd)
-CREATE OR REPLACE PROCEDURE pr_nap_tien_vi(
-    IN  p_mssv         VARCHAR(8),
-    IN  p_so_tien      NUMERIC,
-    OUT o_so_du_truoc  NUMERIC,
-    OUT o_so_du_sau    NUMERIC,
-    OUT o_ma_gd        INTEGER
-)
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    v_mssv VARCHAR(8);
-BEGIN
-    IF p_so_tien IS NULL OR p_so_tien <= 0 THEN
-        RAISE EXCEPTION 'Số tiền nạp phải lớn hơn 0.' USING ERRCODE = 'P0001';
-    END IF;
-
-    SELECT mssv, so_du INTO v_mssv, o_so_du_truoc
-    FROM sinh_vien
-    WHERE mssv = upper(trim(p_mssv))
-    FOR UPDATE;
-
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'Không tìm thấy sinh viên có MSSV %.', p_mssv USING ERRCODE = 'P0001';
-    END IF;
-
-    o_so_du_sau := o_so_du_truoc + p_so_tien;
-    UPDATE sinh_vien SET so_du = o_so_du_sau WHERE mssv = v_mssv;
-
-    INSERT INTO giao_dich_vi (mssv, loai, so_tien, so_du_truoc, so_du_sau, mo_ta)
-    VALUES (v_mssv, 'NAP_TIEN', p_so_tien, o_so_du_truoc, o_so_du_sau, 'Nạp tiền vào tài khoản nội trú KTX')
-    RETURNING ma_gd INTO o_ma_gd;
-END;
-$$;
-
--- 9.2. Thủ tục thanh toán hóa đơn bằng số dư ví (Giao dịch cộng/trừ tiền 2 bên có tham số IN / OUT)
-CREATE OR REPLACE PROCEDURE pr_thanh_toan_bang_vi(
+-- 9.1. Thủ tục thanh toán ngân hàng ACID (IN: p_ma_hoa_don, p_mssv, p_ma_lk | OUT: o_so_du_truoc, o_so_du_sau, o_quy_ktx_moi, o_ma_giao_dich)
+CREATE OR REPLACE PROCEDURE pr_thanh_toan_ngan_hang(
     IN  p_ma_hoa_don   INTEGER,
     IN  p_mssv         VARCHAR(8),
-    OUT o_so_du_truoc  NUMERIC,
-    OUT o_so_du_sau    NUMERIC,
-    OUT o_quy_ktx_moi  NUMERIC,
-    OUT o_ma_giao_dich VARCHAR
+    IN  p_ma_lk        INTEGER,
+    OUT o_so_du_truoc  NUMERIC(12, 0),
+    OUT o_so_du_sau    NUMERIC(12, 0),
+    OUT o_quy_ktx_moi  NUMERIC(12, 0),
+    OUT o_ma_giao_dich VARCHAR(64)
 )
 LANGUAGE plpgsql
 AS $$
 DECLARE
     v_res JSONB;
 BEGIN
-    v_res := sp_thanh_toan_bang_vi(p_ma_hoa_don, p_mssv, FALSE);
+    v_res := sp_thanh_toan_ngan_hang_sandbox(
+        p_ma_hoa_don, p_mssv, p_ma_lk, NULL, 'QR_NGAN_HANG', NULL, NULL, NULL, NULL, FALSE
+    );
     o_so_du_truoc  := (v_res->>'so_du_truoc')::NUMERIC;
     o_so_du_sau    := (v_res->>'so_du_sau')::NUMERIC;
     o_quy_ktx_moi  := (v_res->>'quy_ktx_moi')::NUMERIC;

@@ -70,10 +70,9 @@ async def health():
         """
         SELECT proname FROM pg_proc
         WHERE pronamespace = 'public'::regnamespace
-          AND proname LIKE %s
+          AND (proname LIKE 'pr_%' OR proname LIKE 'sp_%')
         ORDER BY proname
-        """,
-        ("sp_%",),
+        """
     )
     return {
         "status": "ok",

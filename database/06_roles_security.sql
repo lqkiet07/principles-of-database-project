@@ -37,6 +37,10 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ktx_app_u
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ktx_app_user;
 GRANT EXECUTE ON ALL ROUTINES IN SCHEMA public TO ktx_app_user;
 
+-- Bảo vệ tính toàn vẹn của vết kiểm toán (Append-Only: cấm sửa/xóa lịch sử nhật ký)
+REVOKE UPDATE, DELETE, TRUNCATE ON TABLE nhat_ky_du_lieu FROM ktx_app_user;
+GRANT SELECT, INSERT ON TABLE nhat_ky_du_lieu TO ktx_app_user;
+
 -- Đảm bảo các đối tượng tương lai trong schema public kế thừa đúng quyền
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
     GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ktx_app_user;

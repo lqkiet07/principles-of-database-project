@@ -1,0 +1,73 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0">
+  <diagram id="seq_acid" name="Sequence Diagram ACID Payment">
+    <mxGraphModel dx="1094" dy="582" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="p1" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;size=40;fillColor=#F1F5F9;strokeColor=#0284C7;strokeWidth=2;fontStyle=1;fontSize=12;fontColor=#0284C7;" value="Sinh viên&#xa;(Client)" vertex="1">
+          <mxGeometry height="540" width="140" x="80" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p2" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;size=40;fillColor=#F1F5F9;strokeColor=#0F766E;strokeWidth=2;fontStyle=1;fontSize=12;fontColor=#0F766E;" value="Ứng dụng Backend&#xa;(FastAPI Server)" vertex="1">
+          <mxGeometry height="540" width="150" x="320" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p3" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;size=40;fillColor=#F1F5F9;strokeColor=#1E3A8A;strokeWidth=2;fontStyle=1;fontSize=12;fontColor=#1E3A8A;" value="Hệ QTCSDL PostgreSQL&#xa;(Transaction Engine)" vertex="1">
+          <mxGeometry height="540" width="238" x="580" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="act3" parent="p3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A8A;fontColor=#1E3A8A;fontStyle=1;fontSize=10;" value="3. BEGIN TRANSACTION (Mức cô lập READ COMMITTED)" vertex="1">
+          <mxGeometry height="30" width="305" x="-67.5" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="act4" parent="p3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#B45309;fontColor=#B45309;fontStyle=1;fontSize=10;" value="4. SELECT ... FOR UPDATE (Khóa dòng tài khoản &amp; hóa đơn)" vertex="1">
+          <mxGeometry height="30" width="305" x="-67" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="p4" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;size=40;fillColor=#F1F5F9;strokeColor=#D97706;strokeWidth=2;fontStyle=1;fontSize=12;fontColor=#D97706;" value="Tài khoản Sandbox&#xa;(Ngân hàng liên kết)" vertex="1">
+          <mxGeometry height="540" width="160" x="880" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="msg1" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;strokeColor=#0F172A;strokeWidth=1.5;fontSize=11;" value="1. Bấm xác nhận nộp hóa đơn">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="150" y="120" as="sourcePoint" />
+            <mxPoint x="395" y="120" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="msg2" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;strokeColor=#0F172A;strokeWidth=1.5;fontSize=11;" target="p3" value="2. Gọi Stored Procedure pr_thanh_toan_ngan_hang()">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="395" y="160" as="sourcePoint" />
+            <mxPoint x="665" y="160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="msg5" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;strokeColor=#D97706;strokeWidth=1.5;fontColor=#D97706;fontSize=11;" target="p4" value="5. Kiểm tra số dư &amp; Trừ tài khoản ngân hàng SV">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="700" y="285" as="sourcePoint" />
+            <mxPoint x="940" y="285" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="msg6" edge="1" parent="1" source="p4" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;strokeColor=#D97706;strokeWidth=1.5;fontColor=#D97706;fontSize=11;" target="p3" value="6. Phản hồi trừ tiền thành công (Status 200)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="940" y="325" as="sourcePoint" />
+            <mxPoint x="665" y="325" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="act7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#047857;fontColor=#047857;fontStyle=1;fontSize=10;" value="7. Tăng quỹ thu KTX &amp; Cập nhật hóa đơn sang &#39;DA_NOP&#39;" vertex="1">
+          <mxGeometry height="30" width="305" x="513" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="act8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#6D28D9;fontColor=#6D28D9;fontStyle=1;fontSize=10;" value="8. Trigger ghi vết nhat_ky_du_lieu &amp; Sinh mã biên lai" vertex="1">
+          <mxGeometry height="30" width="305" x="512.5" y="405" as="geometry" />
+        </mxCell>
+        <mxCell id="act9" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A8A;fontColor=#1E3A8A;fontStyle=1;fontSize=10;" value="9. COMMIT Giao dịch (Hoặc ROLLBACK nếu phát sinh lỗi)" vertex="1">
+          <mxGeometry height="30" width="305" x="513" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="msg10" edge="1" parent="1" source="p3" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;strokeColor=#0F172A;strokeWidth=1.5;fontSize=11;" value="10. Trả về mã biên lai &amp; số dư mới (Tham số OUT)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="665" y="510" as="sourcePoint" />
+            <mxPoint x="395" y="510" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="msg11" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;strokeColor=#0F172A;strokeWidth=1.5;fontSize=11;" value="11. Hiển thị biên lai điện tử &amp; cập nhật giao diện">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="395" y="550" as="sourcePoint" />
+            <mxPoint x="150" y="550" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -409,7 +409,7 @@ AFTER INSERT OR UPDATE OR DELETE ON don_gia
 FOR EACH ROW
 EXECUTE FUNCTION fn_trg_audit_du_lieu();
 
-CREATE TRIGGER trg_audit_sinh_vien_so_du
-AFTER INSERT OR UPDATE OF so_du OR DELETE ON sinh_vien
+CREATE TRIGGER trg_audit_tai_khoan_ngan_hang_sv
+AFTER INSERT OR UPDATE OF so_du_sandbox OR DELETE ON tai_khoan_ngan_hang_sv
 FOR EACH ROW
 EXECUTE FUNCTION fn_trg_audit_du_lieu();

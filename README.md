@@ -1,153 +1,148 @@
-# Smart Dormitory & Campus Utility Billing System
+# Hệ thống Quản lý Ký túc xá Thông minh — Trường Đại học Cần Thơ (CTU)
 
-> **A high-concurrency, ACID-compliant campus utility billing engine and dormitory management system powered by PostgreSQL 16, `pgvector`, and FastAPI.**
+Đồ án cuối kỳ học phần **Nguyên lý Hệ quản trị Cơ sở dữ liệu (CT221H)** — Nhóm **M02**  
+Trường Công nghệ Thông tin và Truyền thông — Đại học Cần Thơ.
 
-[![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16.15-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![pgvector](https://img.shields.io/badge/pgvector-0.8.7-blue)](https://github.com/pgvector/pgvector)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.162.0-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Python 3.12](https://img.shields.io/badge/Python-3.12.7-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/Tests-56%2F56%20Passed-brightgreen)](backend/tests/)
-[![Ruff](https://img.shields.io/badge/Code%20Style-Ruff-000000?logo=ruff&logoColor=white)](https://astral.sh/ruff)
-[![License](https://img.shields.io/badge/License-MIT-gray)](LICENSE)
-
-An end-to-end academic capstone project for **Principles of Database Management Systems (CT221H)** at Can Tho University (CTU). Designed to solve real-world student accommodation challenges through strict 3NF database normalization, transactional financial operations, audit trails, big-data query optimization, and embedded vector search.
+- **Giảng viên hướng dẫn:** TS. Cù Vĩnh Lộc
+- **Sinh viên thực hiện:**
+  - Nguyễn Thị Ngọc Trân — `B2303907`
+  - Huỳnh Tấn Phúc — `B2303893`
+  - Lê Quốc Kiệt — `B2303878`
 
 ---
 
-## Architecture Overview
+## 1. Kiến trúc & Các thành phần kỹ thuật chính
+
+Hệ thống được xây dựng theo kiến trúc 3 tầng (**Next.js 16 Frontend** – **FastAPI Python Backend** – **PostgreSQL 16/18**), tập trung đóng gói logic toàn vẹn dữ liệu trực tiếp tại tầng Hệ quản trị CSDL:
+
+1. **Mô hình dữ liệu chuẩn hóa:** Lược đồ CSDL `smart_dormitory_db` gồm các bảng quan hệ quản lý khu/phòng ở, hồ sơ sinh viên, kỳ học, lưu trú, hợp đồng, chỉ số điện nước, hóa đơn, tài khoản ngân hàng liên kết (Sandbox), giao dịch thanh toán, điểm danh ra vào và nhật ký kiểm toán.
+2. **Stored Procedure & Giao dịch ACID:**
+   - Thủ tục `pr_thanh_toan_ngan_hang` (có tham số `IN` / `OUT`) và hàm giao dịch `sp_thanh_toan_ngan_hang_sandbox` sử dụng khóa dòng bi quan (`SELECT ... FOR UPDATE`), đảm bảo tính nguyên tử giữa trừ số dư tài khoản sinh viên, cộng quỹ thu KTX, cập nhật trạng thái hóa đơn `DA_NOP` và tự động `ROLLBACK` khi phát sinh lỗi.
+3. **Trigger ràng buộc nghiệp vụ & Kiểm toán dữ liệu (Audit Trail):**
+   - `trg_chan_sua_xoa_hoa_don_da_nop`: Ngăn chặn sửa đổi hoặc xóa hóa đơn đã thanh toán.
+   - `trg_chan_xoa_sinh_vien`: Ngăn chặn xóa trực tiếp hồ sơ sinh viên khỏi CSDL.
+   - `trg_kiem_tra_luu_tru` & `trg_cap_nhat_trang_thai_phong`: Kiểm tra sức chứa, giới tính phòng và đồng bộ trạng thái phòng tự động.
+   - `trg_audit_hoa_don`, `trg_audit_don_gia`, `trg_audit_tk_ngan_hang_sv`: Tự động ghi nhận giá trị cũ (`OLD`) và mới (`NEW`) dạng `JSONB` vào bảng `nhat_ky_du_lieu`.
+4. **Tối ưu hóa truy vấn dữ liệu lớn (Indexing):**
+   - Tập dữ liệu thử nghiệm quy mô lớn: **50.000+ sinh viên** và **2.000.000+ bản ghi điểm danh ra vào** (`luot_ra_vao`).
+   - Kết hợp chỉ mục **B-Tree Composite** (`idx_luot_ra_vao_mssv_loai_tg`, `idx_luot_ra_vao_loai_thoi_gian`) và **GIN Trigram** (`pg_trgm`) để tăng tốc truy vấn và giảm tải đọc I/O bộ đệm.
+5. **Phân quyền CSDL theo nguyên tắc đặc quyền tối thiểu (Least Privilege):**
+   - Tách biệt `ktx_admin_role` và tài khoản ứng dụng `ktx_app_user` (chỉ có quyền DML cần thiết, cấm DDL `CREATE`/`DROP`/`ALTER`, cấm `UPDATE`/`DELETE` trên bảng nhật ký `nhat_ky_du_lieu`).
+6. **Mô đun học máy hỗ trợ quản trị:**
+   - Tìm kiếm phòng theo ngữ nghĩa tiếng Việt (Cosine Similarity trên Vector Embeddings).
+   - Dự báo sản lượng tiêu thụ điện nước 3 tháng tới (`RandomForestRegressor` - `scikit-learn`).
+   - Phân nhóm hành vi sinh viên nội trú (`K-Means` kết hợp luật quản trị).
+
+---
+
+## 2. Cấu trúc thư mục nộp bài
 
 ```text
-┌────────────────────────────────────────────────────────────────────────┐
-│              Frontend Web Client (Next.js 16 + React 19)               │
-│             Role Switcher • Student Portal • Admin Dashboard           │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │ HTTP REST / JSON Envelope
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                FastAPI Backend API Gateway (Python 3.12)               │
-│        psycopg3 Async Pool • SentenceTransformers • Scikit-learn       │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │ TCP 5432 (pgvector, Dual SPs, CDC)
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                   PostgreSQL 16.15 Enterprise Engine                   │
-│   • 10 Normalized 3NF Tables       • Dual Stored Procedures (ACID)    │
-│   • Pessimistic Row Locks          • Fraud-Prevention Triggers        │
-│   • JSONB Audit Logging (CDC)      • Composite B-Tree Index (1M Logs) │
-│   • Vector Embeddings (384-dim)    • Docker Compose Clean-room Env    │
-└────────────────────────────────────────────────────────────────────────┘
+principles-of-database-project/
+├── database/                                   # Toàn bộ mã nguồn SQL, dữ liệu mẫu & Backup CSDL
+│   ├── 01_schema.sql                           # Định nghĩa bảng, PK, FK, CHECK, UNIQUE & pg_trgm
+│   ├── 02_views.sql                            # Các View tổng hợp thống kê KTX
+│   ├── 03_triggers.sql                         # Trigger nghiệp vụ & Trigger ghi nhật ký JSONB
+│   ├── 04_procedures.sql                       # Các Stored Procedure & Function nghiệp vụ
+│   ├── 05_indexes.sql                          # Chỉ mục B-Tree Composite & GIN Trigram
+│   ├── 06_roles_security.sql                   # Phân quyền ktx_admin_role & ktx_app_user
+│   ├── 07_seed_data.py                         # Script sinh 50.000 SV & 2.000.000 lượt ra vào
+│   ├── 08_test_db.sql                          # Script kiểm thử tự động ràng buộc, Trigger, ACID
+│   ├── 09_kich_ban_demo_giang_vien.sql         # Kịch bản 5 phần demo trực tiếp trên PostgreSQL
+│   ├── 10_nang_cap_phan_quyen_canh_cao_thanh_toan.sql
+│   ├── 11_lien_ket_ngan_hang_acid.sql          # Liên kết ngân hàng Sandbox & pr_thanh_toan_ngan_hang
+│   ├── 12_don_sach_bang_cu_va_phan_quyen.sql   # Khóa phân quyền cuối cùng
+│   ├── init_db.ps1                             # Script PowerShell khởi tạo tự động toàn bộ CSDL
+│   ├── backup_restore.ps1                      # Script sao lưu / phục hồi CSDL
+│   ├── HUONG_DAN_CAI_DAT_CSDL.md               # Hướng dẫn chi tiết khôi phục CSDL cho Giảng viên
+│   └── backups/                                # Chứa bản backup nén (.dump) đầy đủ 2M bản ghi
+├── backend/                                    # Backend REST API (FastAPI + psycopg3 + scikit-learn)
+│   ├── app/                                    # Routers, kết nối CSDL bất đồng bộ, xác thực JWT & AI
+│   ├── scripts/smoke_check.py                  # Kiểm tra nhanh toàn bộ API và kết nối CSDL
+│   ├── tests/test_system_e2e.py                # Bộ kiểm thử tích hợp tự động (Pytest)
+│   ├── requirements.txt                        # Thư viện Python cần cài đặt
+│   └── run.py                                  # Điểm chạy máy chủ Backend (cổng 8000)
+├── frontend/                                   # Ứng dụng Web (Next.js 16 + React 19 + Tailwind CSS)
+│   ├── src/app/admin/                          # Phân hệ Quản trị KTX (Tổng quan, Phòng, Hóa đơn, Điểm danh...)
+│   ├── src/app/student/                        # Cổng thông tin Sinh viên nội trú & Thanh toán VietQR
+│   └── package.json                            # Khai báo thư viện Frontend
+├── docs/
+│   ├── api/openapi.json                        # Đặc tả OpenAPI 3.1.0 của toàn bộ REST API
+│   └── diagrams/                               # File gốc sơ đồ Draw.io (ERD & Sequence Diagram)
+└── docker-compose.yml                          # Cấu hình khởi chạy nhanh PostgreSQL & pgAdmin 4
 ```
 
 ---
 
-## Core Technical Pillars
+## 3. Hướng dẫn cài đặt và chạy chương trình
 
-### 1. Dual Stored Procedure Financial Engine (PL/pgSQL)
-- **`sp_generate_and_split_utility_bill`:** Automatically calculates tiered progressive electricity costs (Tier 1: 0–100 kWh, Tier 2: 101–200 kWh, Tier 3: >200 kWh) and water tariffs. Dynamically counts active occupants (`is_active = TRUE`) in the room, splits debt evenly, and reconciles IEEE 754 decimal rounding remainders to the final student to guarantee zero-loss parent-child balance.
-- **`sp_pay_student_utility_bill`:** Executes atomic wallet settlement. Deducts student wallet balances, gags personal debt records, atomically aggregates room-level totals (`PARTIALLY_PAID` $\to$ `PAID`), and issues collision-resistant audit receipt codes (`TX-YYYYMMDD-HHMMSS-XXXXXX`).
+### Bước 1: Khởi tạo Cơ sở dữ liệu PostgreSQL (`smart_dormitory_db`)
+Xem hướng dẫn chi tiết tại [`database/HUONG_DAN_CAI_DAT_CSDL.md`](database/HUONG_DAN_CAI_DAT_CSDL.md). Tóm tắt cách nhanh nhất từ bản sao lưu `.dump` (đã có sẵn 50.000 SV & 2.000.000 lượt ra vào):
 
-### 2. ACID Concurrency Control & Double-Spending Prevention
-- Employs **Pessimistic Row-Level Locking (`SELECT ... FOR UPDATE`)** on wallet balances, personal debts, and parent bills.
-- Eliminates race conditions and lost updates under concurrent checkout attempts (e.g., rapid double-clicking or network retries) without incurring the severe throughput degradation of `SERIALIZABLE` isolation.
+```powershell
+# 1. Tạo database trống (nếu chưa có)
+psql -h localhost -p 5432 -U postgres -c "CREATE DATABASE smart_dormitory_db WITH ENCODING 'UTF8';"
 
-### 3. Change Data Capture & Fraud Prevention Triggers
-- **`trg_validate_utility_meter_fraud`:** Intercepts `BEFORE INSERT OR UPDATE` events on `utility_bills` to strictly reject fraudulent reverse meter readings (`curr_electric < prev_electric`) and block modifications on settled (`PAID`) invoices.
-- **`trg_audit_utility_meter_update`:** Automated audit trail capturing full pre- and post-mutation states as structured `JSONB` snapshots (`to_jsonb(OLD)` and `to_jsonb(NEW)`) for regulatory compliance and forensics.
+# 2. Tạo role phân quyền ktx_admin_role và ktx_app_user
+psql -h localhost -p 5432 -U postgres -d smart_dormitory_db -v ON_ERROR_STOP=1 -f .\database\06_roles_security.sql
 
-### 4. Big Data Query Optimization (1,000,000 Access Logs)
-- Synthetic benchmark dataset of **1,000,000 access log records** evaluating late-night curfew violations after 23:00.
-- Evaluated via `EXPLAIN (ANALYZE, BUFFERS)`:
-  - **Sequential Scan (Unindexed):** ~45.4 ms execution time, 19,066 shared buffer hits.
-  - **Composite B-Tree Index `(is_late, check_time)`:** **3.7–5.4 ms execution time**, 4,655 shared buffer hits (**~16x performance speedup, >75% I/O buffer reduction**).
+# 3. Phục hồi dữ liệu từ file .dump trong thư mục database\backups\
+.\database\backup_restore.ps1 -Action restore -BackupFile ".\database\backups\smart_dormitory_db_20261123_213222.dump"
 
-### 5. In-Database AI & Machine Learning Integration
-- **Semantic Room Search:** Natural language Vietnamese query processing using `paraphrase-multilingual-MiniLM-L12-v2` embeddings mapped into PostgreSQL `vector(384)` columns via Cosine Distance operator (`<=>`).
-- **Load Forecasting:** `RandomForestRegressor` predicting utility consumption 3 months ahead based on 24 months of historical room billing data.
-- **Student Behavioral Segmentation:** `K-Means` clustering categorizing students into 3 actionable profiles (Exemplary, Financial Risk, Security Alert) paired with 2D Principal Component Analysis (PCA) projections.
-
----
-
-## Quick Start
-
-### Prerequisites
-- Docker & Docker Compose
-- Python 3.12+ (with virtual environment support)
-
-### 1. Launch Database Infrastructure
-```bash
-docker compose up -d
-docker compose ps
+# 4. Chạy lại phân quyền để đảm bảo ktx_app_user áp dụng chuẩn quyền tối thiểu
+psql -h localhost -p 5432 -U postgres -d smart_dormitory_db -v ON_ERROR_STOP=1 -f .\database\06_roles_security.sql
 ```
-The database container automatically bootstraps all 10 normalized tables, Stored Procedures, Triggers, and pgvector extensions.
+*(Hoặc chạy `.\database\init_db.ps1` nếu muốn tạo mới từ đầu bằng các file SQL `01` → `12`).*
 
-### 2. Set Up Backend API
+### Bước 2: Cài đặt và chạy Backend FastAPI (Cổng `8000`)
 ```powershell
 cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-```
 
-### 3. Start Development Server
-```powershell
-uvicorn app.main:app --reload --port 8000
-```
-- **Interactive Swagger Docs:** `http://127.0.0.1:8000/docs`
-- **ReDoc Specification:** `http://127.0.0.1:8000/redoc`
-- **Health Check:** `http://127.0.0.1:8000/health`
+# Tạo file cấu hình .env từ mẫu (mặc định kết nối bằng ktx_app_user)
+Copy-Item .env.example .env -ErrorAction SilentlyContinue
 
-### 4. Run Frontend Client
+# Khởi chạy Backend
+python run.py
+```
+- Tài liệu API trực quan (Swagger UI): `http://127.0.0.1:8000/docs`
+- Kiểm tra kết nối CSDL & thủ tục: `http://127.0.0.1:8000/health`
+
+### Bước 3: Cài đặt và chạy Frontend Next.js (Cổng `3000`)
+Mở một cửa sổ PowerShell mới:
 ```powershell
 cd frontend
 npm install
 npm run dev
 ```
-Open `http://localhost:3000` to interact with the Student Mobile Portal and Admin Dashboard.
-
-### 5. Run Isolated Verification Test Suite (56 Tests)
-```powershell
-# Executes full hermetic test harness on an isolated test database
-cd backend
-.\scripts\run_tests.ps1 -v
-```
-
-### 6. Run Live Smoke Check
-```powershell
-cd backend
-python -m scripts.smoke_check
-```
+Truy cập ứng dụng tại: **`http://localhost:3000`**
 
 ---
 
-## Repository Structure
+## 4. Danh sách tài khoản đăng nhập thử nghiệm
 
-```text
-principles-of-database/
-├── docker-compose.yml              # PostgreSQL 16 + pgvector container
-├── database/                       # SQL DDL, Procedures, and Triggers
-│   ├── 01_schema.sql               # 10-table 3NF schema & vector types
-│   ├── 02_procedures.sql           # Dual SPs (SP1 split, SP2 payment)
-│   ├── 03_triggers.sql             # Anti-fraud trigger & JSONB audit log
-│   ├── 04_seed_1m_logs.sql         # 1M log generator & composite index
-│   └── 05_test_cases.sql           # Clean-room SQL verification harness
-├── backend/                        # FastAPI REST API & AI Engine
-│   ├── app/                        # Routers, schemas, DB pool, AI models
-│   ├── scripts/                    # Seeding, evidence capture, smoke check
-│   ├── tests/                      # 56 hermetic pytest cases
-│   └── requirements.txt            # Python dependencies
-├── docs/                           # Documentation & Evidence
-│   ├── api/openapi.json            # Frozen OpenAPI 3.1.0 contract (22 paths)
-│   ├── evidence/backend/           # 11 empirical benchmark JSON artifacts
-│   └── specs/                      # System technical specifications
-└── frontend/                       # SaaS Web Client (Next.js 16 + React 19)
-```
+| Vai trò | Tên đăng nhập | Mật khẩu | Ghi chú |
+| :--- | :--- | :--- | :--- |
+| **Quản trị hệ thống (Toàn KTX)** | `admin` | `Admin@123` | Toàn quyền Khu A & Khu B, cấu hình hệ thống |
+| **Quản lý Khu A** | `ql_khu_a` | `KhuA@123` | Lê Văn Hùng — Chỉ quản lý dữ liệu thuộc Khu A |
+| **Quản lý Khu B** | `ql_khu_b` | `KhuB@123` | Nguyễn Thị Mai — Chỉ quản lý dữ liệu thuộc Khu B |
+| **Sinh viên nội trú (Đã nộp phí)** | `B2100001` | `Ktx@123` | Nguyễn Văn An — Phòng A101 |
+| **Sinh viên nội trú (Còn hóa đơn chưa nộp)** | `B2100017` | `Ktx@123` | Hồ Hoàng Toàn — Phòng A103 (dùng demo thanh toán ACID) |
+| **Tài khoản CSDL ứng dụng (pgAdmin/psql)** | `ktx_app_user` | `KtxApp@2026` | Kiểm thử phân quyền Least Privilege |
 
 ---
 
-## Contributors & Academic Attribution
+## 5. Chạy kịch bản kiểm thử & Demo cho Giảng viên
 
-Developed as a Course Capstone Project for **Principles of Database Management Systems (CT221H)** — Department of Information Technology, College of Information & Communication Technology (CICT), Can Tho University (CTU).
-
-- **Database Architect & Indexing:** Schema 3NF, Dual Stored Procedures, Triggers, 1M Access Log Benchmark.
-- **Backend & AI Lead:** FastAPI Async Connection Pool, 22 Endpoints, 3 ML/Vector Models, 56 Hermetic Tests.
-- **Frontend SaaS & Reporting:** Next.js 16 App Router UI, Demo Checkpoints, Technical Report & Presentation.
+- **Chạy kịch bản SQL 5 phần trực tiếp trên PostgreSQL:**
+  ```powershell
+  psql "postgresql://ktx_app_user:KtxApp%402026@localhost:5432/smart_dormitory_db" -v ON_ERROR_STOP=1 -f .\database\09_kich_ban_demo_giang_vien.sql
+  ```
+- **Chạy kiểm thử tự động Backend (Pytest & Smoke Check):**
+  ```powershell
+  cd backend
+  pytest -v
+  python -m scripts.smoke_check
+  ```

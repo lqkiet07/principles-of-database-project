@@ -112,8 +112,8 @@ SELECT
     bang_tac_dong,
     hanh_dong,
     khoa_chinh,
-    COALESCE(gia_tri_cu->>'so_du_sandbox', gia_tri_cu->>'so_du', gia_tri_cu->>'trang_thai') AS gia_tri_cu_tom_tat,
-    COALESCE(gia_tri_moi->>'so_du_sandbox', gia_tri_moi->>'so_du', gia_tri_moi->>'trang_thai') AS gia_tri_moi_tom_tat,
+    COALESCE(gia_tri_cu->>'so_du_sandbox', gia_tri_cu->>'trang_thai', gia_tri_cu->>'so_tien') AS gia_tri_cu_tom_tat,
+    COALESCE(gia_tri_moi->>'so_du_sandbox', gia_tri_moi->>'trang_thai', gia_tri_moi->>'so_tien') AS gia_tri_moi_tom_tat,
     thoi_gian
 FROM nhat_ky_du_lieu
 ORDER BY ma_log DESC

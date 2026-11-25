@@ -1,0 +1,141 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0">
+  <diagram id="erd_core" name="ERD Core System Diagram">
+    <mxGraphModel dx="1152" dy="613" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1050" pageHeight="750" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="tbl_sinh_vien_hdr" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1E3A8A;strokeColor=#1E3A8A;fontColor=#FFFFFF;fontStyle=1;fontSize=14;align=center;verticalAlign=middle;fontFamily=Times New Roman;strokeWidth=1;" value="&lt;font&gt;sinh_vien&lt;/font&gt;" vertex="1">
+          <mxGeometry height="35" width="220" x="80" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_sinh_vien_body" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1E3A8A;fontColor=#0F172A;fontSize=14;fontFamily=Times New Roman;align=left;verticalAlign=top;spacingTop=8;spacingLeft=8;strokeWidth=1;" value="&lt;div style=&quot;line-height: 140%; padding-left: 8px;&quot;&gt;&lt;b&gt;• mssv (PK)&lt;/b&gt;&lt;br&gt;  ho_ten&lt;br&gt;  gioi_tinh&lt;br&gt;  nganh&lt;br&gt;  sdt&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="220" x="80" y="95" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_hop_dong_hdr" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1E3A8A;strokeColor=#1E3A8A;fontColor=#FFFFFF;fontStyle=1;fontSize=14;align=center;verticalAlign=middle;fontFamily=Times New Roman;strokeWidth=1;" value="hop_dong" vertex="1">
+          <mxGeometry height="35" width="220" x="400" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_hop_dong_body" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1E3A8A;fontColor=#0F172A;fontSize=14;fontFamily=Times New Roman;align=left;verticalAlign=top;spacingTop=8;spacingLeft=8;strokeWidth=1;" value="&lt;div style=&quot;line-height: 140%; padding-left: 8px;&quot;&gt;&lt;b&gt;• ma_hop_dong (PK)&lt;/b&gt;&lt;br&gt;  mssv (FK)&lt;br&gt;  ma_phong (FK)&lt;br&gt;  ngay_bat_dau&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="220" x="400" y="95" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_phong_hdr" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1E3A8A;strokeColor=#1E3A8A;fontColor=#FFFFFF;fontStyle=1;fontSize=14;align=center;verticalAlign=middle;fontFamily=Times New Roman;strokeWidth=1;" value="phong" vertex="1">
+          <mxGeometry height="35" width="220" x="720" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_phong_body" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1E3A8A;fontColor=#0F172A;fontSize=14;fontFamily=Times New Roman;align=left;verticalAlign=top;spacingTop=8;spacingLeft=8;strokeWidth=1;" value="&lt;div style=&quot;line-height: 140%; padding-left: 8px;&quot;&gt;&lt;b&gt;• ma_phong (PK)&lt;/b&gt;&lt;br&gt;  ten_phong&lt;br&gt;  ma_toa (FK)&lt;br&gt;  so_cho&lt;br&gt;  gia_thue&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="220" x="720" y="95" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_tk_hdr" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1E3A8A;strokeColor=#1E3A8A;fontColor=#FFFFFF;fontStyle=1;fontSize=14;align=center;verticalAlign=middle;fontFamily=Times New Roman;strokeWidth=1;" value="tai_khoan_ngan_hang_sv" vertex="1">
+          <mxGeometry height="35" width="220" x="80" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_tk_body" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1E3A8A;fontColor=#0F172A;fontSize=14;fontFamily=Times New Roman;align=left;verticalAlign=top;spacingTop=8;spacingLeft=8;strokeWidth=1;" value="&lt;div style=&quot;line-height: 140%; padding-left: 8px;&quot;&gt;&lt;b&gt;• ma_lk (PK)&lt;/b&gt;&lt;br&gt;  mssv (FK)&lt;br&gt;  ngan_hang&lt;br&gt;  so_du_sandbox&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="220" x="80" y="315" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_gd_hdr" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1E3A8A;strokeColor=#1E3A8A;fontColor=#FFFFFF;fontStyle=1;fontSize=14;align=center;verticalAlign=middle;fontFamily=Times New Roman;strokeWidth=1;" value="giao_dich_ngan_hang" vertex="1">
+          <mxGeometry height="35" width="220" x="400" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_gd_body" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1E3A8A;fontColor=#0F172A;fontSize=14;fontFamily=Times New Roman;align=left;verticalAlign=top;spacingTop=8;spacingLeft=8;strokeWidth=1;" value="&lt;div style=&quot;line-height: 140%; padding-left: 8px;&quot;&gt;&lt;b&gt;• ma_gd (PK)&lt;/b&gt;&lt;br&gt;  ma_hoa_don (FK)&lt;br&gt;  ma_lk (FK)&lt;br&gt;  so_tien&lt;br&gt;  trang_thai&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="220" x="400" y="315" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_lrv_hdr" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1E3A8A;strokeColor=#1E3A8A;fontColor=#FFFFFF;fontStyle=1;fontSize=14;align=center;verticalAlign=middle;fontFamily=Times New Roman;strokeWidth=1;" value="luot_ra_vao" vertex="1">
+          <mxGeometry height="35" width="220" x="80" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_lrv_body" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1E3A8A;fontColor=#0F172A;fontSize=14;fontFamily=Times New Roman;align=left;verticalAlign=top;spacingTop=8;spacingLeft=8;strokeWidth=1;" value="&lt;div style=&quot;line-height: 140%; padding-left: 8px;&quot;&gt;&lt;b&gt;• ma_luot (PK)&lt;/b&gt;&lt;br&gt;  mssv (FK)&lt;br&gt;  loai (VAO/RA)&lt;br&gt;  thoi_gian&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="220" x="80" y="535" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_hd_hdr" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1E3A8A;strokeColor=#1E3A8A;fontColor=#FFFFFF;fontStyle=1;fontSize=14;align=center;verticalAlign=middle;fontFamily=Times New Roman;strokeWidth=1;" value="hoa_don" vertex="1">
+          <mxGeometry height="35" width="220" x="400" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_hd_body" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1E3A8A;fontColor=#0F172A;fontSize=14;fontFamily=Times New Roman;align=left;verticalAlign=top;spacingTop=8;spacingLeft=8;strokeWidth=1;" value="&lt;div style=&quot;line-height: 140%; padding-left: 8px;&quot;&gt;&lt;b&gt;• ma_hoa_don (PK)&lt;/b&gt;&lt;br&gt;  ma_phong (FK)&lt;br&gt;  loai_hoa_don&lt;br&gt;  so_tien&lt;br&gt;  trang_thai&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="220" x="400" y="535" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_log_hdr" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1E3A8A;strokeColor=#1E3A8A;fontColor=#FFFFFF;fontStyle=1;fontSize=14;align=center;verticalAlign=middle;fontFamily=Times New Roman;strokeWidth=1;" value="nhat_ky_du_lieu" vertex="1">
+          <mxGeometry height="35" width="220" x="720" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_log_body" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1E3A8A;fontColor=#0F172A;fontSize=14;fontFamily=Times New Roman;align=left;verticalAlign=top;spacingTop=8;spacingLeft=8;strokeWidth=1;" value="&lt;div style=&quot;line-height: 140%; padding-left: 8px;&quot;&gt;&lt;b&gt;• ma_log (PK)&lt;/b&gt;&lt;br&gt;  bang_tac_dong&lt;br&gt;  hanh_dong&lt;br&gt;  gia_tri_cu&lt;br&gt;  gia_tri_moi&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="220" x="720" y="535" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_sv_hd" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1E3A8A;strokeWidth=1;endArrow=none;fontFamily=Times New Roman;fontSize=14;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="300" y="135" as="sourcePoint" />
+            <mxPoint x="400" y="135" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl_sv_1" parent="edge_sv_hd" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=14;fontColor=#0F172A;fontFamily=Times New Roman;strokeWidth=1;" value="1" vertex="1">
+          <mxGeometry height="30" relative="1" width="30" x="-0.6" y="-12" as="geometry">
+            <mxPoint x="-20" y="-7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl_hd_n" parent="edge_sv_hd" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=14;fontColor=#0F172A;fontFamily=Times New Roman;strokeWidth=1;" value="N" vertex="1">
+          <mxGeometry height="30" relative="1" width="30" x="0.6" y="-12" as="geometry">
+            <mxPoint x="-10" y="-7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_hd_phong" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1E3A8A;strokeWidth=1;endArrow=none;fontFamily=Times New Roman;fontSize=14;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="620" y="135" as="sourcePoint" />
+            <mxPoint x="720" y="135" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl_hd2_n" parent="edge_hd_phong" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=14;fontColor=#0F172A;fontFamily=Times New Roman;strokeWidth=1;" value="N" vertex="1">
+          <mxGeometry height="30" relative="1" width="30" x="-0.6" y="-12" as="geometry">
+            <mxPoint x="-20" y="-7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl_phong_1" parent="edge_hd_phong" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=14;fontColor=#0F172A;fontFamily=Times New Roman;strokeWidth=1;" value="1" vertex="1">
+          <mxGeometry height="30" relative="1" width="30" x="0.6" y="-12" as="geometry">
+            <mxPoint x="-10" y="-7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_sv_tk" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#D97706;strokeWidth=1;endArrow=none;fontFamily=Times New Roman;fontSize=14;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="180" y="210" as="sourcePoint" />
+            <mxPoint x="180" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl_sv_tk_1" parent="edge_sv_tk" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=14;fontColor=#0F172A;fontFamily=Times New Roman;strokeWidth=1;" value="1" vertex="1">
+          <mxGeometry height="30" relative="1" width="30" y="10" as="geometry">
+            <mxPoint x="-10" y="-15" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_sv_lrv" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563EB;strokeWidth=1;endArrow=none;fontFamily=Times New Roman;fontSize=14;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="180" y="430" as="sourcePoint" />
+            <mxPoint x="180" y="500" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl_lrv_n" parent="edge_sv_lrv" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=14;fontColor=#0F172A;fontFamily=Times New Roman;strokeWidth=1;" value="N" vertex="1">
+          <mxGeometry height="30" relative="1" width="30" y="-10" as="geometry">
+            <mxPoint x="10" y="3" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_tk_gd" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#D97706;strokeWidth=1;endArrow=none;fontFamily=Times New Roman;fontSize=14;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="300" y="372" as="sourcePoint" />
+            <mxPoint x="400" y="372" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_gd_hd" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#D97706;strokeWidth=1;endArrow=none;fontFamily=Times New Roman;fontSize=14;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="510" y="430" as="sourcePoint" />
+            <mxPoint x="510" y="500" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_phong_hd" edge="1" parent="1" source="tbl_phong_body" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563EB;strokeWidth=1;dashed=1;dashPattern=2 4;endArrow=none;entryX=1;entryY=0.25;entryDx=0;entryDy=0;fontFamily=Times New Roman;fontSize=14;exitX=0;exitY=0.75;exitDx=0;exitDy=0;" target="tbl_hd_body">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="970" y="270.05" as="sourcePoint" />
+            <mxPoint x="700" y="420" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_hd_log" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9333EA;strokeWidth=1;dashed=1;endArrow=classic;endFill=1;fontColor=#9333EA;fontSize=14;fontStyle=1;fontFamily=Times New Roman;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="620" y="580" as="sourcePoint" />
+            <mxPoint x="720" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl_trigger_audit" parent="edge_hd_log" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=14;fontColor=#9333EA;fontFamily=Times New Roman;strokeWidth=1;" value="Trigger&#xa;Audit" vertex="1">
+          <mxGeometry height="50" relative="1" width="60" y="-18" as="geometry">
+            <mxPoint x="-31" y="-8" as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

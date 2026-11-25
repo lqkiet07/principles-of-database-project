@@ -36,8 +36,7 @@ CREATE TABLE sinh_vien (
     nganh      VARCHAR(120) NOT NULL CHECK (length(trim(nganh)) >= 2),
     sdt        VARCHAR(15) NOT NULL CHECK (sdt ~ '^0[0-9]{9,10}$'),
     email      VARCHAR(120) NOT NULL UNIQUE
-               CHECK (email ~* '^[A-Z][0-9]{7}@student\.ctu\.edu\.vn$'),
-    so_du      NUMERIC(12, 0) NOT NULL DEFAULT 0 CHECK (so_du >= 0)
+               CHECK (email ~* '^[A-Z][0-9]{7}@student\.ctu\.edu\.vn$')
 );
 
 -- 4. TAI_KHOAN: Tài khoản đăng nhập gắn trực tiếp với hồ sơ sinh viên/cán bộ
@@ -239,17 +238,35 @@ CREATE TABLE phien_thanh_toan_qr (
     hoan_tat_luc    TIMESTAMPTZ NULL
 );
 
--- 19. GIAO_DICH_VI: Biến động số dư tài khoản nội trú của sinh viên
-CREATE TABLE giao_dich_vi (
-    ma_gd        SERIAL PRIMARY KEY,
-    mssv         VARCHAR(8) NOT NULL REFERENCES sinh_vien(mssv) ON UPDATE CASCADE ON DELETE RESTRICT,
-    loai         VARCHAR(20) NOT NULL CHECK (loai IN ('NAP_TIEN', 'THANH_TOAN', 'HOAN_TIEN')),
-    so_tien      NUMERIC(12, 0) NOT NULL CHECK (so_tien > 0),
-    so_du_truoc  NUMERIC(12, 0) NOT NULL,
-    so_du_sau    NUMERIC(12, 0) NOT NULL,
-    ma_hoa_don   INTEGER NULL REFERENCES hoa_don(ma_hoa_don) ON UPDATE CASCADE ON DELETE SET NULL,
-    mo_ta        TEXT NOT NULL,
-    thoi_gian    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- 19. TAI_KHOAN_NGAN_HANG_SV: Tài khoản ngân hàng liên kết thanh toán của sinh viên
+CREATE TABLE tai_khoan_ngan_hang_sv (
+    ma_lk           SERIAL PRIMARY KEY,
+    mssv            VARCHAR(8) NOT NULL REFERENCES sinh_vien(mssv) ON UPDATE CASCADE ON DELETE CASCADE,
+    ngan_hang       VARCHAR(80) NOT NULL,
+    ma_bin          VARCHAR(10) NOT NULL DEFAULT '970436',
+    so_tai_khoan    VARCHAR(30) NOT NULL,
+    ten_chu_tk      VARCHAR(120) NOT NULL,
+    so_du_sandbox   NUMERIC(12, 0) NOT NULL DEFAULT 15000000 CHECK (so_du_sandbox >= 0),
+    mac_dinh        BOOLEAN NOT NULL DEFAULT TRUE,
+    ngay_lien_ket   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_sv_stk UNIQUE (mssv, so_tai_khoan)
+);
+
+-- 20. GIAO_DICH_NGAN_HANG: Lịch sử giao dịch trừ tài khoản ngân hàng và cộng quỹ KTX
+CREATE TABLE giao_dich_ngan_hang (
+    ma_gd_nh        BIGSERIAL PRIMARY KEY,
+    ma_lk           INTEGER REFERENCES tai_khoan_ngan_hang_sv(ma_lk) ON DELETE SET NULL,
+    mssv            VARCHAR(8) NOT NULL REFERENCES sinh_vien(mssv) ON UPDATE CASCADE ON DELETE CASCADE,
+    ma_hoa_don      INTEGER NOT NULL REFERENCES hoa_don(ma_hoa_don) ON UPDATE CASCADE ON DELETE RESTRICT,
+    ma_giao_dich    VARCHAR(64) NOT NULL UNIQUE,
+    ngan_hang       VARCHAR(80) NOT NULL,
+    so_tai_khoan    VARCHAR(30) NOT NULL,
+    so_tien         NUMERIC(12, 0) NOT NULL CHECK (so_tien > 0),
+    so_du_truoc     NUMERIC(12, 0) NOT NULL,
+    so_du_sau       NUMERIC(12, 0) NOT NULL,
+    phuong_thuc     VARCHAR(30) NOT NULL DEFAULT 'QR_NGAN_HANG',
+    noi_dung        VARCHAR(200) NOT NULL,
+    thoi_gian       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- 20. NHAT_KY_DU_LIEU: Audit Log ghi giá trị cũ / mới từ Trigger khi INSERT, UPDATE, DELETE
